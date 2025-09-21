@@ -1669,7 +1669,7 @@ def main():
         ]
 
         UIManager.create_dynamic_menu(menu_options)
-        setup_type = input("\033[1;93m[ zam2109roblox.shop ] - Enter command: \033[0m")
+        setup_type = input("\033[1;93m[ zam2109roblox.shop ] - Enter command: \033[0m").strip()
         codex_bypass_active = False
 
         if setup_type == "1":
@@ -1687,9 +1687,9 @@ def main():
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
-                force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m")
+                force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
                 force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
-                if force_rejoin_interval <= 0:
+                if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
@@ -1756,7 +1756,7 @@ def main():
                     "5. Bee Swarm Simulator", "6. Anime Vanguards", "7. Pet GO",
                     "8. Pet Simulator 99", "9. Meme Sea", "10. Anime Adventures",
                     "11. Anime Last Stand", "12. Da Hood", "13. Da Hood VC", "14. Arise Crossover",
-                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other game or Private Server Link"
+                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other game or Private Server Link (per account)"
                 ]
                 for game in games:
                     print(f"\033[96m{game}\033[0m")
@@ -1769,35 +1769,61 @@ def main():
                     "13": "7213786345", "14": "87039211657390", "15": "85896571713843", "16": "72829404259339"
                 }
 
+                server_links = []
                 if choice in game_ids:
                     server_link = game_ids[choice]
+                    formatted_link = RobloxManager.format_server_link(server_link)
+                    if formatted_link:
+                        server_links = [(pkg, formatted_link) for pkg, _ in accounts]
+                        FileManager.save_server_links(server_links)
+                        print("\033[1;32m[ zam2109roblox.shop ] - Game ID or server link saved for all accounts!\033[0m")
+                    else:
+                        print("\033[1;31m[ zam2109roblox.shop ] - Invalid server link.\033[0m")
+                        input("\033[1;32mPress Enter to return...\033[0m")
+                        continue
+
                 elif choice == "17":
-                    server_link = input("\033[93m[ zam2109roblox.shop ] - Enter game ID or private server link: \033[0m")
+                    for package_name, _ in accounts:
+                        prompt = f"\033[93m[ zam2109roblox.shop ] - Enter game ID or private server link for {package_name} (leave blank to skip): \033[0m"
+                        user_input = input(prompt).strip()
+                        if not user_input:
+                            print(f"\033[93m[ zam2109roblox.shop ] - Skipped {package_name}.\033[0m")
+                            continue
+                        formatted_link = RobloxManager.format_server_link(user_input)
+                        if formatted_link:
+                            server_links.append((package_name, formatted_link))
+                            print(f"\033[1;32m[ zam2109roblox.shop ] - Saved link for {package_name}.\033[0m")
+                        else:
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - Invalid server link for {package_name}, skipped.\033[0m")
+
+                    if server_links:
+                        FileManager.save_server_links(server_links)
+                        print("\033[1;32m[ zam2109roblox.shop ] - Per-account server links saved!\033[0m")
+                    else:
+                        print("\033[1;31m[ zam2109roblox.shop ] - No valid per-account links provided.\033[0m")
+                        input("\033[1;32mPress Enter to return...\033[0m")
+                        continue
                 else:
                     print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
-                formatted_link = RobloxManager.format_server_link(server_link)
-                if formatted_link:
-                    server_links = [(package_name, formatted_link) for package_name, _ in accounts]
-                    FileManager.save_server_links(server_links)
-                    print("\033[1;32m[ zam2109roblox.shop ] - Game ID or server link saved!\033[0m")
-                else:
-                    print("\033[1;31m[ zam2109roblox.shop ] - Invalid server link.\033[0m")
             except Exception as e:
                 print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
                 Utilities.log_error(f"Setup error: {e}")
                 input("\033[1;32mPress Enter to return...\033[0m")
                 continue
-            input("\033[1;32mPress Enter to return...\033[0m")
-            continue
 
         elif setup_type == "3":
-            RobloxManager.inject_cookies_and_appstorage()
-            input("\033[1;32m\nPress Enter to exit...\033[0m")
+            try:
+                RobloxManager.inject_cookies_and_appstorage()
+                input("\033[1;32m\nPress Enter to exit...\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error during cookie injection: {e}\033[0m")
+                Utilities.log_error(f"Cookie injection error: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
             continue
-
+            
         elif setup_type == "4":
             WebhookManager.setup_webhook()
             input("\033[1;32m\nPress Enter to exit...\033[0m")
