@@ -773,6 +773,7 @@ class RobloxManager:
             time.sleep(20)
             with status_lock:
                 globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                time.sleep(60)
                 UIManager.update_status_table()
 
         except Exception as e:
