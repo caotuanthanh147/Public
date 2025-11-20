@@ -1248,34 +1248,32 @@ class ExecutorManager:
     
     @staticmethod
     def find_status_file_for_user(user_id):
-    executors = globals().get("executors", {})
+       executors = globals().get("executors", {})
     
-    for exe_name, base_path in executors.items():
+       for exe_name, base_path in executors.items():
         
-        base = base_path.rstrip("/\\")
-        for ws in ("Workspace", "workspace"):
-            candidate = os.path.join(base, ws, f"{user_id}.status")
-            if os.path.exists(candidate):
-                return candidate, exe_name
+           base = base_path.rstrip("/\\")
+           for ws in ("Workspace", "workspace"):
+               candidate = os.path.join(base, ws, f"{user_id}.status")
+               if os.path.exists(candidate):
+                   return candidate, exe_name
 
     
-    for wp in globals().get("workspace_paths", []):
-        candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
-        if os.path.exists(candidate):
+           for wp in globals().get("workspace_paths", []):
+               candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
+               if os.path.exists(candidate):
             
-            return candidate, None
+                  return candidate, None
 
     
-    fallback = f"/storage/emulated/0/Delta/Workspace/{user_id}.status"
-    return fallback, None
     
     @staticmethod
     def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
-    user_id = str(globals()["_user_"][package_name])
+      user_id = str(globals()["_user_"][package_name])
     
-    status_file, detected_executor = find_status_file_for_user(user_id)
+      status_file, detected_executor = find_status_file_for_user(user_id)
 
-    while True:
+      while True:
         try:
             
             status_file, detected_executor = find_status_file_for_user(user_id)
