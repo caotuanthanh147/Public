@@ -1,74 +1,83 @@
 wait(5)
-local GAME_IDS = {
-    121116694547285,
-    127886236032517,
-}
+wait(5)
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
+
+local PLACE_ID = 127886236032517
+local TARGET_GAME_ID = 127886236032517
+
 local teleported = false
-local function getTargetId(currentPlaceId)
-    for i, id in ipairs(GAME_IDS) do
-        if id ~= currentPlaceId then
-            return id
-        end
-    end
-    return GAME_IDS[1]
-end
+
 local function tryTeleport()
-    if teleported then return end
-    teleported = true
-    pcall(function()
-        local playersCount = #Players:GetPlayers()
-        local targetId = getTargetId(game.PlaceId)
-        if playersCount > 1 then
-            TeleportService:Teleport(targetId, LocalPlayer)
-            return
-        end
-        if game.PlaceId == targetId then
-            local jobId = game.JobId
-            if playersCount <= 1 then
-                LocalPlayer:Kick("\nRejoining...")
-                task.wait(0.5)
-                TeleportService:Teleport(targetId, LocalPlayer)
-            else
-                TeleportService:TeleportToPlaceInstance(targetId, jobId, LocalPlayer)
-            end
-        else
-            TeleportService:Teleport(targetId, LocalPlayer)
-        end
-    end)
+	if teleported then return end
+	teleported = true
+
+	pcall(function()
+		local playersCount = #Players:GetPlayers()
+
+		if playersCount > 1 then
+			pcall(function()
+				TeleportService:Teleport(127886236032517, Players.LocalPlayer)
+			end)
+			return
+		end
+
+		if game.PlaceId == TARGET_GAME_ID then
+			local jobId = game.JobId
+
+			if playersCount <= 1 then
+				Players.LocalPlayer:Kick("\nRejoining...")
+				task.wait(0.5)
+				TeleportService:Teleport(127886236032517, Players.LocalPlayer)
+			else
+				TeleportService:TeleportToPlaceInstance(127886236032517, jobId, Players.LocalPlayer)
+			end
+		else
+			TeleportService:Teleport(PLACE_ID, Players.LocalPlayer)
+		end
+	end)
 end
+
 if #Players:GetPlayers() > 1 then
-    tryTeleport()
+	tryTeleport()
 end
+
 Players.PlayerAdded:Connect(function()
-    if #Players:GetPlayers() > 1 then
-        tryTeleport()
-    end
+	if #Players:GetPlayers() > 1 then
+		tryTeleport()
+	end
 end)
+
 local function onCharacter(char)
-    local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
-    if humanoid then
-        humanoid.Died:Connect(tryTeleport)
-    end
+	local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
+	if humanoid then
+		humanoid.Died:Connect(tryTeleport)
+	end
 end
-if LocalPlayer.Character then onCharacter(LocalPlayer.Character) end
+
+if LocalPlayer.Character then
+	onCharacter(LocalPlayer.Character)
+end
+
 LocalPlayer.CharacterAdded:Connect(onCharacter)
+
 task.spawn(function()
-    while not teleported do
-        local bossInterface = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("bossInterface")
-        local healthFrame = bossInterface and bossInterface:FindFirstChild("HealthFrame")
-        local healthLabel = healthFrame and healthFrame:FindFirstChild("HealthLabel")
-        if healthLabel and healthLabel.Text then
-            local number = tonumber((healthLabel.Text:gsub("%%", "")))
-            if number and number <= 0 then
-                task.wait(10)
-                tryTeleport()
-            end
-        end
-        task.wait(0.2)
-    end
+	while not teleported do
+		local bossInterface = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("bossInterface")
+		local healthFrame = bossInterface and bossInterface:FindFirstChild("HealthFrame")
+		local healthLabel = healthFrame and healthFrame:FindFirstChild("HealthLabel")
+
+		if healthLabel and healthLabel.Text then
+			local number = tonumber((healthLabel.Text:gsub("%%", "")))
+			if number and number <= 0 then
+				task.wait(10)
+				tryTeleport()
+			end
+		end
+
+		task.wait(0.2)
+	end
 end)
 if game.PlaceId == 127886236032517 then
     do
