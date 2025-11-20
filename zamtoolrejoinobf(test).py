@@ -1248,11 +1248,6 @@ class ExecutorManager:
     
     @staticmethod
     def find_status_file_for_user(user_id):
-    """
-    Search globals()['executors'] (and globals()['workspace_paths']) for a {user_id}.status file.
-    Returns: (status_file_path, executor_name_or_None)
-    If not found, returns (default_delta_path, None) as a fallback.
-    """
     executors = globals().get("executors", {})
     
     for exe_name, base_path in executors.items():
@@ -1276,10 +1271,6 @@ class ExecutorManager:
     
     @staticmethod
     def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
-    """
-    Background monitor: every `check_interval` seconds look for the user's .status file
-    (auto-detecting which executor path it's in) and rejoin if stale or disconnected.
-    """
     user_id = str(globals()["_user_"][package_name])
     
     status_file, detected_executor = find_status_file_for_user(user_id)
