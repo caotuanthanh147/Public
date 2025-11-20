@@ -1245,100 +1245,77 @@ class ExecutorManager:
             if continuous and time.time() > retry_timeout:
                 return False
             time.sleep(20)
-    
+
     @staticmethod
     def find_status_file_for_user(user_id):
-       executors = globals().get("executors", {})
-    
-       for exe_name, base_path in executors.items():
         
-           base = base_path.rstrip("/\\")
-           for ws in ("Workspace", "workspace"):
-               candidate = os.path.join(base, ws, f"{user_id}.status")
-               if os.path.exists(candidate):
-                   return candidate, exe_name
-
-    
-           for wp in globals().get("workspace_paths", []):
-               candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
-               if os.path.exists(candidate):
-            
-                  return candidate, None
+        executors_list = globals().get("executors", {})
+        for exe_name, base_path in executors_list.items():
+            base = base_path.rstrip("/\\")
+            for ws in ("Workspace", "workspace"):
+                candidate = os.path.join(base, ws, f"{user_id}.status")
+                if os.path.exists(candidate):
+                    return candidate, exe_name
+        for wp in globals().get("workspace_paths", []):
+            candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
+            if os.path.exists(candidate):
+                return candidate, None
+        return None, None
 
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
-      user_id = str(globals()["_user_"][package_name])
-    
-      status_file, detected_executor = find_status_file_for_user(user_id)
+    def monitor_executor_status(package_name, server_link, check_interval=60):
+        user_id = str(globals()["_user_"][package_name])
+        while True:
+            try:
+                status_file, detected = ExecutorManager.find_status_file_for_user(user_id)
+                if status_file and os.path.exists(status_file):
+                    with open(status_file, "r") as f:
+                        try:
+                            data = json.load(f)
+                        except Exception:
+                            data = {}
+                    status = data.get("status")
+                else:
+                    status = None
 
-      while True:
-        try:
-            
-            status_file, detected_executor = find_status_file_for_user(user_id)
-
-            if os.path.exists(status_file):
-                with open(status_file, "r") as f:
-                    try:
-                        data = json.load(f)
-                    except Exception:
-                        data = {}
-                status = data.get("status")
-                timestamp = data.get("timestamp", 0)
-                now = time.time()
-
-                is_stale = (now - timestamp) > stale_threshold
-                is_offline = (status != "online")
-
-                if status == "disconnected" or is_stale or is_offline:
-                    with globals()["status_lock"]:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining (offline/stale)...\033[0m"
+                if status is None or status == "disconnected":
+                    with status_lock:
+                        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
                         UIManager.update_status_table()
-
-                    
+                    print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining.\033[0m")
+                    try:
+                        Utilities.log_error(f"Monitor: {package_name} offline or missing status, rejoining.")
+                    except:
+                        pass
                     RobloxManager.kill_roblox_process(package_name)
                     RobloxManager.delete_cache_for_package(package_name)
                     time.sleep(10)
-
-                    with globals()["status_lock"]:
+                    with status_lock:
                         globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
                         UIManager.update_status_table()
-
                     RobloxManager.launch_roblox(package_name, server_link)
-
-                    with globals()["status_lock"]:
+                    with status_lock:
                         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                         UIManager.update_status_table()
-                
-            else:
-                
-                with globals()["status_lock"]:
-                    globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining (no status file)...\033[0m"
-                    UIManager.update_status_table()
+                    
+                    if status_file and os.path.exists(status_file):
+                        try:
+                            os.remove(status_file)
+                        except Exception as e:
+                            try:
+                                Utilities.log_error(f"Error deleting stale status file {status_file}: {e}")
+                            except:
+                                pass
+                time.sleep(check_interval)
+            except Exception as e:
+                try:
+                    Utilities.log_error(f"Error in monitor thread for {package_name}: {e}")
+                except:
+                    print(f"[monitor_executor_status] Error for {package_name}: {e}")
+                time.sleep(check_interval)
 
-                RobloxManager.kill_roblox_process(package_name)
-                RobloxManager.delete_cache_for_package(package_name)
-                time.sleep(10)
-
-                with globals()["status_lock"]:
-                    globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
-                    UIManager.update_status_table()
-
-                RobloxManager.launch_roblox(package_name, server_link)
-
-                with globals()["status_lock"]:
-                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
-                    UIManager.update_status_table()
-
-        except Exception as e:
-            
-            try:
-                Utilities.log_error(f"Error in monitor thread for {package_name}: {e}")
-            except Exception:
-                print(f"[monitor_executor_status] Error for {package_name}: {e}")
-
-        time.sleep(check_interval)
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
         user_id = globals()["_user_"][package_name]
@@ -1348,7 +1325,6 @@ class ExecutorManager:
         globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
         UIManager.update_status_table()
 
-        
         try:
             if os.path.exists(status_file):
                 with open(status_file, "r") as f:
@@ -1360,6 +1336,12 @@ class ExecutorManager:
                 if status == "online" and now - timestamp <= 360:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                     UIManager.update_status_table()
+                    
+                    threading.Thread(
+                        target=ExecutorManager.monitor_executor_status,
+                        args=(package_name, server_link),
+                        daemon=True
+                    ).start()
                     next_package_event.set()
                     return
             
@@ -1380,6 +1362,7 @@ class ExecutorManager:
         RobloxManager.launch_roblox(package_name, server_link)
         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
         UIManager.update_status_table()
+        
         threading.Thread(
             target=ExecutorManager.monitor_executor_status,
             args=(package_name, server_link),
