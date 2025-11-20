@@ -1391,8 +1391,11 @@ class ExecutorManager:
         RobloxManager.launch_roblox(package_name, server_link)
         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
         UIManager.update_status_table()
-
-        
+        threading.Thread(
+            target=ExecutorManager.monitor_executor_status,
+            args=(package_name, server_link),
+            daemon=True
+        ).start()
         next_package_event.set()
 
     @staticmethod
