@@ -1,18 +1,12 @@
-wait(5)
-wait(5)
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
-
 local PLACE_ID = 127886236032517
 local TARGET_GAME_ID = 127886236032517
-
 local teleported = false
-
 local function tryTeleport()
 	if teleported then return end
 	teleported = true
-
 	pcall(function()
 		local playersCount = #Players:GetPlayers()
 
@@ -22,7 +16,6 @@ local function tryTeleport()
 			end)
 			return
 		end
-
 		if game.PlaceId == TARGET_GAME_ID then
 			local jobId = game.JobId
 
