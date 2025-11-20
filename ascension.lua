@@ -2185,3 +2185,5 @@ CTab:CreateButton({
         end
     end
 })
+
+Rayfield:LoadConfiguration()

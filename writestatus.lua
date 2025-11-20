@@ -9,7 +9,7 @@ end
 writeStatus("online")
 spawn(function()
     while true do
-        wait(120)  
+        wait(15)  
         writeStatus("online")
     end
 end)
