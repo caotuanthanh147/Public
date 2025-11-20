@@ -13,20 +13,20 @@ import sys
 import gc
 import os
 from datetime import datetime, timezone
-from rich.table import Table #type: ignore
-from rich.panel import Panel #type: ignore
-from rich.text import Text #type: ignore
-from rich.align import Align #type: ignore
-from rich.box import ROUNDED #type: ignore
-from rich.console import Console #type: ignore
+from rich.table import Table 
+from rich.panel import Panel 
+from rich.text import Text 
+from rich.align import Align 
+from rich.box import ROUNDED 
+from rich.console import Console 
 from threading import Lock, Event
 from psutil import boot_time, process_iter, cpu_percent, virtual_memory, Process, NoSuchProcess, AccessDenied, ZombieProcess
 
 try:
-    from prettytable import PrettyTable #type: ignore
+    from prettytable import PrettyTable 
 except ImportError:
     os.system("pip install prettytable")
-    from prettytable import PrettyTable #type: ignore
+    from prettytable import PrettyTable 
 
 package_lock = Lock()
 status_lock = Lock()
@@ -1245,8 +1245,111 @@ class ExecutorManager:
             if continuous and time.time() > retry_timeout:
                 return False
             time.sleep(20)
+    
+    @staticmethod
+    def find_status_file_for_user(user_id):
+    """
+    Search globals()['executors'] (and globals()['workspace_paths']) for a {user_id}.status file.
+    Returns: (status_file_path, executor_name_or_None)
+    If not found, returns (default_delta_path, None) as a fallback.
+    """
+    executors = globals().get("executors", {})
+    
+    for exe_name, base_path in executors.items():
+        
+        base = base_path.rstrip("/\\")
+        for ws in ("Workspace", "workspace"):
+            candidate = os.path.join(base, ws, f"{user_id}.status")
+            if os.path.exists(candidate):
+                return candidate, exe_name
 
     
+    for wp in globals().get("workspace_paths", []):
+        candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
+        if os.path.exists(candidate):
+            
+            return candidate, None
+
+    
+    fallback = f"/storage/emulated/0/Delta/Workspace/{user_id}.status"
+    return fallback, None
+    
+    @staticmethod
+    def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
+    """
+    Background monitor: every `check_interval` seconds look for the user's .status file
+    (auto-detecting which executor path it's in) and rejoin if stale or disconnected.
+    """
+    user_id = str(globals()["_user_"][package_name])
+    
+    status_file, detected_executor = find_status_file_for_user(user_id)
+
+    while True:
+        try:
+            
+            status_file, detected_executor = find_status_file_for_user(user_id)
+
+            if os.path.exists(status_file):
+                with open(status_file, "r") as f:
+                    try:
+                        data = json.load(f)
+                    except Exception:
+                        data = {}
+                status = data.get("status")
+                timestamp = data.get("timestamp", 0)
+                now = time.time()
+
+                is_stale = (now - timestamp) > stale_threshold
+                is_offline = (status != "online")
+
+                if status == "disconnected" or is_stale or is_offline:
+                    with globals()["status_lock"]:
+                        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining (offline/stale)...\033[0m"
+                        UIManager.update_status_table()
+
+                    
+                    RobloxManager.kill_roblox_process(package_name)
+                    RobloxManager.delete_cache_for_package(package_name)
+                    time.sleep(10)
+
+                    with globals()["status_lock"]:
+                        globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
+                        UIManager.update_status_table()
+
+                    RobloxManager.launch_roblox(package_name, server_link)
+
+                    with globals()["status_lock"]:
+                        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                        UIManager.update_status_table()
+                
+            else:
+                
+                with globals()["status_lock"]:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining (no status file)...\033[0m"
+                    UIManager.update_status_table()
+
+                RobloxManager.kill_roblox_process(package_name)
+                RobloxManager.delete_cache_for_package(package_name)
+                time.sleep(10)
+
+                with globals()["status_lock"]:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
+                    UIManager.update_status_table()
+
+                RobloxManager.launch_roblox(package_name, server_link)
+
+                with globals()["status_lock"]:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                    UIManager.update_status_table()
+
+        except Exception as e:
+            
+            try:
+                Utilities.log_error(f"Error in monitor thread for {package_name}: {e}")
+            except Exception:
+                print(f"[monitor_executor_status] Error for {package_name}: {e}")
+
+        time.sleep(check_interval)
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
         user_id = globals()["_user_"][package_name]
@@ -1270,14 +1373,14 @@ class ExecutorManager:
                     UIManager.update_status_table()
                     next_package_event.set()
                     return
-            # If we reach here, either file missing, stale, or disconnected
+            
             globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
             UIManager.update_status_table()
         except Exception as e:
             globals()["package_statuses"][package_name]["Status"] = f"\033[1;31mError reading status: {e}\033[0m"
             UIManager.update_status_table()
 
-        # Failover: kill and rejoin as before
+        
         time.sleep(15)
         RobloxManager.kill_roblox_process(package_name)
         RobloxManager.delete_cache_for_package(package_name)
@@ -1289,7 +1392,7 @@ class ExecutorManager:
         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
         UIManager.update_status_table()
 
-        # Signal to continue with next package after rejoin
+        
         next_package_event.set()
 
     @staticmethod
