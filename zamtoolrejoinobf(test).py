@@ -1265,56 +1265,54 @@ class ExecutorManager:
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=60):
-        user_id = str(globals()["_user_"][package_name])
-        while True:
-            try:
-                status_file, detected = ExecutorManager.find_status_file_for_user(user_id)
-                if status_file and os.path.exists(status_file):
+    def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
+      user_id = str(globals()["_user_"][package_name])
+      while True:
+        try:
+            status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
+            status = None
+            reason = None
+            timestamp = None
+            if not status_file or not os.path.exists(status_file):
+                status = None
+                reason = "status file missing"
+            else:
+                try:
                     with open(status_file, "r") as f:
-                        try:
-                            data = json.load(f)
-                        except Exception:
-                            data = {}
+                        data = json.load(f)
                     status = data.get("status")
-                else:
+                    timestamp = int(data.get("timestamp", 0))
+                except:
                     status = None
-
-                if status is None or status == "disconnected":
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
-                        UIManager.update_status_table()
-                    print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining.\033[0m")
+                    reason = "corrupted status file"
+            now = time.time()
+            if status == "disconnected":
+                reason = "status == disconnected"
+            if timestamp and (now - timestamp) > stale_threshold:
+                status = None
+                reason = f"stale timestamp ({int(now - timestamp)}s > {stale_threshold}s)"
+            if status is None or status == "disconnected":
+                with status_lock:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
+                    UIManager.update_status_table()
+                print(f"[AutoRejoin] {package_name}: {reason}, rejoining...")
+                RobloxManager.kill_roblox_process(package_name)
+                RobloxManager.delete_cache_for_package(package_name)
+                time.sleep(8)
+                RobloxManager.launch_roblox(package_name, server_link)
+                with status_lock:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                    UIManager.update_status_table()
+                if status_file and os.path.exists(status_file):
                     try:
-                        Utilities.log_error(f"Monitor: {package_name} offline or missing status, rejoining.")
+                        os.remove(status_file)
                     except:
                         pass
-                    RobloxManager.kill_roblox_process(package_name)
-                    RobloxManager.delete_cache_for_package(package_name)
-                    time.sleep(10)
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
-                        UIManager.update_status_table()
-                    RobloxManager.launch_roblox(package_name, server_link)
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
-                        UIManager.update_status_table()
-                    
-                    if status_file and os.path.exists(status_file):
-                        try:
-                            os.remove(status_file)
-                        except Exception as e:
-                            try:
-                                Utilities.log_error(f"Error deleting stale status file {status_file}: {e}")
-                            except:
-                                pass
-                time.sleep(check_interval)
-            except Exception as e:
-                try:
-                    Utilities.log_error(f"Error in monitor thread for {package_name}: {e}")
-                except:
-                    print(f"[monitor_executor_status] Error for {package_name}: {e}")
-                time.sleep(check_interval)
+                time.sleep(20)
+            time.sleep(check_interval)
+        except Exception as e:
+            print(f"[monitor_executor_status] error for {package_name}: {e}")
+            time.sleep(check_interval)
 
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
