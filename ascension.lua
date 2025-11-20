@@ -85,7 +85,7 @@ local function findClosestTeleporter()
     local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return nil end
     local closestTeleporter = nil
-    local closestDistance = 25 
+    local closestDistance = 15
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("TouchTransmitter") and obj.Name == "TouchInterest" then
             local teleporterPart = obj.Parent
@@ -141,7 +141,6 @@ local teleporterTask
 MiscTab:CreateToggle({
    Name = "Teleport Pad",
    CurrentValue = false,
-   Flag = "lesbian2",
    Callback = function(value)
       local ok, err = pcall(function()
          teleporterEnabled = value
@@ -1084,8 +1083,8 @@ local workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 local HORIZ_DISTANCE = 6      
 local VERTICAL_OFFSET = 6     
-local FOLLOW_SPEED = 100       
-local scanInterval = 0.135    
+local FOLLOW_SPEED = 1000
+local scanInterval = 0.1
 local TOTAL_DISTANCE = 10     
 local MAX_TARGET_DISTANCE = 800
 _G.isAutoCollectActive = _G.isAutoCollectActive or false
@@ -1211,6 +1210,7 @@ end
 ExTab:CreateToggle({
     Name = "Auto Farm",
     CurrentValue = false,
+    Flag = "lesbian2",
     Callback = function(value)
         _G.isAutoCollectActive = value
         if connection then
@@ -1403,7 +1403,15 @@ ExTab:CreateToggle({
 })
 _G.AutoSkillToken = _G.AutoSkillToken or 0
 local Players = game:GetService("Players")
+local Replicated = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
+local lastFire = {}
+local function safeUnpack(t)
+    if type(t) == "table" then
+        return table.unpack(t)
+    end
+    return t
+end
 local function getTargetPosition()
     local mobFolder = workspace:FindFirstChild("MobFolder")
     if mobFolder and #mobFolder:GetChildren() > 0 then
@@ -1411,36 +1419,63 @@ local function getTargetPosition()
         if firstMob:FindFirstChild("HumanoidRootPart") then
             return firstMob.HumanoidRootPart.Position
         end
-        return firstMob:GetPivot().Position
+        local ok, pivot = pcall(function() return firstMob:GetPivot().Position end)
+        if ok and pivot then return pivot end
     end
     return Vector3.new(0, 0, 0)
 end
+local remoteCache = {}
+local function resolveRemote(tool, remotePath)
+    if not tool then return nil end
+    local toolName = tool.Name
+    remoteCache[toolName] = remoteCache[toolName] or {}
+    if remoteCache[toolName][remotePath] and remoteCache[toolName][remotePath].Parent then
+        return remoteCache[toolName][remotePath]
+    end
+    local found = nil
+    if remotePath == "LukaRemote" then
+        local folder = Replicated:FindFirstChild("Luka's Additional Remotes")
+        if folder then
+            found = folder:FindFirstChild("InputEvent")
+        end
+    else
+        found = tool:FindFirstChild(remotePath)
+    end
+    remoteCache[toolName][remotePath] = found
+    return found
+end
 local function executeAttack(character, toolName, attackName, remotePath, argsBuilder)
+    if not character then return false end
     local tool = character:FindFirstChild(toolName)
     if not tool then return false end
-    local remote
-    if remotePath == "LukaRemote" then
-        remote = game:GetService("ReplicatedStorage"):FindFirstChild("Luka's Additional Remotes")
-        and game:GetService("ReplicatedStorage"):WaitForChild("Luka's Additional Remotes"):FindFirstChild("InputEvent")
-    else
-        remote = tool:FindFirstChild(remotePath)
+    local remote = resolveRemote(tool, remotePath)
+    if not remote then return false end
+    local key = (remote and remote:GetFullName()) or tostring(remote)
+    local now = tick()
+    local throttleSec = 0.05 
+    if lastFire[key] and now - lastFire[key] < throttleSec then
+        return false 
     end
-    if remote then
-        local targetPos = getTargetPosition()
-        local args = argsBuilder(character, tool, attackName, targetPos)
-        pcall(function()
-            if remote:IsA("RemoteEvent") then
-                remote:FireServer(unpack(args))
-            else
-                remote:InvokeServer(unpack(args))
-            end
-        end)
-        return true
+    lastFire[key] = now
+    local targetPos = nil
+    local ok, args = pcall(function()
+        return argsBuilder(character, tool, attackName, getTargetPosition())
+    end)
+    if not ok then args = {} end
+    if type(args) ~= "table" then
+        args = {args}
     end
-    return false
+    pcall(function()
+        if remote:IsA("RemoteEvent") then
+            remote:FireServer(safeUnpack(args))
+        elseif remote:IsA("RemoteFunction") then
+            remote:InvokeServer(safeUnpack(args))
+        end
+    end)
+    return true
 end
 local function startAutoSkills(character)
-    _G.AutoSkillToken = _G.AutoSkillToken + 1
+    _G.AutoSkillToken = (_G.AutoSkillToken or 0) + 1
     local myToken = _G.AutoSkillToken
     local skillSequences = {
         {
@@ -1458,88 +1493,78 @@ local function startAutoSkills(character)
                 {attack = "Critical", key = "E", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Critical"}, {MousePos = pos}} end}
             }
         },
-{
-        tools = {"Ego Breaker"},
-        sequence = {
-            {
-                attack = "Special", 
-                remote = "MainRemote", 
-                args = function(char, tool, attack, pos) 
-                    return {Enum.UserInputState.Begin, "Special"}
-                end
-            },
-            {
-                attack = "Main", 
-                remote = "MainRemote", 
-                args = function(char, tool, attack, pos) 
-                    return {Enum.UserInputState.Begin, "Main"}
-                end
+        {
+            tools = {"Ego Breaker"},
+            sequence = {
+                {attack = "Special", remote = "MainRemote", args = function(char, tool, attack, pos) return {Enum.UserInputState.Begin, "Special"} end},
+                {attack = "Main", remote = "MainRemote", args = function(char, tool, attack, pos) return {Enum.UserInputState.Begin, "Main"} end}
             }
-        }
-    },
+        },
         {
             tools = {"Classic Wand of Triplets"},
-        sequence = {
-            {
-                attack = "TripletAttack", 
-                remote = "Event", 
-                args = function(char, tool, attack, pos) 
-                    return {pos}  
-                end
+            sequence = {
+                {attack = "TripletAttack", remote = "Event", args = function(char, tool, attack, pos) return {pos} end}
             }
         }
     }
-}
     local continuousSkills = {
-        {tool = "Witch's Brew", remote = "SplashSend", args = function() return {"Activate"} end, interval = 0.001},
-        {tool = "Arvoth", remote = "FinalBurstRemote", args = function() return {} end, interval = 0.5},
-        {tool = "Bloxy Cola", remote = "SplashSend", args = function() return {"Activate"} end, interval = 0.001}
+        {tool = "Witch's Brew", remote = "SplashSend", args = function() return {"Activate"} end, interval = 0.00001},
+        {tool = "Bloxy Cola", remote = "SplashSend", args = function() return {"Activate"} end, interval = 0.00001}
     }
     for _, sequenceData in pairs(skillSequences) do
         task.spawn(function()
             while _G.AutoSkillActive and myToken == _G.AutoSkillToken do
-                if character and character.Parent then
-                    local hasTool = false
-                    for _, toolName in pairs(sequenceData.tools) do
-                        if character:FindFirstChild(toolName) then
-                            hasTool = true
-                            break
-                        end
-                    end
-                    if hasTool then
-                        for _, skill in pairs(sequenceData.sequence) do
-                            if not _G.AutoSkillActive or myToken ~= _G.AutoSkillToken then break end
-                            for _, toolName in pairs(sequenceData.tools) do
-                                executeAttack(character, toolName, skill.attack, skill.remote, skill.args)
-                            end
-                            task.wait(0.2)
-                        end
+                if not character or not character.Parent then break end
+                local hasTool = false
+                for _, toolName in pairs(sequenceData.tools) do
+                    if character:FindFirstChild(toolName) then
+                        hasTool = true
+                        break
                     end
                 end
-                task.wait(0.5)
+                if hasTool then
+                    for _, skill in pairs(sequenceData.sequence) do
+                        if not _G.AutoSkillActive or myToken ~= _G.AutoSkillToken then break end
+                        for _, toolName in pairs(sequenceData.tools) do
+                            task.wait(0.01)
+                            executeAttack(character, toolName, skill.attack, skill.remote, skill.args)
+                            task.wait(0.01)
+                        end
+                        task.wait(0.01)
+                    end
+                end
+                task.wait(0.01)
             end
         end)
     end
     for _, skill in pairs(continuousSkills) do
         task.spawn(function()
             while _G.AutoSkillActive and myToken == _G.AutoSkillToken do
-                if character and character.Parent then
-                    executeAttack(character, skill.tool, nil, skill.remote, skill.args)
-                end
-                task.wait(skill.interval)
+                if not character or not character.Parent then break end
+                task.wait(0.01)
+                executeAttack(character, skill.tool, nil, skill.remote, skill.args)
+                task.wait(0.01)
             end
+            task.wait(0.01)
         end)
     end
 end
 local function setupCharacter(character)
+    remoteCache = {}
     if _G.AutoSkillActive then
-        task.wait(0.2)
+        task.wait(0.01)
         startAutoSkills(character)
+        task.wait(0.01)
     end
 end
+player.CharacterRemoving:Connect(function(char)
+    _G.AutoSkillToken = (_G.AutoSkillToken or 0) + 1
+end)
 player.CharacterAdded:Connect(setupCharacter)
 if player.Character then
+    task.wait(0.01)
     setupCharacter(player.Character)
+    task.wait(0.01)
 end
 ExTab:CreateToggle({
     Name = "Auto Skill Sequence",
@@ -1549,7 +1574,9 @@ ExTab:CreateToggle({
         _G.AutoSkillActive = value
         if _G.AutoSkillActive then
             if player.Character then
+                task.wait(0.01)
                 setupCharacter(player.Character)
+                task.wait(0.01)
             end
         else
             _G.AutoSkillToken = (_G.AutoSkillToken or 0) + 1
@@ -2061,7 +2088,7 @@ ManTab:CreateToggle({
             equipAllItems()
             autoEquipConnection = player.ChildAdded:Connect(function(child)
                 if child:IsA("Backpack") then
-                    task.wait(0.5)
+                    task.wait(1)
                     equipAllItems()
                 end
             end)
@@ -2130,13 +2157,13 @@ CTab:CreateButton({
                 Actions = {{
                     Name = "Close",
                     Callback = function()
-                        print("[DEBUG] Closed empty inventory notification")
+                        print(lo"[DEBUG] Closed empty inventory notification")
                     end
                 }}
             })
         end
 
-        print(string.format("[DEBUG] Scan completed in %.2f seconds", os.clock() - startTime))
+      
     end
 })
 
@@ -2158,5 +2185,3 @@ CTab:CreateButton({
         end
     end
 })
-
-Rayfield:LoadConfiguration()
