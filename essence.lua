@@ -38,6 +38,7 @@ local function checkAndTeleport()
         if distance > checkRadius then
             if tick() - lastAwayTime >= checkInterval then
                 humanoidRootPart.CFrame = CFrame.new(teleportPosition)
+                task.wait(2)
                 local touchTransmitter = findPumpkinTeleporter()
                 if touchTransmitter then
                     local telePart = touchTransmitter.Parent
@@ -45,7 +46,7 @@ local function checkAndTeleport()
                         fireTouchInterest(telePart, humanoidRootPart)
                     end
                 end
-                task.wait(5) 
+                task.wait(8) 
                 humanoidRootPart.CFrame = CFrame.new(targetPosition)
                 lastAwayTime = tick()
             end
