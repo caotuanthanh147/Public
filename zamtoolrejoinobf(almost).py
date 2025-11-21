@@ -1248,19 +1248,17 @@ class ExecutorManager:
 
     @staticmethod
     def find_status_file_for_user(user_id):
-        
-        executors_list = globals().get("executors", {})
-        for exe_name, base_path in executors_list.items():
-            base = base_path.rstrip("/\\")
-            for ws in ("Workspace", "workspace"):
-                candidate = os.path.join(base, ws, f"{user_id}.status")
-                if os.path.exists(candidate):
-                    return candidate, exe_name
-        for wp in globals().get("workspace_paths", []):
-            candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
+      executors_list = globals().get("executors", {})
+      for exe_name, base_path in executors_list.items():
+        base = base_path.rstrip("/\\")
+        candidate = os.path.join(base, f"{user_id}.status")
+        if os.path.exists(candidate):
+            return candidate, exe_name
+        for ws in ("Workspace", "workspace"):
+            candidate = os.path.join(base, ws, f"{user_id}.status")
             if os.path.exists(candidate):
-                return candidate, None
-        return None, None
+                return candidate, exe_name
+      return None, None
 
     
     
@@ -1270,37 +1268,26 @@ class ExecutorManager:
       last_timestamp = None
       stale_count = 0
       have_seen_file = False
-
-    
       last_launch = globals()["_uid_"].get(user_id, 0)
       grace_after_launch = 90
       short_interval = 5       
-
       while True:
         try:
             status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
             now = time.time()
             status = None
             reason = None
-
-            
             if not status_file or not os.path.exists(status_file):
                 if not have_seen_file:
-                    
                     if now - last_launch < grace_after_launch:
-                        
                         time.sleep(short_interval)
                         continue
                     else:
-                        
                         stale_count += 1
                         reason = "status file missing"
                 else:
-                    
                     stale_count += 1
                     reason = "status file missing"
-
-            
             else:
                 have_seen_file = True
                 try:
@@ -1309,44 +1296,31 @@ class ExecutorManager:
                     status = data.get("status")
                     timestamp = int(data.get("timestamp", 0))
                 except Exception:
-                    
                     stale_count += 1
                     reason = "corrupted status file"
                     status = None
                     timestamp = None
-
-                
                 if status == "disconnected":
                     reason = "status == disconnected"
-                    
                     stale_count = 2
-
-                
                 if status != "disconnected" and timestamp:
                     if last_timestamp is None:
                         last_timestamp = timestamp
                         stale_count = 0  
                     else:
                         if timestamp > last_timestamp:
-                            
                             last_timestamp = timestamp
                             stale_count = 0
                         else:
-                            
                             stale_count += 1
                             reason = "timestamp not updated"
-                    
                     if now - timestamp > stale_threshold:
                         stale_count += 1
                         reason = f"stale timestamp ({int(now - timestamp)}s > {stale_threshold}s)"
                 elif status != "disconnected" and not timestamp:
-                    
                     stale_count += 1
                     reason = "no timestamp"
-
-            
             if stale_count >= 2:
-                
                 with status_lock:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
                     UIManager.update_status_table()
@@ -1358,28 +1332,21 @@ class ExecutorManager:
                 with status_lock:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                     UIManager.update_status_table()
-                
                 if status_file and os.path.exists(status_file):
                     try:
                         os.remove(status_file)
                     except:
                         pass
-                
                 last_timestamp = None
                 stale_count = 0
                 have_seen_file = False
                 last_launch = time.time()
                 time.sleep(20)
                 continue
-
             elif stale_count == 1:
-                
                 time.sleep(short_interval)
                 continue
-
-            
             time.sleep(check_interval)
-
         except Exception as e:
             print(f"[monitor_executor_status] error for {package_name}: {e}")
             time.sleep(check_interval)
@@ -1387,11 +1354,11 @@ class ExecutorManager:
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
       user_id = globals()["_user_"][package_name]
-      status_file = f"/storage/emulated/0/Delta/Workspace/{user_id}.status"
       globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
       UIManager.update_status_table()
       try:
-        if os.path.exists(status_file):
+        status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
+        if status_file and os.path.exists(status_file):
             with open(status_file, "r") as f:
                 data = json.load(f)
             status = data.get("status")
@@ -1407,8 +1374,8 @@ class ExecutorManager:
                 ).start()
                 next_package_event.set()
                 return
-        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
-        UIManager.update_status_table()
+                globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
+                UIManager.update_status_table()
       except Exception as e:
         globals()["package_statuses"][package_name]["Status"] = f"\033[1;31mError reading status: {e}\033[0m"
         UIManager.update_status_table()
