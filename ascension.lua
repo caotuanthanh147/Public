@@ -1479,25 +1479,17 @@ local function startAutoSkills(character)
     local myToken = _G.AutoSkillToken
     local skillSequences = {
         {
-            tools = {"Vixen Nightfall"},
+            tools = {"Arvoth"},
             sequence = {
-                {attack = "VixenMouse2", remote = "Event", args = function(char, tool, attack, pos) return {pos, attack} end},
-                {attack = "VixenMouse1", remote = "Event", args = function(char, tool, attack, pos) return {pos, attack} end}
+                {attack = "Slash", key = "M1", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Slash"}, {MousePos = pos}} end},
+                {attack = "Triple Fury", key = "E", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Triple Fury"}, {MousePos = pos}} end}
             }
         },
         {
-            tools = {"Wraithful Blazer"},
+            tools = {"The Revenant"},
             sequence = {
-                {attack = "Swing", key = "M1", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Swing"}, {MousePos = pos}} end},
-                {attack = "FirePillar", key = "Q", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "Q", attack = "FirePillar"}, {MousePos = pos}} end},
-                {attack = "Critical", key = "E", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Critical"}, {MousePos = pos}} end}
-            }
-        },
-        {
-            tools = {"Ego Breaker"},
-            sequence = {
-                {attack = "Special", remote = "MainRemote", args = function(char, tool, attack, pos) return {Enum.UserInputState.Begin, "Special"} end},
-                {attack = "Main", remote = "MainRemote", args = function(char, tool, attack, pos) return {Enum.UserInputState.Begin, "Main"} end}
+                {attack = "Necrostrike", key = "M1", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Necrostrike"}, {MousePos = pos}} end},
+                {attack = "Death Insurgence", key = "R", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "R", attack = "Death Insurgence"}, {MousePos = pos}} end}
             }
         },
         {
