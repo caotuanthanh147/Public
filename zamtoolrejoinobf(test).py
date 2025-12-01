@@ -2087,7 +2087,7 @@ def main():
             continue
         
         elif setup_type == "9":
-            global clear_cache_enabled
+            
             choice = input("\033[1;93m[ zam2109roblox.shop ] - Would you like to clear Roblox cache before each rejoin? (y/n): \033[0m").strip().lower()
             if choice == 'y':
                 clear_cache_enabled = True
@@ -2101,28 +2101,46 @@ def main():
 
         elif setup_type == "10":
             try:
-                global autorun_enabled, force_rejoin_interval
-                termux_dir = os.path.expanduser("~/.termux/boot")
-                script_path = os.path.join(termux_dir, "start_zam.sh")
-                if autorun_enabled:
-                    
-                    if os.path.exists(script_path):
-                        os.remove(script_path)
-                        print("\033[1;31m[ zam2109roblox.shop ] - Autorun disabled (removed start_zam.sh).\033[0m")
-                    autorun_enabled = False
-                else:
-                    
+        
+                choice = input("\033[1;93m[ zam2109roblox.shop ] - Would you like to enable autorun on Termux startup? (y/n): \033[0m").strip().lower()
+        
+                if choice == 'y':
+            
+                    termux_dir = os.path.expanduser("~/.termux/boot")
+                    script_path = os.path.join(termux_dir, "start_zam.sh")
+            
                     os.makedirs(termux_dir, exist_ok=True)
                     with open(script_path, "w") as f:
                         f.write("#!/data/data/com.termux/files/usr/bin/sh\n")
                         f.write("termux-wake-lock\n")
                         f.write("sleep 60\n")
                         f.write("python3 /sdcard/Download/zamtoolrejoinobf.py\n")
+            
                     os.chmod(script_path, 0o700)
                     autorun_enabled = True
                     print("\033[1;32m[ zam2109roblox.shop ] - Autorun enabled (start_zam.sh created).\033[0m")
+            
+                elif choice == 'n':
+            
+                    termux_dir = os.path.expanduser("~/.termux/boot")
+                    script_path = os.path.join(termux_dir, "start_zam.sh")
+            
+                    if os.path.exists(script_path):
+                        os.remove(script_path)
+                        print("\033[1;31m[ zam2109roblox.shop ] - Autorun disabled (removed start_zam.sh).\033[0m")
+                    else:
+                        print("\033[1;33m[ zam2109roblox.shop ] - Autorun was already disabled.\033[0m")
+            
+                    autorun_enabled = False
+            
+                else:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice. Please enter 'y' or 'n'.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+        
                 FileManager.save_config()
                 input("\033[1;32mPress Enter to return...\033[0m")
+        
             except Exception as e:
                 print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
                 Utilities.log_error(f"Autorun setup error: {e}")
