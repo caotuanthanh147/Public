@@ -2129,7 +2129,7 @@ su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xte
             
             
                     with open(script_path, "w") as f:
-                f.write(script_content)
+                        f.write(script_content)
             
             
             
@@ -2187,7 +2187,7 @@ su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xte
                 
                         error_log = "/sdcard/termux_boot_error.log"
                         if os.path.exists(error_log):
-                    os.remove(error_log)
+                            os.remove(error_log)
                     else:
                         print("\033[1;33m⚠ No autorun script found\033[0m")
             
