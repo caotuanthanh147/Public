@@ -1835,15 +1835,15 @@ def main():
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
-                force_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
-                force_rejoin_interval = float('inf') if force_input.lower() == 'q' else int(force_input) * 60
-                globals()['force_rejoin_interval'] = force_rejoin_interval
+                force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
+                force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
                 if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
                 codex_bypass_active = True
+
                 if codex_bypass_active and codex_bypass_enabled:
                     print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
 
@@ -1922,7 +1922,7 @@ def main():
                     server_link = game_ids[choice]
                     formatted_link = RobloxManager.format_server_link(server_link)
                     if formatted_link:
-                        server_links = [(pkg, formatted_link) for pkg, _ in globals()["accounts"]]
+                        server_links = [(pkg, formatted_link) for pkg, _ in accounts]
                         FileManager.save_server_links(server_links)
                         print("\033[1;32m[ zam2109roblox.shop ] - Game ID or server link saved for all accounts!\033[0m")
                     else:
@@ -1931,7 +1931,7 @@ def main():
                         continue
 
                 elif choice == "17":
-                    for package_name, _ in globals()["accounts"]:
+                    for package_name, _ in accounts:
                         prompt = f"\033[93m[ zam2109roblox.shop ] - Enter game ID or private server link for {package_name} (leave blank to skip): \033[0m"
                         user_input = input(prompt).strip()
                         if not user_input:
@@ -1971,7 +1971,7 @@ def main():
                 Utilities.log_error(f"Cookie injection error: {e}")
                 input("\033[1;32mPress Enter to return...\033[0m")
             continue
-
+            
         elif setup_type == "4":
             WebhookManager.setup_webhook()
             input("\033[1;32m\nPress Enter to exit...\033[0m")
@@ -2019,53 +2019,73 @@ def main():
                             Utilities.log_error(f"Error removing {config_file}: {e}")
 
                 globals()["command_8_configured"] = True
+
                 FileManager.save_config()
                 print("\033[1;32m[ zam2109roblox.shop ] - Check method configuration saved.\033[0m")
             except Exception as e:
-                print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
-                Utilities.log_error(f"Error in auto check user setup: {e}")
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting up check method: {e}\033[0m")
+                Utilities.log_error(f"Check method setup error: {e}")
                 input("\033[1;32mPress Enter to return...\033[0m")
+                continue
+            input("\033[1;32mPress Enter to return...\033[0m")
             continue
 
         elif setup_type == "6":
-            global codex_bypass_enabled, codex_bypass_thread
             if codex_bypass_enabled:
                 codex_bypass_enabled = False
                 print("\033[1;31m[ zam2109roblox.shop ] - Codex bypass disabled.\033[0m")
             else:
                 codex_bypass_enabled = True
                 if codex_bypass_thread is None or not codex_bypass_thread.is_alive():
-                    codex_bypass_thread = threading.Thread(target=Utilities.get_hwid_codex, daemon=True)
+                    codex_bypass_thread = threading.Thread(target=CodexBypass.bypass_thread, daemon=True)
                     codex_bypass_thread.start()
-                print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
+                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled and thread started.\033[0m")
+                else:
+                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass already running.\033[0m")
             FileManager.save_config()
+            input("\033[1;32m\nPress Enter to return to menu...\033[0m")
             continue
 
         elif setup_type == "7":
-            new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix: \033[0m").strip()
-            if new_prefix:
-                globals()["package_prefix"] = new_prefix
-                FileManager.save_config()
-                print(f"\033[1;32m[ zam2109roblox.shop ] - Package prefix updated to: {new_prefix}\033[0m")
-            else:
-                print("\033[1;31m[ zam2109roblox.shop ] - Prefix cannot be empty.\033[0m")
+            try:
+                current_prefix = globals().get("package_prefix", "com.roblox")
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Current package prefix: {current_prefix}\033[0m")
+                new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix (or press Enter to keep current): \033[0m").strip()
+                
+                if new_prefix:
+                    globals()["package_prefix"] = new_prefix
+                    FileManager.save_config()
+                    print(f"\033[1;32m[ zam2109roblox.shop ] - Package prefix updated to: {new_prefix}\033[0m")
+                else:
+                    print(f"\033[1;33m[ zam2109roblox.shop ] - Package prefix unchanged: {current_prefix}\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting package prefix: {e}\033[0m")
+                Utilities.log_error(f"Error setting package prefix: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+                continue
             input("\033[1;32mPress Enter to return...\033[0m")
             continue
 
         elif setup_type == "8":
-            auto_android_id_value = input("\033[1;93m[ zam2109roblox.shop ] - Enter Android ID value: \033[0m").strip()
-            if auto_android_id_value:
+            global auto_android_id_enabled, auto_android_id_thread, auto_android_id_value
+            if not auto_android_id_enabled:
+                android_id = input("\033[1;93m[ zam2109roblox.shop ] - Enter Android ID to spam set: \033[0m").strip()
+                if not android_id:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Android ID cannot be empty.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+                auto_android_id_value = android_id
                 auto_android_id_enabled = True
-                auto_android_id_thread = threading.Thread(target=lambda val: subprocess.run(["settings", "put", "secure", "android_id", val]), args=(auto_android_id_value,), daemon=True)
-                auto_android_id_thread.start()
-                print("\033[1;32m[ zam2109roblox.shop ] - Android ID will be changed periodically.\033[0m")
+                if auto_android_id_thread is None or not auto_android_id_thread.is_alive():
+                    auto_android_id_thread = threading.Thread(target=auto_change_android_id, daemon=True)
+                    auto_android_id_thread.start()
+                print("\033[1;32m[ zam2109roblox.shop ] - Auto change Android ID enabled.\033[0m")
             else:
                 auto_android_id_enabled = False
-                print("\033[1;31m[ zam2109roblox.shop ] - Invalid Android ID. Auto change disabled.\033[0m")
-            FileManager.save_config()
+                print("\033[1;31m[ zam2109roblox.shop ] - Auto change Android ID disabled.\033[0m")
             input("\033[1;32mPress Enter to return...\033[0m")
             continue
-
+        
         elif setup_type == "9":
             global clear_cache_enabled
             choice = input("\033[1;93m[ zam2109roblox.shop ] - Would you like to clear Roblox cache before each rejoin? (y/n): \033[0m").strip().lower()
