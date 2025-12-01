@@ -2108,38 +2108,118 @@ def main():
                     boot_dir = "/data/data/com.termux/files/home/.termux/boot"
                     script_path = os.path.join(boot_dir, "zam_autorun.sh")
             
-                    script_content = """#!/data/data/com.termux/files/usr/bin/sh
+            # Create boot directory
+                    try:
+                        os.makedirs(boot_dir, exist_ok=True, mode=0o700)
+                    except:
+                        pass
+            
+                    script_content = """#!/data/data/com.termux/files/usr/bin/bash
+# Wait for system to stabilize
 sleep 45
+
+# Ensure we have proper permissions
+if [ ! -x "/data/data/com.termux/files/usr/bin/python" ]; then
+    echo "Python not executable" > /sdcard/termux_boot_error.log
+    exit 1
+fi
+
+# Enable wake lock to prevent sleep
 termux-wake-lock
-su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xterm-256color && cd /sdcard/Download && python zamtoolrejoinobf.py"
+
+# Set environment
+export PATH=/data/data/com.termux/files/usr/bin:$PATH
+export HOME=/data/data/com.termux/files/home
+export PREFIX=/data/data/com.termux/files/usr
+
+# Navigate to script location
+cd "/storage/emulated/0/Download" 2>/dev/null || cd "/sdcard/Download"
+
+# Check if script exists
+if [ ! -f "zamtoolrejoinobf.py" ]; then
+    echo "Main script not found" > /sdcard/termux_boot_error.log
+    exit 1
+fi
+
+# Run the script
+python zamtoolrejoinobf.py
 """
             
-                    os.makedirs(boot_dir, exist_ok=True)
+            # Write the script
                     with open(script_path, "w") as f:
-                        f.write(script_content)
-                    os.chmod(script_path, 0o700)
+                f.write(script_content)
             
-                    print("\033[1;32m✓ Autorun enabled!")
-                    print("\033[1;36mInstall 'Termux:Boot' from F-Droid and reboot!\033[0m")
+            # CRITICAL FIX: Set proper permissions (read+write+execute for owner)
+            # 0o755 = rwxr-xr-x (owner: read/write/execute, group/others: read/execute)
+                    os.chmod(script_path, 0o755)
+            
+            # Also verify permissions were set
+                    import stat
+                    st = os.stat(script_path)
+                    if not (st.st_mode & stat.S_IEXEC):
+                # If chmod didn't work, try alternative method
+                        import subprocess
+                        subprocess.run(["chmod", "+x", script_path])
+            
+                    print("\033[1;32m✓ Autorun script created at:\033[0m")
+                    print(f"\033[1;36m{script_path}\033[0m")
+                    print("\n\033[1;33mChecking permissions...\033[0m")
+            
+            # Verify script is executable
+                    if os.access(script_path, os.X_OK):
+                        print("\033[1;32m✓ Script is executable\033[0m")
+                    else:
+                        print("\033[1;31m✗ Script is NOT executable - fixing...\033[0m")
+                        os.chmod(script_path, 0o755)
+            
+            # Test the script
+                    test = input("\033[1;93mTest script now? (y/n): \033[0m").strip().lower()
+                    if test == 'y':
+                        print("\033[1;36mTesting boot script...\033[0m")
+                        try:
+                            import subprocess
+                            result = subprocess.run(
+                                ["bash", script_path],
+                                capture_output=True,
+                                text=True,
+                                timeout=10
+                            )
+                            print(f"\033[1;32mTest exit code: {result.returncode}\033[0m")
+                            if result.stdout:
+                                print(f"\033[1;36mOutput: {result.stdout[:100]}...\033[0m")
+                        except subprocess.TimeoutExpired:
+                            print("\033[1;32m✓ Script is running (timed out as expected)\033[0m")
+                        except Exception as e:
+                            print(f"\033[1;31mTest error: {e}\033[0m")
+           
+            
                     autorun_enabled = True
             
                 elif choice == 'n':
+            # Remove script
                     script_path = "/data/data/com.termux/files/home/.termux/boot/zam_autorun.sh"
                     if os.path.exists(script_path):
                         os.remove(script_path)
-                        print("\033[1;32m✓ Autorun disabled\033[0m")
+                        print("\033[1;32m✓ Autorun script removed\033[0m")
+                
+                # Remove error log if exists
+                        error_log = "/sdcard/termux_boot_error.log"
+                        if os.path.exists(error_log):
+                    os.remove(error_log)
                     else:
-                        print("\033[1;33m⚠ Autorun already disabled\033[0m")
+                        print("\033[1;33m⚠ No autorun script found\033[0m")
+            
                     autorun_enabled = False
             
                 else:
                     print("\033[1;31m✗ Invalid choice\033[0m")
-            
+        
                 FileManager.save_config()
                 input("\033[1;32mPress Enter to return...\033[0m")
         
             except Exception as e:
                 print(f"\033[1;31mError: {e}\033[0m")
+                Utilities.log_error(f"Autorun setup error: {e}")
                 continue
 
 if __name__ == "__main__":
