@@ -2106,7 +2106,7 @@ def main():
         
                 if choice == 'y':
             
-                    termux_dir = os.path.expanduser("~/.termux/boot")
+                    termux_dir = os.path.expanduser("/storage/emulated/0/Download/")
                     script_path = os.path.join(termux_dir, "start_zam.sh")
             
                     os.makedirs(termux_dir, exist_ok=True)
@@ -2114,7 +2114,7 @@ def main():
                         f.write("#!/data/data/com.termux/files/usr/bin/sh\n")
                         f.write("termux-wake-lock\n")
                         f.write("sleep 60\n")
-                        f.write("python3 /sdcard/Download/zamtoolrejoinobf.py\n")
+                        f.write("su -c \"export PATH=\\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xterm-256color && cd /sdcard/Download && python zamtoolrejoinobf.py\"\n")
             
                     os.chmod(script_path, 0o700)
                     autorun_enabled = True
@@ -2122,7 +2122,7 @@ def main():
             
                 elif choice == 'n':
             
-                    termux_dir = os.path.expanduser("~/.termux/boot")
+                    termux_dir = os.path.expanduser("/storage/emulated/0/Download/")
                     script_path = os.path.join(termux_dir, "start_zam.sh")
             
                     if os.path.exists(script_path):
@@ -2136,7 +2136,7 @@ def main():
                 else:
                     print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice. Please enter 'y' or 'n'.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
-            continue
+                    continue
         
                 FileManager.save_config()
                 input("\033[1;32mPress Enter to return...\033[0m")
@@ -2144,7 +2144,7 @@ def main():
             except Exception as e:
                 print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
                 Utilities.log_error(f"Autorun setup error: {e}")
-            continue
+                continue
 
         else:
             print("\033[1;31m[ zam2109roblox.shop ] - Invalid command.\033[0m")
