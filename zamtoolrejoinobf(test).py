@@ -28,6 +28,16 @@ except ImportError:
     os.system("pip install prettytable")
     from prettytable import PrettyTable 
 
+def boot_time():
+    try:
+        return int(subprocess.check_output(["settings", "get", "global", "boot_count"]).strip())
+    except Exception:
+        return None
+        
+        
+autorun_enabled = False
+force_rejoin_interval = None
+
 package_lock = Lock()
 status_lock = Lock()
 rejoin_lock = Lock()
@@ -48,6 +58,7 @@ boot_time = boot_time()
 auto_android_id_enabled = False
 auto_android_id_thread = None
 auto_android_id_value = None
+clear_cache_enabled = False
 
 globals()["_disable_ui"] = "0"
 globals()["package_statuses"] = {}
@@ -410,8 +421,8 @@ class FileManager:
 
     @staticmethod
     def _load_config():
-        global webhook_url, device_name, webhook_interval, close_and_rejoin_delay, reset_tab_interval
-        global codex_bypass_enabled
+        global webhook_url, device_name, webhook_interval, close_and_rejoin_delay, reset_tab_interval, codex_bypass_enabled, clear_cache_enabled
+        global autorun_enabled, force_rejoin_interval
         try:
             if os.path.exists(FileManager.CONFIG_FILE):
                 with open(FileManager.CONFIG_FILE, "r") as file:
@@ -428,6 +439,9 @@ class FileManager:
                     close_and_rejoin_delay = config.get("close_and_rejoin_delay", None)
                     reset_tab_interval = config.get("reset_tab_interval", None)
                     codex_bypass_enabled = config.get("codex_bypass_enabled", False)
+                    clear_cache_enabled = config.get("clear_cache_enabled", False)
+                    autorun_enabled = config.get("autorun_enabled", False)
+                    force_rejoin_interval = config.get("force_rejoin_interval", None)
             else:
                 webhook_url = None
                 device_name = None
@@ -441,13 +455,16 @@ class FileManager:
                 close_and_rejoin_delay = None
                 reset_tab_interval = None
                 codex_bypass_enabled = False
+                clear_cache_enabled = False
+                autorun_enabled = False
+                force_rejoin_interval = None
         except Exception as e:
             print(f"\033[1;31m[ zam2109roblox.shop ] - Error loading configuration: {e}\033[0m")
             Utilities.log_error(f"Error loading configuration: {e}")
 
     @staticmethod
     def save_config():
-        global codex_bypass_enabled
+        global codex_bypass_enabled, clear_cache_enabled, autorun_enabled, force_rejoin_interval
         try:
             config = {
                 "webhook_url": webhook_url,
@@ -460,6 +477,9 @@ class FileManager:
                 "lua_script_template": globals().get("lua_script_template", None),
                 "package_prefix": globals().get("package_prefix", "com.roblox"),
                 "codex_bypass_enabled": codex_bypass_enabled,
+                "clear_cache_enabled": clear_cache_enabled,
+                "autorun_enabled": autorun_enabled,
+                "force_rejoin_interval": force_rejoin_interval
             }
             with open(FileManager.CONFIG_FILE, "w") as file:
                 json.dump(config, file, indent=4, sort_keys=True)
@@ -1234,7 +1254,7 @@ class ExecutorManager:
                         console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
 
     @staticmethod
-    def check_executor_status(package_name, continuous=True, max_wait_time=180):
+    def check_executor_status(package_name, continuous=True, max_wait_time=300):
         retry_timeout = time.time() + max_wait_time
         while True:
             for workspace in globals()["workspace_paths"]:
@@ -1248,56 +1268,86 @@ class ExecutorManager:
 
     @staticmethod
     def find_status_file_for_user(user_id):
-        
-        executors_list = globals().get("executors", {})
-        for exe_name, base_path in executors_list.items():
-            base = base_path.rstrip("/\\")
-            for ws in ("Workspace", "workspace"):
-                candidate = os.path.join(base, ws, f"{user_id}.status")
-                if os.path.exists(candidate):
-                    return candidate, exe_name
-        for wp in globals().get("workspace_paths", []):
-            candidate = os.path.join(wp.rstrip("/\\"), f"{user_id}.status")
+      executors_list = globals().get("executors", {})
+      for exe_name, base_path in executors_list.items():
+        base = base_path.rstrip("/\\")
+        candidate = os.path.join(base, f"{user_id}.status")
+        if os.path.exists(candidate):
+            return candidate, exe_name
+        for ws in ("Workspace", "workspace"):
+            candidate = os.path.join(base, ws, f"{user_id}.status")
             if os.path.exists(candidate):
-                return candidate, None
-        return None, None
+                return candidate, exe_name
+      return None, None
 
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=60, stale_threshold=360):
+    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=300):
       user_id = str(globals()["_user_"][package_name])
+      last_timestamp = None
+      stale_count = 0
+      have_seen_file = False
+      last_launch = globals()["_uid_"].get(user_id, 0)
+      grace_after_launch = 90
+      short_interval = 5       
       while True:
         try:
             status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
+            now = time.time()
             status = None
             reason = None
-            timestamp = None
             if not status_file or not os.path.exists(status_file):
-                status = None
-                reason = "status file missing"
+                if not have_seen_file:
+                    if now - last_launch < grace_after_launch:
+                        time.sleep(short_interval)
+                        continue
+                    else:
+                        stale_count += 1
+                        reason = "status file missing"
+                else:
+                    stale_count += 1
+                    reason = "status file missing"
             else:
+                have_seen_file = True
                 try:
                     with open(status_file, "r") as f:
                         data = json.load(f)
                     status = data.get("status")
                     timestamp = int(data.get("timestamp", 0))
-                except:
-                    status = None
+                except Exception:
+                    stale_count += 1
                     reason = "corrupted status file"
-            now = time.time()
-            if status == "disconnected":
-                reason = "status == disconnected"
-            if timestamp and (now - timestamp) > stale_threshold:
-                status = None
-                reason = f"stale timestamp ({int(now - timestamp)}s > {stale_threshold}s)"
-            if status is None or status == "disconnected":
+                    status = None
+                    timestamp = None
+                if status == "disconnected":
+                    reason = "status == disconnected"
+                    stale_count = 2
+                if status != "disconnected" and timestamp:
+                    if last_timestamp is None:
+                        last_timestamp = timestamp
+                        stale_count = 0  
+                    else:
+                        if timestamp > last_timestamp:
+                            last_timestamp = timestamp
+                            stale_count = 0
+                        else:
+                            stale_count += 1
+                            reason = "timestamp not updated"
+                    if now - timestamp > stale_threshold:
+                        stale_count += 1
+                        reason = f"stale timestamp ({int(now - timestamp)}s > {stale_threshold}s)"
+                elif status != "disconnected" and not timestamp:
+                    stale_count += 1
+                    reason = "no timestamp"
+            if stale_count >= 2:
                 with status_lock:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
                     UIManager.update_status_table()
-                print(f"[AutoRejoin] {package_name}: {reason}, rejoining...")
+                print(f"[AutoRejoin] {package_name}: {reason} (x2), rejoining...")
                 RobloxManager.kill_roblox_process(package_name)
-                RobloxManager.delete_cache_for_package(package_name)
+                if clear_cache_enabled:
+                    RobloxManager.delete_cache_for_package(package_name)
                 time.sleep(8)
                 RobloxManager.launch_roblox(package_name, server_link)
                 with status_lock:
@@ -1308,7 +1358,15 @@ class ExecutorManager:
                         os.remove(status_file)
                     except:
                         pass
+                last_timestamp = None
+                stale_count = 0
+                have_seen_file = False
+                last_launch = time.time()
                 time.sleep(20)
+                continue
+            elif stale_count == 1:
+                time.sleep(short_interval)
+                continue
             time.sleep(check_interval)
         except Exception as e:
             print(f"[monitor_executor_status] error for {package_name}: {e}")
@@ -1316,57 +1374,49 @@ class ExecutorManager:
 
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
-        user_id = globals()["_user_"][package_name]
-        
-        status_file = f"/storage/emulated/0/Delta/Workspace/{user_id}.status"
-
-        globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
+      user_id = globals()["_user_"][package_name]
+      globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
+      UIManager.update_status_table()
+      try:
+        status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
+        if status_file and os.path.exists(status_file):
+            with open(status_file, "r") as f:
+                data = json.load(f)
+            status = data.get("status")
+            timestamp = data.get("timestamp", 0)
+            now = time.time()
+            if status == "online" and now - timestamp <= 300:
+                globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
+                UIManager.update_status_table()
+                threading.Thread(
+                    target=ExecutorManager.monitor_executor_status,
+                    args=(package_name, server_link),
+                    daemon=True
+                ).start()
+                next_package_event.set()
+                return
+                globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
+                UIManager.update_status_table()
+      except Exception as e:
+        globals()["package_statuses"][package_name]["Status"] = f"\033[1;31mError reading status: {e}\033[0m"
         UIManager.update_status_table()
-
-        try:
-            if os.path.exists(status_file):
-                with open(status_file, "r") as f:
-                    data = json.load(f)
-                status = data.get("status")
-                timestamp = data.get("timestamp", 0)
-                now = time.time()
-               
-                if status == "online" and now - timestamp <= 360:
-                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
-                    UIManager.update_status_table()
-                    
-                    threading.Thread(
-                        target=ExecutorManager.monitor_executor_status,
-                        args=(package_name, server_link),
-                        daemon=True
-                    ).start()
-                    next_package_event.set()
-                    return
-            
-            globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
-            UIManager.update_status_table()
-        except Exception as e:
-            globals()["package_statuses"][package_name]["Status"] = f"\033[1;31mError reading status: {e}\033[0m"
-            UIManager.update_status_table()
-
-        
-        time.sleep(15)
-        RobloxManager.kill_roblox_process(package_name)
+      time.sleep(15)
+      RobloxManager.kill_roblox_process(package_name)
+      if clear_cache_enabled:
         RobloxManager.delete_cache_for_package(package_name)
-        time.sleep(10)
-        print(f"\033[1;33m[ Tool ] - Rejoining {package_name}.\033[0m")
-        globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
-        UIManager.update_status_table()
-        RobloxManager.launch_roblox(package_name, server_link)
-        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
-        UIManager.update_status_table()
-        
-        threading.Thread(
-            target=ExecutorManager.monitor_executor_status,
-            args=(package_name, server_link),
-            daemon=True
-        ).start()
-        next_package_event.set()
+      time.sleep(10)
+      print(f"\033[1;33m[ Tool ] - Rejoining {package_name}.\033[0m")
+      globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
+      UIManager.update_status_table()
+      RobloxManager.launch_roblox(package_name, server_link)
+      globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+      UIManager.update_status_table()
+      threading.Thread(
+        target=ExecutorManager.monitor_executor_status,
+        args=(package_name, server_link),
+        daemon=True
+      ).start()
+      next_package_event.set()
 
     @staticmethod
     def reset_executor_file(package_name):
@@ -1614,7 +1664,8 @@ class Runner:
                                 UIManager.update_status_table()
                             print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
                             RobloxManager.kill_roblox_process(package_name)
-                            RobloxManager.delete_cache_for_package(package_name)
+                            if clear_cache_enabled:
+                                RobloxManager.delete_cache_for_package(package_name)
                             time.sleep(2)
                             threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                         else:
@@ -1686,9 +1737,9 @@ def main():
     if not check_activation_status():
         print("\033[1;31m[ zam2109roblox.shop ] - Exiting due to activation status check failure.\033[0m")
         return
-    
+
     FileManager._load_config()
-    
+
     if not globals().get("command_8_configured", False):
         globals()["check_exec_enable"] = "1"
         globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
@@ -1713,6 +1764,40 @@ def main():
 
     stop_main_event = threading.Event()
 
+    
+    if globals().get("autorun_enabled", False):
+        global autorun_enabled, force_rejoin_interval
+        server_links = FileManager.load_server_links()
+        accounts = FileManager.load_accounts()
+        if not accounts or not server_links:
+            print("\033[1;31m[ zam2109roblox.shop ] - Cannot enable autorun: accounts or server links not configured.\033[0m")
+            autorun_enabled = False
+            FileManager.save_config()
+        else:
+            
+            interval = force_rejoin_interval
+            if interval is None:
+                interval = float('inf')
+            codex_bypass_active = True
+            if codex_bypass_active and codex_bypass_enabled:
+                print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
+            RobloxManager.kill_roblox_processes()
+            time.sleep(5)
+            Runner.launch_package_sequentially(server_links)
+            globals()["is_runner_ez"] = True
+            for task in [
+                (Runner.monitor_presence, (server_links, stop_main_event)),
+                (Runner.force_rejoin, (server_links, interval, stop_main_event)),
+                (Runner.update_status_table_periodically, ())
+            ]:
+                threading.Thread(target=task[0], args=task[1], daemon=True).start()
+            while not stop_main_event.is_set():
+                time.sleep(500)
+                with status_lock:
+                    UIManager.update_status_table()
+                Utilities.collect_garbage()
+            return
+
     while True:
         Utilities.clear_screen()
         UIManager.print_header(version)
@@ -1724,9 +1809,11 @@ def main():
             "Auto Login with Cookie",
             "Enable Discord Webhook",
             "Auto Check User Setup",
-            "Toggle Codex Bypass - OLD",
-            "Configure Package Prefix - NEW",
-            "Auto Change Android ID - NEW"
+            "Toggle Codex Bypass",
+            "Configure Package Prefix",
+            "Auto Change Android ID",
+            "Cache Clear",
+            "Run on boot"
         ]
 
         UIManager.create_dynamic_menu(menu_options)
@@ -1748,15 +1835,15 @@ def main():
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
-                force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
-                force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
+                force_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
+                force_rejoin_interval = float('inf') if force_input.lower() == 'q' else int(force_input) * 60
+                globals()['force_rejoin_interval'] = force_rejoin_interval
                 if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
 
                 codex_bypass_active = True
-
                 if codex_bypass_active and codex_bypass_enabled:
                     print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
 
@@ -1835,7 +1922,7 @@ def main():
                     server_link = game_ids[choice]
                     formatted_link = RobloxManager.format_server_link(server_link)
                     if formatted_link:
-                        server_links = [(pkg, formatted_link) for pkg, _ in accounts]
+                        server_links = [(pkg, formatted_link) for pkg, _ in globals()["accounts"]]
                         FileManager.save_server_links(server_links)
                         print("\033[1;32m[ zam2109roblox.shop ] - Game ID or server link saved for all accounts!\033[0m")
                     else:
@@ -1844,7 +1931,7 @@ def main():
                         continue
 
                 elif choice == "17":
-                    for package_name, _ in accounts:
+                    for package_name, _ in globals()["accounts"]:
                         prompt = f"\033[93m[ zam2109roblox.shop ] - Enter game ID or private server link for {package_name} (leave blank to skip): \033[0m"
                         user_input = input(prompt).strip()
                         if not user_input:
@@ -1884,7 +1971,7 @@ def main():
                 Utilities.log_error(f"Cookie injection error: {e}")
                 input("\033[1;32mPress Enter to return...\033[0m")
             continue
-            
+
         elif setup_type == "4":
             WebhookManager.setup_webhook()
             input("\033[1;32m\nPress Enter to exit...\033[0m")
@@ -1897,11 +1984,11 @@ def main():
 
                 if config_choice.lower() == "q":
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
                     print("\033[1;32m[ zam2109roblox.shop ] - Default set: Executor + Shouko Check\033[0m")
                 elif config_choice == "1":
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
                     print("\033[1;32m[ zam2109roblox.shop ] - Set to Executor + Shouko Check\033[0m")
                 elif config_choice == "2":
                     globals()["check_exec_enable"] = "0"
@@ -1910,7 +1997,7 @@ def main():
                 else:
                     print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice. Keeping default.\033[0m")
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
 
                 config_file = os.path.join("Shouko.dev", "checkui.lua")
                 if globals()["lua_script_template"]:
@@ -1932,70 +2019,97 @@ def main():
                             Utilities.log_error(f"Error removing {config_file}: {e}")
 
                 globals()["command_8_configured"] = True
-
                 FileManager.save_config()
                 print("\033[1;32m[ zam2109roblox.shop ] - Check method configuration saved.\033[0m")
             except Exception as e:
-                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting up check method: {e}\033[0m")
-                Utilities.log_error(f"Check method setup error: {e}")
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+                Utilities.log_error(f"Error in auto check user setup: {e}")
                 input("\033[1;32mPress Enter to return...\033[0m")
-                continue
-            input("\033[1;32mPress Enter to return...\033[0m")
             continue
 
         elif setup_type == "6":
+            global codex_bypass_enabled, codex_bypass_thread
             if codex_bypass_enabled:
                 codex_bypass_enabled = False
                 print("\033[1;31m[ zam2109roblox.shop ] - Codex bypass disabled.\033[0m")
             else:
                 codex_bypass_enabled = True
                 if codex_bypass_thread is None or not codex_bypass_thread.is_alive():
-                    codex_bypass_thread = threading.Thread(target=CodexBypass.bypass_thread, daemon=True)
+                    codex_bypass_thread = threading.Thread(target=Utilities.get_hwid_codex, daemon=True)
                     codex_bypass_thread.start()
-                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled and thread started.\033[0m")
-                else:
-                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass already running.\033[0m")
+                print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
             FileManager.save_config()
-            input("\033[1;32m\nPress Enter to return to menu...\033[0m")
             continue
 
         elif setup_type == "7":
-            try:
-                current_prefix = globals().get("package_prefix", "com.roblox")
-                print(f"\033[1;32m[ zam2109roblox.shop ] - Current package prefix: {current_prefix}\033[0m")
-                new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix (or press Enter to keep current): \033[0m").strip()
-                
-                if new_prefix:
-                    globals()["package_prefix"] = new_prefix
-                    FileManager.save_config()
-                    print(f"\033[1;32m[ zam2109roblox.shop ] - Package prefix updated to: {new_prefix}\033[0m")
-                else:
-                    print(f"\033[1;33m[ zam2109roblox.shop ] - Package prefix unchanged: {current_prefix}\033[0m")
-            except Exception as e:
-                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting package prefix: {e}\033[0m")
-                Utilities.log_error(f"Error setting package prefix: {e}")
-                input("\033[1;32mPress Enter to return...\033[0m")
-                continue
+            new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix: \033[0m").strip()
+            if new_prefix:
+                globals()["package_prefix"] = new_prefix
+                FileManager.save_config()
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Package prefix updated to: {new_prefix}\033[0m")
+            else:
+                print("\033[1;31m[ zam2109roblox.shop ] - Prefix cannot be empty.\033[0m")
             input("\033[1;32mPress Enter to return...\033[0m")
             continue
 
         elif setup_type == "8":
-            global auto_android_id_enabled, auto_android_id_thread, auto_android_id_value
-            if not auto_android_id_enabled:
-                android_id = input("\033[1;93m[ zam2109roblox.shop ] - Enter Android ID to spam set: \033[0m").strip()
-                if not android_id:
-                    print("\033[1;31m[ zam2109roblox.shop ] - Android ID cannot be empty.\033[0m")
-                    input("\033[1;32mPress Enter to return...\033[0m")
-                    continue
-                auto_android_id_value = android_id
+            auto_android_id_value = input("\033[1;93m[ zam2109roblox.shop ] - Enter Android ID value: \033[0m").strip()
+            if auto_android_id_value:
                 auto_android_id_enabled = True
-                if auto_android_id_thread is None or not auto_android_id_thread.is_alive():
-                    auto_android_id_thread = threading.Thread(target=auto_change_android_id, daemon=True)
-                    auto_android_id_thread.start()
-                print("\033[1;32m[ zam2109roblox.shop ] - Auto change Android ID enabled.\033[0m")
+                auto_android_id_thread = threading.Thread(target=lambda val: subprocess.run(["settings", "put", "secure", "android_id", val]), args=(auto_android_id_value,), daemon=True)
+                auto_android_id_thread.start()
+                print("\033[1;32m[ zam2109roblox.shop ] - Android ID will be changed periodically.\033[0m")
             else:
                 auto_android_id_enabled = False
-                print("\033[1;31m[ zam2109roblox.shop ] - Auto change Android ID disabled.\033[0m")
+                print("\033[1;31m[ zam2109roblox.shop ] - Invalid Android ID. Auto change disabled.\033[0m")
+            FileManager.save_config()
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+
+        elif setup_type == "9":
+            global clear_cache_enabled
+            choice = input("\033[1;93m[ zam2109roblox.shop ] - Would you like to clear Roblox cache before each rejoin? (y/n): \033[0m").strip().lower()
+            if choice == 'y':
+                clear_cache_enabled = True
+                print("\033[1;32m[ zam2109roblox.shop ] - Clear cache before rejoin enabled.\033[0m")
+            else:
+                clear_cache_enabled = False
+                print("\033[1;31m[ zam2109roblox.shop ] - Clear cache before rejoin disabled.\033[0m")
+            FileManager.save_config()
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+
+        elif setup_type == "10":
+            try:
+                global autorun_enabled, force_rejoin_interval
+                termux_dir = os.path.expanduser("~/.termux/boot")
+                script_path = os.path.join(termux_dir, "start_zam.sh")
+                if autorun_enabled:
+                    
+                    if os.path.exists(script_path):
+                        os.remove(script_path)
+                        print("\033[1;31m[ zam2109roblox.shop ] - Autorun disabled (removed start_zam.sh).\033[0m")
+                    autorun_enabled = False
+                else:
+                    
+                    os.makedirs(termux_dir, exist_ok=True)
+                    with open(script_path, "w") as f:
+                        f.write("#!/data/data/com.termux/files/usr/bin/sh\n")
+                        f.write("termux-wake-lock\n")
+                        f.write("sleep 60\n")
+                        f.write("python3 /sdcard/Download/zamtoolrejoinobf.py\n")
+                    os.chmod(script_path, 0o700)
+                    autorun_enabled = True
+                    print("\033[1;32m[ zam2109roblox.shop ] - Autorun enabled (start_zam.sh created).\033[0m")
+                FileManager.save_config()
+                input("\033[1;32mPress Enter to return...\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+                Utilities.log_error(f"Autorun setup error: {e}")
+            continue
+
+        else:
+            print("\033[1;31m[ zam2109roblox.shop ] - Invalid command.\033[0m")
             input("\033[1;32mPress Enter to return...\033[0m")
             continue
 
