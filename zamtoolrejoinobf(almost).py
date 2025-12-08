@@ -1338,12 +1338,7 @@ class ExecutorManager:
                 with status_lock:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
                     UIManager.update_status_table()
-                print(f"[AutoRejoin] {package_name}: {reason} (x2), rejoining...")
-                RobloxManager.kill_roblox_process(package_name)
-                if clear_cache_enabled:
-                    RobloxManager.delete_cache_for_package(package_name)
-                time.sleep(8)
-                RobloxManager.launch_roblox(package_name, server_link)
+                    check_executor_and_rejoin(package_name, server_link, next_package_event)
                 with status_lock:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                     UIManager.update_status_table()
