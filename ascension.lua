@@ -77,7 +77,82 @@ local CTab = Window:CreateTab("Inventory", 4483345998)
 local ExTab = Window:CreateTab("Extra", 4483345998)
 local PTab = Window:CreateTab("Prompt", 4483345998)
 
-
+ManTab:CreateToggle({
+    Name = "Shadow Castle",
+    CurrentValue = false,
+    Flag = "lesbian2",
+    Callback = function(value)
+        isKillAllActive = value
+        if isKillAllActive then
+            killAllCoroutine = coroutine.create(function()
+                while isKillAllActive do
+                    sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", 11240)
+                    sethiddenproperty(game.Players.LocalPlayer, "MaxSimulationRadius", 11240)
+                    local mobFolder = game.Workspace:FindFirstChild("MobFolder")
+                    if mobFolder then
+                        for _, mob in pairs(mobFolder:GetDescendants()) do
+                            if mob.ClassName == 'Humanoid' and mob.Health > 0 then
+                                local isPlayerCharacter = false
+                                for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+                                    if player.Character and player.Character == mob.Parent then
+                                        isPlayerCharacter = true
+                                        break
+                                    end
+                                end
+                                if not isPlayerCharacter then
+                                    local mobName = mob.Parent and mob.Parent.Name:lower() or ""
+                                    local isExcluded = mobName:find("shadow") or mobName:find("shade") or mobName:find("nyx") or mobName:find("nightmaric") or mobName:find("poltergeist")
+                                    if not isExcluded then
+                                        if mobName:find("master") then
+                                            if mob.MaxHealth - mob.Health >= 100 or mob.Health <= 100 then
+                                                mob.Health = 0
+                                            end
+                                        else
+                                            mob.Health = 0
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        for _, d in pairs(game.Workspace:GetDescendants()) do
+                            if d.ClassName == 'Humanoid' and d.Health > 0 then
+                                local isPlayerCharacter = false
+                                for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+                                    if player.Character and player.Character == d.Parent then
+                                        isPlayerCharacter = true
+                                        break
+                                    end
+                                end
+                                if not isPlayerCharacter then
+                                    local mobName = d.Parent and d.Parent.Name:lower() or ""
+                                    local isExcluded = mobName:find("shadow") or mobName:find("shade") or mobName:find("nyx") or mobName:find("nightmare")
+                                    if not isExcluded then
+                                        if mobName:find("master") then
+                                            if d.MaxHealth - d.Health >= 100 or d.Health <= 100 then
+                                                d.Health = 0
+                                            end
+                                        else
+                                            d.Health = 0
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    wait()
+                end
+            end)
+            coroutine.resume(killAllCoroutine)
+        else
+            isKillAllActive = false
+            if killAllCoroutine then
+                coroutine.close(killAllCoroutine)
+                killAllCoroutine = nil
+            end
+        end
+    end    
+})
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local function findClosestTeleporter()
@@ -85,7 +160,7 @@ local function findClosestTeleporter()
     local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return nil end
     local closestTeleporter = nil
-    local closestDistance = 15
+    local closestDistance = 25
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("TouchTransmitter") and obj.Name == "TouchInterest" then
             local teleporterPart = obj.Parent
@@ -105,7 +180,7 @@ local function teleportToPad(teleporterPart)
     local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return false end
     local teleporterCFrame = teleporterPart.CFrame
-    local positionAbove = teleporterCFrame.Position + Vector3.new(0, 5, 0) 
+    local positionAbove = teleporterCFrame.Position + Vector3.new(0, 1, 0) 
     pcall(function()
         rootPart.CFrame = CFrame.new(positionAbove)
     end)
@@ -575,7 +650,6 @@ local killAllCoroutine = nil
 local HEALTH_DAMAGE_THRESHOLD = 100  
 MiscTab:CreateToggle({
     Name = "Kill All Mobs",
-    Flag = "lesbian4",
     CurrentValue = false,
     Callback = function(value)
         if isKillAllActive == value then return end
@@ -624,134 +698,469 @@ MiscTab:CreateToggle({
         end
     end
 })
-_G.CeliaActive = _G.CeliaActive or false
-local CeliaThreads = {}
-local CeliaHooks = {}
-local function findRemotesByPattern(pattern)
-    local bulletsFolder = workspace:FindFirstChild("Bullets")
-    if not bulletsFolder then
-        return {}
-    end
-    local remotes = {}  
-    for _, child in pairs(bulletsFolder:GetChildren()) do  
-        if child:IsA("RemoteEvent") and string.find(child.Name, pattern) then  
-            table.insert(remotes, child)  
-        end  
-    end  
-    return remotes
-end
-local function hookSpecificRemote(remote)
-    if CeliaHooks[remote] then
-        return 
-    end
-    local oldFire = remote.FireServer
-    CeliaHooks[remote] = oldFire
-    remote.FireServer = function(self, ...)
-        if _G.CeliaActive and string.find(self.Name, "Qsaky23Z") then
-            return 
-        end
-        return oldFire(self, ...)
-    end
-end
-local function startCeliaProcesses()
-    CeliaThreads = {}
-    CeliaHooks = {}
-    table.insert(CeliaThreads, task.spawn(function()
-        while _G.CeliaActive do
-            local damageRemotes = findRemotesByPattern("retyhthlo")
-            for _, remote in ipairs(damageRemotes) do
-                local args = {
-                    "Charge",
-                    CFrame.new(24647.1171875, 4862.48681640625, -40336.84375, 0.8099825382232666, -0.2534901797771454, -0.5288393497467041, -0, 0.901757538318634, -0.43224215507507324, 0.5864540934562683, 0.3501085937023163, 0.7304077744483948),
-                    "Mobile"
-                }
-                remote:FireServer(unpack(args))
+local isAutoQuestActive = false
+local questCheckCoroutine = nil
+local function repeatFinishedQuests()
+    local questsFolder = game:GetService("Players").LocalPlayer.PlayerGui.MainMenus.MainGui.QuestsMenu.Quests
+    if not questsFolder then return end
+    local repeatedCount = 0
+    for _, npcQuest in pairs(questsFolder:GetChildren()) do
+        if npcQuest:IsA("Frame") then
+            local objectivesHolder = npcQuest:FindFirstChild("ObjectivesHolder")
+            if objectivesHolder then
+                local objectivesScrolling = objectivesHolder:FindFirstChild("Objectives")
+                if objectivesScrolling and objectivesScrolling:IsA("ScrollingFrame") then
+                    local hasDoneObjective = false
+                    for _, objective in pairs(objectivesScrolling:GetChildren()) do
+                        if objective:IsA("Frame") and objective.Name ~= "UIGridLayout" and objective.Name ~= "UIPadding" then
+                            local progress = objective:FindFirstChild("Progress")
+                            if progress then
+                                local additionalLabel = progress:FindFirstChild("AdditionalLabel")
+                                if additionalLabel and additionalLabel:IsA("TextLabel") and string.upper(additionalLabel.Text) == "DONE" then
+                                    hasDoneObjective = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if hasDoneObjective then
+                        local args = {npcQuest.Name, true}
+                        workspace:WaitForChild("Remote"):WaitForChild("QuestRepeat"):FireServer(unpack(args))
+                        
+                        repeatedCount = repeatedCount + 1
+                        task.wait(0.5) 
+                    end
+                end
             end
-            task.wait(0.1)
         end
-    end))
-    table.insert(CeliaThreads, task.spawn(function()
-        while _G.CeliaActive do
-            local damageTakenRemotes = findRemotesByPattern("Qsaky23Z")
-            for _, remote in ipairs(damageTakenRemotes) do
-                hookSpecificRemote(remote)
-            end
-            task.wait(0.5) 
-        end
-    end))
+    end
 end
-local function stopCeliaProcesses()
-    for remote, oldFire in pairs(CeliaHooks) do
-        if remote and oldFire then
-            remote.FireServer = oldFire
-        end
+local function startAutoQuest()
+    while isAutoQuestActive do
+        repeatFinishedQuests()
+        task.wait(5) 
     end
-    CeliaHooks = {}
-    for _, thread in ipairs(CeliaThreads) do
-        if type(thread) == "thread" then
-            task.cancel(thread)
-        end
-    end
-    CeliaThreads = {}
 end
 MiscTab:CreateToggle({
-    Name = "Celia",
-    CurrentValue = _G.CeliaActive,
+    Name = "Auto Repeat Quests",
+    CurrentValue = false,
+    Flag = "lesbian1",
     Callback = function(value)
-        _G.CeliaActive = value
-        if _G.CeliaActive then
-            startCeliaProcesses()
+        isAutoQuestActive = value
+        if isAutoQuestActive then
+            questCheckCoroutine = coroutine.create(function()
+                startAutoQuest()
+            end)
+            coroutine.resume(questCheckCoroutine)
+            
         else
-            stopCeliaProcesses()
+            if questCheckCoroutine then
+                coroutine.close(questCheckCoroutine)
+                questCheckCoroutine = nil
+            end
+            
         end
     end
 })
-local itemFilter = "chest"
-
-local ItemInput = CTab:CreateInput({
-    Name = "Item Name Filter",
-    PlaceholderText = "Enter item name",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(Text)
-        itemFilter = Text:lower()
-    end,
+local isAutoRejoinActive = false
+local skipToFinalBoss = false 
+local rejoinCheckCoroutine = nil
+local lastMobCheckTime = 0
+local lastFarMobCheckTime = 0
+local nyxFound = false
+local nyxDefeated = false
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+local player = Players.LocalPlayer
+local function isInShadowRaid()
+    return Workspace:FindFirstChild("IsShadowRaid") or 
+           Workspace:FindFirstChild("ShadowRaidBool")
+end
+local function areChestsRemaining()
+    local shadowRaidCastle = Workspace:FindFirstChild("ShadowRaidCastle")
+    if not shadowRaidCastle then return false end
+    local chestSpawns = shadowRaidCastle:FindFirstChild("ChestSpawns")
+    if not chestSpawns then return false end
+    for _, child in ipairs(chestSpawns:GetDescendants()) do
+        if child:IsA("ProximityPrompt") then
+            return true
+        end
+    end
+    return false
+end
+local function hopToRandomServer()
+    local teleporting = false
+    local teleportStateConnection = nil
+    local teleportSuccess = false
+    local function cleanup()
+        if teleportStateConnection then
+            teleportStateConnection:Disconnect()
+            teleportStateConnection = nil
+        end
+        teleporting = false
+    end
+    local function attemptTeleport()
+        local function getAllServers()
+            local url = string.format(
+                "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100",
+                PlaceId
+            )
+            local success, res = pcall(function()
+                return game:HttpGet(url)
+            end)
+            if not success or not res then return {} end
+            local decoded = HttpService:JSONDecode(res)
+            return decoded and decoded.data or {}
+        end
+        while not teleportSuccess and not teleporting do
+            local servers = getAllServers()
+            local bestServer = nil
+            local lowestPlayerCount = math.huge
+            for _, server in ipairs(servers) do
+                if server.id ~= JobId and server.playing < server.maxPlayers then
+                    if server.playing < lowestPlayerCount then
+                        lowestPlayerCount = server.playing
+                        bestServer = server
+                    end
+                end
+            end
+            if bestServer then
+                print("Best server found - Players: ".. bestServer.playing .."/".. bestServer.maxPlayers)
+                teleporting = true
+                teleportStateConnection = TeleportService.TeleportInitFailed:Connect(function()
+                    print("Teleport failed, retrying...")
+                    teleporting = false
+                    teleportSuccess = false
+                    cleanup()
+                    task.wait(0.5)
+                end)
+                local ok, err = pcall(function()
+                    TeleportService:TeleportToPlaceInstance(PlaceId, bestServer.id, player)
+                end)
+                if not ok then
+                    print("Teleport error: " .. tostring(err))
+                    teleporting = false
+                    teleportSuccess = false
+                    cleanup()
+                else
+                    print("Teleport initiated successfully")
+                    task.wait(0.5)
+                    if not teleportSuccess then
+                        print("Teleport seems stuck, retrying...")
+                        teleporting = false
+                        cleanup()
+                    end
+                end
+            else
+                print("No suitable server found, retrying in 2 seconds...")
+                task.wait(0.5)
+            end
+        end
+    end
+    spawn(attemptTeleport)
+end
+local function areMobsPresent(character)
+    if not character then return false, false end  
+    local characterPosition = character:GetPivot().Position
+    local mobFolder = Workspace:FindFirstChild("MobFolder")
+    if not mobFolder then return false, false end
+    local hasAnyMobs = false
+    local hasNearbyMobs = false
+    if skipToFinalBoss then
+        local nyx = mobFolder:FindFirstChild("Nyx, Coalescence of Terror")
+        if nyx then
+            local humanoid = nyx:FindFirstChildWhichIsA("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                nyxFound = true
+                nyxDefeated = false
+                local nyxPosition = nyx:GetPivot().Position
+                local distance = (nyxPosition - characterPosition).Magnitude
+                return true, distance <= 1000 
+            elseif humanoid and humanoid.Health <= 0 then
+                nyxFound = true
+                nyxDefeated = true
+                return true, false 
+            end
+        end
+    end
+    for _, mob in ipairs(mobFolder:GetChildren()) do
+        if not Players:GetPlayerFromCharacter(mob) then
+            local humanoid = mob:FindFirstChildWhichIsA("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local mobPosition = mob:GetPivot().Position
+                local distance = (mobPosition - characterPosition).Magnitude
+                hasAnyMobs = true  
+                if distance <= 1000 then
+                    hasNearbyMobs = true  
+                    break
+                end
+            end
+        end
+    end
+    return hasAnyMobs, hasNearbyMobs
+end
+local function killCharacter()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = 0
+            print("Character killed - mobs are too far away")
+        end
+    end
+end
+local function startAutoRejoinCheck()
+    local deathCount = 0
+    local lastDeathTime = 0
+    while isAutoRejoinActive do
+        if isInShadowRaid() then
+            local playerCount = #Players:GetPlayers()
+            if playerCount > 1 then
+            hopToRandomServer()
+            end
+            local character = player.Character
+            local hasAnyMobs, hasNearbyMobs = areMobsPresent(character)
+            if skipToFinalBoss then
+                local mobFolder = Workspace:FindFirstChild("MobFolder")
+                if mobFolder then
+                    local nyx = mobFolder:FindFirstChild("Nyx, Coalescence of Terror")
+                    if nyx and not nyxFound then
+                        nyxFound = true
+                        nyxDefeated = false
+                        print("Nyx boss found, monitoring for defeat...")
+                    end
+                    if nyxFound and nyx then
+                        local humanoid = nyx:FindFirstChildWhichIsA("Humanoid")
+                        if humanoid and humanoid.Health <= 0 then
+                            nyxDefeated = true
+                            print("Nyx defeated, checking for chests...")
+                        end
+                    elseif nyxFound and not nyx then
+                        nyxDefeated = true
+                        print("Nyx disappeared (defeated), checking for chests...")
+                    end
+                    if nyxDefeated then
+                        task.wait(10)
+                        if not areChestsRemaining() then
+                            print("Chests collected or none remaining, rejoining...")
+                            hopToRandomServer()
+                            break
+                        else
+                            print("Chests still remaining, waiting...")
+                        end
+                    end
+                end
+            end
+            if not (skipToFinalBoss and nyxFound and nyxDefeated) then
+                if hasAnyMobs and not hasNearbyMobs then
+                    if lastFarMobCheckTime == 0 then
+                        lastFarMobCheckTime = tick()
+                    else
+                        local timeSinceFarMobs = tick() - lastFarMobCheckTime
+                        if timeSinceFarMobs >= 10 then  
+                            killCharacter()
+                            lastFarMobCheckTime = 0  
+                        end
+                    end
+                else
+                    lastFarMobCheckTime = 0  
+                end
+                if character then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health <= 0 then
+                        local currentTime = tick()
+                        if currentTime - lastDeathTime > 2 then 
+                            deathCount = deathCount + 1
+                            lastDeathTime = currentTime
+                            print("Player died. Death count: " .. deathCount)
+                            if deathCount >= 3 then
+                                hopToRandomServer()
+                            end
+                        end
+                    end
+                end
+                if not hasAnyMobs then
+                    if lastMobCheckTime == 0 then
+                        lastMobCheckTime = tick()
+                    else
+                        local timeSinceNoMobs = tick() - lastMobCheckTime
+                        if timeSinceNoMobs >= 90 then
+                            print("Conditions met: No mobs for 90+ seconds or multiple players. Rejoining...")
+                            hopToRandomServer()
+                        end
+                    end
+                else
+                    lastMobCheckTime = 0
+                end
+            end
+            if tick() % 5 < 0.1 then 
+                local nyxStatus = "Not Found"
+                if nyxFound then
+                    nyxStatus = nyxDefeated and "Defeated" or "Alive"
+                end
+                print(string.format("AutoRejoin: AnyMobs=%s, NearbyMobs=%s, Players=%d, TimeNoMobs=%.1fs, TimeFarMobs=%.1fs, Deaths=%d, Nyx=%s", 
+                    tostring(hasAnyMobs), tostring(hasNearbyMobs), playerCount, 
+                    lastMobCheckTime > 0 and (tick() - lastMobCheckTime) or 0,
+                    lastFarMobCheckTime > 0 and (tick() - lastFarMobCheckTime) or 0, 
+                    deathCount, nyxStatus))
+            end
+        else
+            lastMobCheckTime = 0 
+            lastFarMobCheckTime = 0
+            nyxFound = false
+            nyxDefeated = false
+        end
+        task.wait(1) 
+    end
+end
+MiscTab:CreateToggle({
+    Name = "Rejoin Shadow Castle",
+    CurrentValue = false,
+    Flag = "lesbian3",
+    Callback = function(value)
+        isAutoRejoinActive = value
+        lastMobCheckTime = 0
+        lastFarMobCheckTime = 0
+        if not value then
+            nyxFound = false
+            nyxDefeated = false
+        end
+        if isAutoRejoinActive then
+            rejoinCheckCoroutine = coroutine.create(startAutoRejoinCheck)
+            coroutine.resume(rejoinCheckCoroutine)
+        else
+            if rejoinCheckCoroutine then
+                coroutine.close(rejoinCheckCoroutine)
+                rejoinCheckCoroutine = nil
+            end
+        end
+    end
 })
-
-CTab:CreateButton({
-    Name = "Use All Matching Items",
-    Callback = function()
-        local player = game:GetService("Players").LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local backpack = player.Backpack
-        
-        local usedCount = 0
-        local success, err = pcall(function()
-            for _, tool in ipairs(backpack:GetChildren()) do
-                if tool:IsA("Tool") and string.find(tool.Name:lower(), itemFilter) then
-                    tool.Parent = character
-                    tool:Activate()
-                    tool.Parent = backpack
-                    usedCount += 1
-                    task.wait()
+local yOffsetDp = 30
+local xOffsetDp = 5
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local function getNyxSkipButton()
+    local pg = localPlayer and localPlayer:FindFirstChild("PlayerGui")
+    if not pg then return nil end
+    local nyxCutscene = pg:FindFirstChild("NyxCutscene")
+    if not nyxCutscene then return nil end
+    return nyxCutscene:FindFirstChild("SkipCutsceneButton")
+end
+local function clickGuiButton(button)
+    if not button or not button:IsA("GuiButton") then return false end
+    local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(360, 640)
+    local dpScale = (viewport.X ~= 0) and (viewport.X / 360) or 1
+    local xOffsetPx = math.floor(xOffsetDp * dpScale + 0.5)  
+    local yOffsetPx = math.floor(yOffsetDp * dpScale + 0.5)
+    local x = math.floor(button.AbsolutePosition.X + button.AbsoluteSize.X/2 + xOffsetPx)
+    local y = math.floor(button.AbsolutePosition.Y + button.AbsoluteSize.Y/2 + yOffsetPx)
+    local success, err = pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
+        task.wait(0.02)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1)
+    end)
+    if not success then
+        warn("Click failed:", err)
+    end
+    return success
+end
+local function continuousClickButton(button)
+    spawn(function()
+        while button and button.Parent and button:IsA("GuiButton") and button.Visible do
+            clickGuiButton(button)
+            wait(0.1)  
+        end
+    end)
+end
+local nyxSkipCoroutine = nil
+local nyxSkipConnections = {}
+local nyxClickThreads = {}  
+local function autoSkipNyxCutsceneV2(state)
+    if state then
+        local function checkAndClickNyxButton()
+            local button = getNyxSkipButton()
+            if button and button:IsA("GuiButton") and button.Visible then
+                wait(0.05)
+                continuousClickButton(button)
+            end
+        end
+        checkAndClickNyxButton()
+        local playerGui = localPlayer:WaitForChild("PlayerGui")
+        nyxSkipConnections["nyxAdded"] = playerGui.ChildAdded:Connect(function(child)
+            if child.Name == "NyxCutscene" then
+                wait(0.1) 
+                local button = child:FindFirstChild("SkipCutsceneButton")
+                if button and button:IsA("GuiButton") and button.Visible then
+                    continuousClickButton(button)
+                end
+                nyxSkipConnections["buttonAdded"] = child.ChildAdded:Connect(function(buttonChild)
+                    if buttonChild.Name == "SkipCutsceneButton" and buttonChild:IsA("GuiButton") then
+                        wait(0.05)
+                        if buttonChild.Visible then
+                            continuousClickButton(buttonChild)
+                        end
+                    end
+                end)
+            end
+        end)
+        local function monitorExistingButton()
+            local nyxCutscene = playerGui:FindFirstChild("NyxCutscene")
+            if nyxCutscene then
+                local button = nyxCutscene:FindFirstChild("SkipCutsceneButton")
+                if button and button:IsA("GuiButton") then
+                    if button.Visible then
+                        continuousClickButton(button)
+                    end
+                    nyxSkipConnections["buttonVisible"] = button:GetPropertyChangedSignal("Visible"):Connect(function()
+                        if button.Visible then
+                            wait(0.05)
+                            continuousClickButton(button)
+                        end
+                    end)
+                end
+            end
+        end
+        monitorExistingButton()
+        nyxSkipCoroutine = coroutine.create(function()
+            while true do
+                wait(1)  
+                local button = getNyxSkipButton()
+                if button and button:IsA("GuiButton") and button.Visible then
+                    continuousClickButton(button)
                 end
             end
         end)
-
-        if success then
-            Rayfield:Notify({
-                Title = "Success",
-                Content = "Used "..usedCount.." matching items",
-                Duration = 3,
-                Image = 4483362458,
-            })
-        else
-            Rayfield:Notify({
-                Title = "Error",
-                Content = "Operation failed: "..tostring(err),
-                Duration = 5,
-                Image = 4483362458,
-            })
+        coroutine.resume(nyxSkipCoroutine)
+    else
+        for name, connection in pairs(nyxSkipConnections) do
+            if connection then
+                connection:Disconnect()
+            end
         end
+        nyxSkipConnections = {}
+        if nyxSkipCoroutine then
+            coroutine.close(nyxSkipCoroutine)
+            nyxSkipCoroutine = nil
+        end
+        for _, thread in pairs(nyxClickThreads) do
+            if thread then
+                coroutine.close(thread)
+            end
+        end
+        nyxClickThreads = {}
+    end
+end
+ExTab:CreateToggle({
+    Name = "Auto Skip Nyx Cutscene",
+    CurrentValue = false,
+    Flag = "lesbian9",
+    Callback = function(Value)
+        autoSkipNyxCutsceneV2(Value)
     end
 })
 ManTab:CreateToggle({
@@ -864,6 +1273,750 @@ ManTab:CreateToggle({
         end
     end    
 })
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+local isAutoRaidActive = false
+local raidCoroutine = nil
+local skipToFinalBoss = false
+local isCollectingChests = true
+local chestCollectCoroutine = nil
+local keyCollectCoroutine = nil
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+local firedPrompts = {}
+local allKeysCollected = false
+local MAX_DISTANCE = 2000
+local FIRE_ITER = 5
+local FIRE_WAIT = 0.03
+local function isInShadowRaid()
+    return Workspace:FindFirstChild("IsShadowRaid") or 
+           Workspace:FindFirstChild("ShadowRaidBool")
+end
+
+local function useTool(toolName, amount, delayTime)
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local character = player.Character
+    if not character or not character.Parent then
+        character = player.CharacterAdded:Wait()
+    end
+    local hrp = character:WaitForChild("HumanoidRootPart", 10)
+    if not hrp then
+        warn("HumanoidRootPart not found!")
+        return false
+    end
+    local backpack = player:WaitForChild("Backpack", 10)
+    if not backpack then
+        warn("Backpack not found!")
+        return false
+    end
+    local tool = backpack:FindFirstChild(toolName)
+    if not tool then
+        warn("Tool not found: " .. toolName)
+        return false
+    end
+    tool.Parent = character
+    task.spawn(function()
+        for i = 1, amount do
+            if tool and tool.Parent == character then
+                tool:Activate()
+                task.wait(delayTime > 0 and delayTime or 0.1)
+            end
+        end
+        if tool then
+            tool.Parent = backpack
+        end
+    end)
+    return true
+end
+local function teleportTo(position)
+    local character = player.Character
+    if not character then return false end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    pcall(function()
+        hrp.CFrame = CFrame.new(position)
+    end)
+    task.wait(0.5)
+    return true
+end
+local function isNearPosition(targetPos, radius)
+    local character = player.Character
+    if not character then return false end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    return (hrp.Position - targetPos).Magnitude <= radius
+end
+local function checkProximityAvailable(promptName)
+    local proximityParts = Workspace:FindFirstChild("ShadowRaidCastle")
+    if proximityParts then
+        proximityParts = proximityParts:FindFirstChild("ProximityParts")
+        if proximityParts then
+            local promptPart = proximityParts:FindFirstChild(promptName)
+            if promptPart then
+                local prompt = promptPart:FindFirstChild("ProximityPrompt")
+                if prompt then
+                    return prompt.Enabled
+                end
+            end
+        end
+    end
+    return false
+end
+local function findAndFireProximityPrompt(promptName)
+    if firedPrompts[promptName] then
+        return true
+    end
+    local proximityParts = Workspace:FindFirstChild("ShadowRaidCastle")
+    if proximityParts then
+        proximityParts = proximityParts:FindFirstChild("ProximityParts")
+        if proximityParts then
+            local promptPart = proximityParts:FindFirstChild(promptName)
+            if promptPart then
+                local prompt = promptPart:FindFirstChild("ProximityPrompt")
+                if prompt and prompt.Enabled then
+                    local character = player.Character
+                    if character then
+                        local hrp = character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            pcall(function()
+                                hrp.CFrame = promptPart.CFrame
+                            end)
+                            task.wait(0.5)
+                            do
+                                if prompt and prompt.Parent and prompt.Enabled then
+                                    fireproximityprompt(prompt)
+                                    task.wait(0.05)
+                                end
+                            end
+                            firedPrompts[promptName] = true
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+local function areMobsPresent()
+    local mobFolder = Workspace:FindFirstChild("MobFolder")
+    if not mobFolder then return false end
+    for _, mob in ipairs(mobFolder:GetChildren()) do
+        if not Players:GetPlayerFromCharacter(mob) then
+            local humanoid = mob:FindFirstChildWhichIsA("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                return true  
+            end
+        end
+    end
+    return false
+end
+local function waitForMobsClear(timeout)
+    timeout = timeout or 10  
+    local startTime = tick()
+    while tick() - startTime < timeout do
+        if not areMobsPresent() then
+            return true
+        end
+        task.wait(1)
+    end
+    return false
+end
+local function startChestCollection()
+    while isCollectingChests and isAutoRaidActive do
+        local character = player.Character
+        if not character then
+            task.wait(1)
+            continue
+        end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            task.wait(1)
+            continue
+        end
+        local origin = hrp.Position
+        local nearestEntry = nil
+        local nearestDist = math.huge
+        local function searchForChests(parent)
+            for _, child in ipairs(parent:GetDescendants()) do
+                if child:IsA("ProximityPrompt") and child.Enabled then
+                    local primaryPart = child.Parent
+                    if primaryPart and primaryPart:IsA("BasePart") then
+                        local dist = (origin - primaryPart.Position).Magnitude
+                        if dist <= MAX_DISTANCE and dist < nearestDist then
+                            nearestDist = dist
+                            nearestEntry = {
+                                chest = child.Parent,
+                                primaryPart = primaryPart,
+                                prompt = child
+                            }
+                        end
+                    end
+                end
+            end
+        end
+        local shadowRaidCastle = Workspace:FindFirstChild("ShadowRaidCastle")
+        if shadowRaidCastle then
+            local chestSpawns = shadowRaidCastle:FindFirstChild("ChestSpawns")
+            if chestSpawns then
+                for _, folder in ipairs(chestSpawns:GetChildren()) do
+                    if folder:IsA("Folder") then
+                        searchForChests(folder)
+                    end
+                end
+                searchForChests(chestSpawns)
+            end
+        end
+        if nearestEntry then
+            pcall(function()
+                hrp.CFrame = nearestEntry.primaryPart.CFrame * CFrame.new(0, 0, 0)
+            end)
+            for i = 1, FIRE_ITER do
+                if not isCollectingChests or not isAutoRaidActive then break end
+                if not nearestEntry.prompt.Parent then break end
+                pcall(fireproximityprompt, nearestEntry.prompt)
+                task.wait(FIRE_WAIT)
+            end
+            task.wait(0.08)
+        else
+            task.wait(0.1)
+        end
+    end
+end
+local function waitForKeyToDisappear(keyName)
+    while isAutoRaidActive do
+        local key = Workspace:FindFirstChild(keyName)
+        if not key then
+            print(keyName .. " collected or despawned.")
+            break
+        end
+        pcall(function()
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hrp = char:WaitForChild("HumanoidRootPart")
+            hrp.CFrame = CFrame.new(key:GetPivot().Position)
+        end)
+        task.wait(0.2)
+    end
+end
+
+local function startKeyCollection()
+    if skipToFinalBoss then
+        return
+    end
+    while isAutoRaidActive and not allKeysCollected do
+        local character = player.Character
+        if not character then
+            task.wait(1)
+            continue
+        end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            task.wait(1)
+            continue
+        end
+        local keyWavePositions = {
+            {name = "ShadowRaidKey1", spawnPos = Vector3.new(-8474, 1070, 3859)},
+            {name = "ShadowRaidKey2", spawnPos = Vector3.new(-7717, 1070, 3808)},
+            {name = "ShadowRaidKey3", spawnPos = Vector3.new(-9093, 1070, 3808)}
+        }
+        local key1 = Workspace.ShadowRaidCastle:FindFirstChild("ShadowRaidKey1")
+        if key1 then
+            local prompt1 = key1:FindFirstChildWhichIsA("ProximityPrompt")
+            if prompt1 then
+                if prompt1.Enabled then
+                    print("Collecting ShadowRaidKey1")
+                    pcall(function()
+                        hrp.CFrame = key1.CFrame
+                    end)
+                    task.wait(0.5)
+                    for i = 1, 5 do
+                        if prompt1 and prompt1.Parent and prompt1.Enabled then
+                            fireproximityprompt(prompt1)
+                            task.wait(0.05)
+                        end
+                    end
+                    print("ShadowRaidKey1 collected!")
+                    task.wait(1)
+                else
+                    print("Triggering wave for ShadowRaidKey1")
+                    pcall(function()
+                        hrp.CFrame = CFrame.new(keyWavePositions[1].spawnPos)
+                    end)
+                    task.wait(1)
+                    if areMobsPresent() then
+                        print("Waiting for mobs to clear at Key1")
+                        waitForMobsClear(20)
+                    end
+                end
+            end
+        else
+            for i = 2, 3 do
+                local keyName = "ShadowRaidKey" .. i
+                local key = Workspace.ShadowRaidCastle:FindFirstChild(keyName)
+                if key then
+                    local prompt = key:FindFirstChildWhichIsA("ProximityPrompt")
+                    if prompt then
+                        if prompt.Enabled then
+                            print("Collecting " .. keyName)
+                            pcall(function()
+                                hrp.CFrame = key.CFrame
+                            end)
+                            task.wait(0.5)
+                            for j = 1, 5 do
+                                if prompt and prompt.Parent and prompt.Enabled then
+                                    fireproximityprompt(prompt)
+                                    task.wait(0.05)
+                                end
+                            end
+                            print(keyName .. " collected!")
+                            task.wait(1)
+                        else
+                            print("Triggering wave for " .. keyName)
+                            pcall(function()
+                                hrp.CFrame = CFrame.new(keyWavePositions[i].spawnPos)
+                            end)
+                            task.wait(1)
+                            if areMobsPresent() then
+                                print("Waiting for mobs to clear at " .. keyName)
+                                waitForMobsClear(20)
+                            end
+                        end
+                        break 
+                    end
+                end
+            end
+        end
+        local foundKey = false
+        for _, descendant in pairs(Workspace.ShadowRaidCastle:GetDescendants()) do
+            if descendant.Name:lower():find("shadowraidkey") then
+                foundKey = true
+                break
+            end
+        end
+        if not foundKey then
+            allKeysCollected = true
+            print("All keys collected - no keys found in ShadowRaidCastle!")
+            break
+        else
+            allKeysCollected = false
+            print("Keys still present, continuing collection...")
+        end
+        task.wait(1) 
+    end
+end
+local function areChestsRemaining()
+    if not isCollectingChests then
+        return false
+    end
+    local shadowRaidCastle = Workspace:FindFirstChild("ShadowRaidCastle")
+    if not shadowRaidCastle then return false end
+    local chestSpawns = shadowRaidCastle:FindFirstChild("ChestSpawns")
+    if not chestSpawns then return false end
+    for _, child in ipairs(chestSpawns:GetDescendants()) do
+        if child:IsA("ProximityPrompt") and child.Enabled then
+            return true
+        end
+    end
+    return false
+end
+local function areKeysRemaining()
+    local shadowRaidCastle = Workspace:FindFirstChild("ShadowRaidCastle")
+    if not shadowRaidCastle then return false end
+    local key1 = shadowRaidCastle:FindFirstChild("ShadowRaidKey1")
+    local key2 = shadowRaidCastle:FindFirstChild("ShadowRaidKey2")
+    local key3 = shadowRaidCastle:FindFirstChild("ShadowRaidKey3")
+    return (key1 ~= nil) or (key2 ~= nil) or (key3 ~= nil)
+end
+local function checkKeyDoorAvailable()
+    local keyDoor = Workspace.ShadowRaidCastle:FindFirstChild("KeyDoor")
+    if keyDoor then
+        local keyProximityPart = keyDoor:FindFirstChild("KeyProximity")
+        if keyProximityPart then
+            local prompt = keyProximityPart:FindFirstChild("ProximityPrompt")
+            if prompt then
+                return prompt.Enabled
+            end
+        end
+    end
+    return false
+end
+local function findAndFireKeyDoorProximity()
+    if firedPrompts["KeyDoor"] then
+        return true
+    end
+    local keyDoor = Workspace.ShadowRaidCastle:FindFirstChild("KeyDoor")
+    if keyDoor then
+        local keyProximityPart = keyDoor:FindFirstChild("KeyProximity")
+        if keyProximityPart then
+            local prompt = keyProximityPart:FindFirstChild("ProximityPrompt")
+            if prompt and prompt.Enabled then
+                local character = player.Character
+                if character then
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        pcall(function()
+                            hrp.CFrame = keyProximityPart.CFrame
+                        end)
+                        task.wait(0.135)
+                        for i = 1, 10 do
+                            if prompt and prompt.Parent and prompt.Enabled then
+                                fireproximityprompt(prompt)
+                                task.wait(0.05)
+                            end
+                        end
+                        firedPrompts["KeyDoor"] = true
+                        return true
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+local function checkFloorGateAvailable()
+    local floorGate = Workspace.ShadowRaidCastle:FindFirstChild("FloorGate")
+    if floorGate then
+        local hrp = floorGate:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local prompt = hrp:FindFirstChild("GateOpenProximity")
+            if prompt then
+                return prompt.Enabled
+            end
+        end
+    end
+    return false
+end
+local function findAndFireFloorGateProximity()
+    if firedPrompts["FloorGate"] then
+        return true
+    end
+    local floorGate = Workspace.ShadowRaidCastle:FindFirstChild("FloorGate")
+    if floorGate then
+        local hrp = floorGate:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local prompt = hrp:FindFirstChild("GateOpenProximity")
+            if prompt and prompt.Enabled then
+                local character = player.Character
+                if character then
+                    local playerHrp = character:FindFirstChild("HumanoidRootPart")
+                    if playerHrp then
+                        pcall(function()
+                            playerHrp.CFrame = hrp.CFrame
+                        end)
+                        task.wait(0.5)
+                        for i = 1, 5 do
+                            if prompt and prompt.Parent and prompt.Enabled then
+                                fireproximityprompt(prompt)
+                                task.wait(0.05)
+                            end
+                        end
+                        firedPrompts["FloorGate"] = true
+                        return true
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+local player = Players.LocalPlayer
+local function hopToRandomServer()
+    local teleporting = false
+    local teleportStateConnection = nil
+    local teleportSuccess = false
+    local function cleanup()
+        if teleportStateConnection then
+            teleportStateConnection:Disconnect()
+            teleportStateConnection = nil
+        end
+        teleporting = false
+    end
+    local function attemptTeleport()
+        local function getAllServers()
+            local url = string.format(
+                "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100",
+                PlaceId
+            )
+            local success, res = pcall(function()
+                return game:HttpGet(url)
+            end)
+            if not success or not res then return {} end
+            local decoded = HttpService:JSONDecode(res)
+            return decoded and decoded.data or {}
+        end
+        while not teleportSuccess and not teleporting do
+            local servers = getAllServers()
+            local bestServer = nil
+            local lowestPlayerCount = math.huge
+            for _, server in ipairs(servers) do
+                if server.id ~= JobId and server.playing < server.maxPlayers then
+                    if server.playing < lowestPlayerCount then
+                        lowestPlayerCount = server.playing
+                        bestServer = server
+                    end
+                end
+            end
+            if bestServer then
+                print("Best server found - Players: ".. bestServer.playing .."/".. bestServer.maxPlayers)
+                teleporting = true
+                teleportStateConnection = TeleportService.TeleportInitFailed:Connect(function()
+                    print("Teleport failed, retrying...")
+                    teleporting = false
+                    teleportSuccess = false
+                    cleanup()
+                    task.wait(0.5)
+                end)
+                local ok, err = pcall(function()
+                    TeleportService:TeleportToPlaceInstance(PlaceId, bestServer.id, player)
+                end)
+                if not ok then
+                    print("Teleport error: " .. tostring(err))
+                    teleporting = false
+                    teleportSuccess = false
+                    cleanup()
+                else
+                    print("Teleport initiated successfully")
+                    task.wait(0.5)
+                    if not teleportSuccess then
+                        print("Teleport seems stuck, retrying...")
+                        teleporting = false
+                        cleanup()
+                    end
+                end
+            else
+                print("No suitable server found, retrying in 2 seconds...")
+                task.wait(0.5)
+            end
+        end
+    end
+    spawn(attemptTeleport)
+end
+local rejoinCoroutine = nil
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+local function startAutoRejoin()
+    while isAutoRaidActive do
+        local character = player.Character
+        if character then
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local currentPos = hrp.Position
+                local targetPos = Vector3.new(-7490, 3987, 5382)
+                local distance = (currentPos - targetPos).Magnitude
+                if distance <= 500 then
+                    if skipToFinalBoss then
+                        print("Near final boss position, firing Proximity5...")
+                        task.wait(1)
+                        findAndFireProximityPrompt("Proximity5")
+                    else
+                        while areChestsRemaining() do
+                        task.wait(2)
+                        end
+                        print("Near final boss position, auto-rejoining...")
+                        hopToRandomServer()
+                    end
+                    break
+                end
+            end
+        end
+        task.wait(1)
+    end
+end
+local hasProcessedProximity2 = false
+
+local function startAutoRaid()
+    firedPrompts = {}
+    if not rejoinCoroutine then
+        rejoinCoroutine = coroutine.create(startAutoRejoin)
+        coroutine.resume(rejoinCoroutine)
+    end
+    allKeysCollected = false
+    
+    if not isInShadowRaid() then
+        task.spawn(function()
+            while true do
+                local char = player.Character or player.CharacterAdded:Wait()
+                local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
+                if isInShadowRaid() then
+                    break
+                end
+                task.wait(0.01)
+                useTool("Shadow Invitation" ,5 ,0.1)
+                task.wait(0.1)
+            end
+        end)
+    end
+    
+    if isCollectingChests and not chestCollectCoroutine then
+        chestCollectCoroutine = coroutine.create(startChestCollection)
+        coroutine.resume(chestCollectCoroutine)
+    end
+    if not hasProcessedProximity2 then
+        print("Step 1: Entering the castle...")
+        local character = player.Character
+        if character then
+            task.wait(1)
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                task.wait(1)
+                local promptPart = workspace.ShadowRaidCastle.ProximityParts.Proximity2
+                local prompt = promptPart.ProximityPrompt
+                pcall(function() hrp.CFrame = promptPart.CFrame end)
+                task.wait(0.5)
+                for i = 1, 1 do
+                    if prompt and prompt.Parent and prompt.Enabled then
+                        task.wait(0.135)
+                        fireproximityprompt(prompt)
+                        task.wait(0.05)
+                    end
+                end
+                if skipToFinalBoss then
+                    task.wait(1)
+                    useTool("Gatekeeper Key", 5, 0.1)
+                    task.wait(0.1)
+                    pcall(function() hrp.CFrame = hrp.CFrame * CFrame.new(20, 0, 20) end)
+                    task.wait(0.2)
+                    pcall(function() hrp.CFrame = promptPart.CFrame end)
+                    task.wait(0.5)
+                    for i = 1, 1 do
+                        if prompt and prompt.Parent and prompt.Enabled then
+                            task.wait(0.135)
+                            fireproximityprompt(prompt)
+                            task.wait(0.05)
+                        end
+                    end
+                else
+                    task.wait(2)
+                    pcall(function() hrp.CFrame = hrp.CFrame * CFrame.new(20, 0, 20) end)
+                    task.wait(0.2)
+                    pcall(function() hrp.CFrame = promptPart.CFrame end)
+                    task.wait(0.5)
+                    for i = 1, 1 do
+                        if prompt and prompt.Parent and prompt.Enabled then
+                            task.wait(0.135)
+                            fireproximityprompt(prompt)
+                            task.wait(0.05)
+                        end
+                    end
+                end
+            end
+        end
+        hasProcessedProximity2 = true
+    end
+    if isNearPosition(Vector3.new(-8474, 1065, 3538), 1000) then
+    print("Step 3: Inside castle, starting collection...")
+    waitForKeyToDisappear("ShadowRaidKey1")
+    waitForKeyToDisappear("ShadowRaidKey2")
+    waitForKeyToDisappear("ShadowRaidKey3")
+    if not keyCollectCoroutine then
+        task.wait(5)
+        keyCollectCoroutine = coroutine.create(startKeyCollection)
+        coroutine.resume(keyCollectCoroutine)
+    end
+    while isAutoRaidActive and (not allKeysCollected or areChestsRemaining()) do
+        task.wait(0.5)
+    end
+        if allKeysCollected and not areChestsRemaining() then
+            print("Step 4: All keys and chests collected, progressing...")
+            while isAutoRaidActive and not checkKeyDoorAvailable() do
+                task.wait(0.5)
+            end
+            if not keyCollectRunning then
+            keyCollectRunning = true
+            task.spawn(function()
+            task.wait(5)
+                startKeyCollection()
+            keyCollectRunning = false
+                end)
+            end
+            while areChestsRemaining() do
+            task.wait(1.3)
+            end
+            while areKeysRemaining() do
+            task.wait(1.3)
+            end
+            findAndFireKeyDoorProximity()
+            task.wait(0.135)
+            findAndFireKeyDoorProximity()
+            waitForMobsClear(10)
+            while isAutoRaidActive and (not checkProximityAvailable("Proximity3") or areChestsRemaining()) do
+                task.wait(1.3)
+            end
+            waitForMobsClear(10)
+            while areChestsRemaining() do
+            task.wait(1.3)
+            end            
+            findAndFireProximityPrompt("Proximity3")
+            task.wait(0.135)
+            findAndFireProximityPrompt("Proximity3")
+            task.wait(0.05)
+        end
+    end
+    if isNearPosition(Vector3.new(-5611, 2729, 4465), 1000) then
+        waitForMobsClear(10)
+        while isAutoRaidActive and (not checkFloorGateAvailable() or areChestsRemaining()) do
+            task.wait(1.3)
+        end
+        while areChestsRemaining() do
+        task.wait(1.3)
+        end
+        findAndFireFloorGateProximity()
+        task.wait(0.135)
+        while isAutoRaidActive and (not checkProximityAvailable("Proximity4") or areChestsRemaining()) do
+            task.wait(1.3)
+        end
+        findAndFireProximityPrompt("Proximity4")
+        task.wait(0.135)
+        findAndFireProximityPrompt("Proximity4")
+        task.wait(0.05)
+    end
+    if isNearPosition(Vector3.new(-7490, 3987, 5382), 500) and skipToFinalBoss then
+    task.wait(1)
+    findAndFireProximityPrompt("Proximity5")
+    end
+end
+ManTab:CreateToggle({
+    Name = "Auto Shadow Raid",
+    CurrentValue = false,
+    Flag = "lesbian4",
+    Callback = function(value)
+        isAutoRaidActive = value
+        hasProcessedProximity2 = false
+        if isAutoRaidActive then
+            raidCoroutine = task.spawn(function()
+                local player = game.Players.LocalPlayer
+                while isAutoRaidActive do
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+                    local hrp = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                    local ok, err = pcall(startAutoRaid)
+                    if not ok then
+                        warn("[AutoShadowRaid] startAutoRaid error:", err)
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            isAutoRaidActive = false
+            raidCoroutine = nil
+            if keyCollectCoroutine then
+                keyCollectCoroutine = nil
+            end
+            if chestCollectCoroutine then
+                chestCollectCoroutine = nil
+            end
+        end
+    end
+})
 local isCollecting = false
 local collectingCoroutine
 local MAX_DISTANCE = 2000
@@ -907,7 +2060,6 @@ ManTab:CreateToggle({
                     local origin = hrp.Position
                     local nearestEntry = nil
                     local nearestDist = math.huge
-                    -- Search in all ChestSpawns folders and their descendants
                     local function searchForChests(parent)
                         for _, child in ipairs(parent:GetDescendants()) do
                             if child:IsA("ProximityPrompt") then
@@ -926,18 +2078,15 @@ ManTab:CreateToggle({
                             end
                         end
                     end
-                    -- Check the main ChestSpawns folders
                     local shadowRaidCastle = workspace:FindFirstChild("ShadowRaidCastle")
                     if shadowRaidCastle then
                         local chestSpawns = shadowRaidCastle:FindFirstChild("ChestSpawns")
                         if chestSpawns then
-                            -- Search in all subfolders of ChestSpawns
                             for _, folder in ipairs(chestSpawns:GetChildren()) do
                                 if folder:IsA("Folder") then
                                     searchForChests(folder)
                                 end
                             end
-                            -- Also search in ChestSpawns itself
                             searchForChests(chestSpawns)
                         end
                     end
@@ -982,62 +2131,27 @@ ManTab:CreateToggle({
 local plr = game:GetService("Players")
 local rs = game:GetService("RunService")
 local cgui = game:GetService("CoreGui")
-local thresh = 1
 local enabled = false
 local connection
 local function taml(state)
-	enabled = state
-	if not enabled then
-		rs:Set3dRenderingEnabled(true)
-		if connection then
-			connection:Disconnect()
-			connection = nil
-		end
-		return
-	else
-		RunService:Set3dRenderingEnabled(false)
-	end
-	local ps = cgui:WaitForChild("RobloxGui"):WaitForChild("PerformanceStats")
-	for _, b in pairs(ps:GetDescendants()) do
-		if b:IsA("TextButton") and b.Name == "PS_Button" then
-			local tp = b:FindFirstChild("StatsMiniTextPanelClass")
-			local tl = tp and tp:FindFirstChild("TitleLabel")
-			if tl and string.find(tl.Text:lower(), "mem") then
-				local v = tp:FindFirstChild("ValueLabel")
-				if v then
-					connection = v:GetPropertyChangedSignal("Text"):Connect(function()
-						if not enabled or not v or not v.Parent then return end
-						local memValue = tonumber(v.Text:match("%d+%.?%d*"))
-						if memValue and memValue > thresh then
-							rs:Set3dRenderingEnabled(true)
-							task.delay(1, function()
-								rs:Set3dRenderingEnabled(false)
-							end)
-						end
-					end)
-				end
-				break
-			end
-		end
-	end
-end
-function clk() 
-	task.spawn(function()
-		local s = Instance.new("Sound") 
-		s.SoundId = "rbxassetid://87152549167464"
-		s.Parent = workspace
-		s.Volume = 1.2 
-		s.TimePosition = 0.1 
-		s:Play() 
-	end)
+    enabled = state
+    if not enabled then
+        rs:Set3dRenderingEnabled(true)
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+        return
+    end
+    rs:Set3dRenderingEnabled(false)
 end
 ExTab:CreateToggle({
-	Name = "Anti Memory Leak",
-	CurrentValue = false,
-	Flag = "lesbian5",
-	Callback = function(Value)
-		taml(Value)
-	end
+    Name = "Toggle Anti Memory Leak",
+    CurrentValue = false,
+    Flag = "lesbian13",
+    Callback = function(Value)
+        taml(Value)
+    end
 })
 ExTab:CreateButton({
    Name = "Dupe Quests(100)",
@@ -1085,8 +2199,10 @@ local HORIZ_DISTANCE = 6
 local VERTICAL_OFFSET = 6     
 local FOLLOW_SPEED = 1000
 local scanInterval = 0.1
-local TOTAL_DISTANCE = 10     
-local MAX_TARGET_DISTANCE = 800
+local NORMAL_DISTANCE = 20
+local FLEE_DISTANCE = 1000
+local TOTAL_DISTANCE = NORMAL_DISTANCE
+local MAX_TARGET_DISTANCE = 8000
 _G.isAutoCollectActive = _G.isAutoCollectActive or false
 local connection = nil
 local currentTarget = nil
@@ -1100,6 +2216,21 @@ local noclipThread = nil
 local modifiedParts = {}
 local floatName = nil
 local mobFolder = workspace:FindFirstChild("MobFolder")
+local function checkHealthAndAdjustDistance()
+    if not player or not player.Character then
+        return
+    end
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return
+    end
+    local healthPercent = (humanoid.Health / humanoid.MaxHealth) * 100
+    if healthPercent < 30 then
+        TOTAL_DISTANCE = FLEE_DISTANCE
+    elseif healthPercent >= 80 then
+        TOTAL_DISTANCE = NORMAL_DISTANCE
+    end
+end
 local function enableBodyControl(hrp)
     if not hrp then return end
     for _, inst in ipairs(hrp:GetChildren()) do
@@ -1210,7 +2341,7 @@ end
 ExTab:CreateToggle({
     Name = "Auto Farm",
     CurrentValue = false,
-    Flag = "lesbian2",
+    Flag = "lesbian6",
     Callback = function(value)
         _G.isAutoCollectActive = value
         if connection then
@@ -1222,6 +2353,7 @@ ExTab:CreateToggle({
                 if not player or not player.Character or not _G.isAutoCollectActive then
                     return
                 end
+                checkHealthAndAdjustDistance()
                 local hrp = player.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
                 lastScan = lastScan + dt
@@ -1237,8 +2369,8 @@ ExTab:CreateToggle({
                 if currentTarget and currentTarget.Parent and currentTarget:IsDescendantOf(workspace) then
                     local hum = currentTarget.Parent:FindFirstChildWhichIsA("Humanoid")
                     if hum and hum.Health > 0 then
-                        local currentDistance = (hrp.Position - currentTarget.Position).Magnitude
-                        if currentDistance <= MAX_TARGET_DISTANCE then
+                        local TOTAL_DISTANCEToTarget = (hrp.Position - currentTarget.Position).Magnitude
+                        if TOTAL_DISTANCEToTarget <= MAX_TARGET_DISTANCE then
                             local desired = buildTopRightWithTotalDistance(currentTarget, HORIZ_DISTANCE, VERTICAL_OFFSET, TOTAL_DISTANCE)
                             local alpha = math.clamp(dt * FOLLOW_SPEED, 0, 1)
                             hrp.CFrame = hrp.CFrame:Lerp(desired, alpha)
@@ -1254,6 +2386,7 @@ ExTab:CreateToggle({
             end)
         else
             currentTarget = nil
+            TOTAL_DISTANCE = NORMAL_DISTANCE 
         end
     end
 })
@@ -1274,132 +2407,6 @@ ExTab:CreateInput({
        TOTAL_DISTANCE = num
        print(("Total distance set to %.2f studs"):format(TOTAL_DISTANCE))
    end,
-})
-local Players = game:GetService("Players")
-local AntiFreeze = {}
-AntiFreeze._connections = {}    
-AntiFreeze._targets = {}        
-AntiFreeze._running = false
-AntiFreeze._scanInterval = 0.02
-local function unanchorDescendants(character, floatName)
-    if not character then return end
-    for _, d in ipairs(character:GetDescendants()) do
-        if d:IsA("BasePart") and d.Anchored and d.Name ~= floatName then
-            local ok, err = pcall(function() d.Anchored = false end)
-            if not ok then
-            end
-        end
-    end
-end
-local function onDescendantAdded(desc, floatName)
-    if desc:IsA("BasePart") and desc.Anchored and desc.Name ~= floatName then
-        local ok = pcall(function() desc.Anchored = false end)
-    end
-end
-local function connectCharacter(player, floatName)
-    if not player or not player.Character then return end
-    local uid = player.UserId
-    if AntiFreeze._connections[uid] then
-        for _, con in ipairs(AntiFreeze._connections[uid]) do
-            if con and con.Disconnect then pcall(function() con:Disconnect() end) end
-        end
-    end
-    AntiFreeze._connections[uid] = {}
-    unanchorDescendants(player.Character, floatName)
-    local con1 = player.Character.DescendantAdded:Connect(function(desc)
-        onDescendantAdded(desc, floatName)
-    end)
-    table.insert(AntiFreeze._connections[uid], con1)
-    local con2 = player.Character:GetPropertyChangedSignal("Parent"):Connect(function()
-        if not player.Character or not player.Character.Parent then
-        end
-    end)
-    table.insert(AntiFreeze._connections[uid], con2)
-    local con3 = player.CharacterAdded:Connect(function(char)
-        task.wait(0.02)
-        unanchorDescendants(char, floatName)
-        local subCon = char.DescendantAdded:Connect(function(desc)
-            onDescendantAdded(desc, floatName)
-        end)
-        table.insert(AntiFreeze._connections[uid], subCon)
-    end)
-    table.insert(AntiFreeze._connections[uid], con3)
-end
-function AntiFreeze.Start(targets, floatName, scanInterval)
-    if AntiFreeze._running then
-        AntiFreeze.Stop()
-    end
-    floatName = floatName or "Float"
-    AntiFreeze._scanInterval = scanInterval or AntiFreeze._scanInterval
-    local t = {}
-    if not targets then
-        t = { Players.LocalPlayer }
-    elseif typeof(targets) == "Instance" and targets:IsA("Player") then
-        t = { targets }
-    elseif type(targets) == "table" then
-        t = targets
-    else
-        if type(targets) == "string" then
-            local p = Players:FindFirstChild(targets)
-            if p then t = { p } end
-        end
-    end
-    for _, p in ipairs(t) do
-        if p and p:IsA("Player") then
-            AntiFreeze._targets[p.UserId] = p
-            if p.Character then
-                connectCharacter(p, floatName)
-            end
-            local charConn 
-            charConn = p.CharacterAdded:Connect(function(char)
-                task.wait(0.02)
-                unanchorDescendants(char, floatName)
-                local subCon = char.DescendantAdded:Connect(function(desc)
-                    onDescendantAdded(desc, floatName)
-                end)
-                table.insert(AntiFreeze._connections[p.UserId], subCon)
-            end)
-            table.insert(AntiFreeze._connections[p.UserId], charConn)
-        end
-    end
-    if not AntiFreeze._running then
-        AntiFreeze._running = true
-        task.spawn(function()
-            while AntiFreeze._running do
-                for _, p in pairs(AntiFreeze._targets) do
-                    local char = p and p.Character
-                    if char then
-                        unanchorDescendants(char, floatName)
-                    end
-                end
-                task.wait(AntiFreeze._scanInterval)
-            end
-        end)
-    end
-end
-function AntiFreeze.Stop()
-    AntiFreeze._running = false
-    for uid, conlist in pairs(AntiFreeze._connections) do
-        for _, c in ipairs(conlist) do
-            if c and c.Disconnect then
-                pcall(function() c:Disconnect() end)
-            end
-        end
-    end
-    AntiFreeze._connections = {}
-    AntiFreeze._targets = {}
-end
-ExTab:CreateToggle({
-    Name = "Anti-Freeze",
-    CurrentValue = false,
-    Callback = function(value)
-        _G.AntiFreezeEnabled = value
-        if _G.AntiFreezeEnabled then
-            AntiFreeze.Start()
-        else
-            AntiFreeze.Stop()
-        end
-    end
 })
 _G.AutoSkillToken = _G.AutoSkillToken or 0
 local Players = game:GetService("Players")
@@ -1478,24 +2485,79 @@ local function startAutoSkills(character)
     _G.AutoSkillToken = (_G.AutoSkillToken or 0) + 1
     local myToken = _G.AutoSkillToken
     local skillSequences = {
+{
+    tools = {"Terrorsteel Edges"},
+    sequence = {
         {
-            tools = {"Arvoth"},
+            attack = "Slash",
+            key = "M1",
+            remote = "AttackEvent",
+            args = function(char, tool, attack, pos)
+                return {
+                    {key = "M1", attack = "Slash"},
+                    {MouseBehavior = "Default", MousePos = pos}
+                }
+            end
+        },
+        {
+            attack = "Shadow Spin",
+            key = "Q",
+            remote = "AttackEvent",
+            args = function(char, tool, attack, pos)
+                return {
+                    {key = "Q", attack = "Shadow Spin"},
+                    {MouseBehavior = "Default", MousePos = pos}
+                }
+            end
+        },
+        {
+            attack = "Shadow Slam",
+            key = "E",
+            remote = "AttackEvent",
+            args = function(char, tool, attack, pos)
+                return {
+                    {key = "E", attack = "Shadow Slam"},
+                    {MouseBehavior = "Default", MousePos = pos}
+                }
+            end
+        },
+        {
+            attack = "Shadow Slashes",
+            key = "F",
+            remote = "AttackEvent",
+            args = function(char, tool, attack, pos)
+                return {
+                    {key = "F", attack = "Shadow Slashes"},
+                    {MouseBehavior = "Default", MousePos = pos}
+                }
+            end
+        }
+    }
+},
+        {
+            tools = {"Cataclysm"},
             sequence = {
                 {attack = "Slash", key = "M1", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Slash"}, {MousePos = pos}} end},
-                {attack = "Triple Fury", key = "E", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Triple Fury"}, {MousePos = pos}} end}
+                {attack = "Cyclone", key = "Q", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "Q", attack = "Cyclone"}, {MousePos = pos}} end},
+                {attack = "Crow Pillars", key = "F", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "F", attack = "Crow Pillars"}, {MousePos = pos}} end},                
+                {attack = "Teleport Slam", key = "E", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Teleport Slam"}, {MousePos = pos}} end}
             }
         },
         {
-            tools = {"The Revenant"},
+            tools = {"Astral Convergence"},
             sequence = {
-                {attack = "Necrostrike", key = "M1", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Necrostrike"}, {MousePos = pos}} end},
-                {attack = "Death Insurgence", key = "R", remote = "RemoteEvent", args = function(char, tool, attack, pos) return {{key = "R", attack = "Death Insurgence"}, {MousePos = pos}} end}
+                {attack = "Slash", key = "M1", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Slash"}, {MousePos = pos}} end},
+                {attack = "Astral Lunge", key = "Q", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "Q", attack = "Astral Lunge"}, {MousePos = pos}} end},  
+                {attack = "Link/Sever", key = "E", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Link/Sever"}, {MousePos = pos}} end}
             }
         },
         {
-            tools = {"Classic Wand of Triplets"},
+            tools = {"Tyrannical Greatsword"},
             sequence = {
-                {attack = "TripletAttack", remote = "Event", args = function(char, tool, attack, pos) return {pos} end}
+                {attack = "Slash", key = "M1", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "M1", attack = "Slash"}, {MousePos = pos}} end},
+                {attack = "Vicious Thrusts", key = "Q", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "Q", attack = "Vicious Thrusts"}, {MousePos = pos}} end},
+                {attack = "All Dark", key = "F", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "F", attack = "All Dark"}, {MousePos = pos}} end},                
+                {attack = "Void Saw", key = "E", remote = "AttackEvent", args = function(char, tool, attack, pos) return {{key = "E", attack = "Void Saw"}, {MousePos = pos}} end}
             }
         }
     }
@@ -1533,20 +2595,20 @@ local function startAutoSkills(character)
         task.spawn(function()
             while _G.AutoSkillActive and myToken == _G.AutoSkillToken do
                 if not character or not character.Parent then break end
-                task.wait(0.01)
+                task.wait(0.00001)
                 executeAttack(character, skill.tool, nil, skill.remote, skill.args)
-                task.wait(0.01)
+                task.wait(0.00001)
             end
-            task.wait(0.01)
+            task.wait(0.00001)
         end)
     end
 end
 local function setupCharacter(character)
     remoteCache = {}
     if _G.AutoSkillActive then
-        task.wait(0.01)
+        task.wait(0.00001)
         startAutoSkills(character)
-        task.wait(0.01)
+        task.wait(0.00001)
     end
 end
 player.CharacterRemoving:Connect(function(char)
@@ -1561,7 +2623,7 @@ end
 ExTab:CreateToggle({
     Name = "Auto Skill Sequence",
     CurrentValue = false,
-    Flag = "lesbian1",
+    Flag = "lesbian7",
     Callback = function(value)
         _G.AutoSkillActive = value
         if _G.AutoSkillActive then
@@ -1768,95 +2830,6 @@ PTab:CreateToggle({
         end
     end
 })
-local function findNearestPrompt()
-    local rootPart = getCharacterRoot()
-    if not rootPart then return nil end
-
-    local closestPrompt = nil
-    local minDistance = math.huge
-
-    for _, prompt in ipairs(workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            local parent = prompt.Parent
-            local position
-            if parent:IsA("Model") and parent.PrimaryPart then
-                position = parent.PrimaryPart.Position
-            elseif parent:IsA("BasePart") then
-                position = parent.Position
-            else
-                position = nil
-            end
-            if position then
-                local distance = (position - rootPart.Position).Magnitude
-                if distance <= config.fireRadius and distance < minDistance then
-                    closestPrompt = prompt
-                    minDistance = distance
-                end
-            end
-        end
-    end
-
-    return closestPrompt
-end
-config = config or {}
-config.fireRadius = config.fireRadius or 20
-config.repeatCount = config.repeatCount or 1    
-connections = connections or {}
-PTab:CreateToggle({
-    Name = "Auto Fire Nearby ClickDetectors",
-    CurrentValue = false,
-    Flag = "AutoFireClickToggle",
-    Callback = function(Value)
-        config.autoFireClick = Value
-        if Value then
-            connections.autoFireClick = game:GetService("RunService").Heartbeat:Connect(function()
-                local rootPart = getCharacterRoot()
-                if not rootPart then return end
-                local rootPos = rootPart.Position
-                for _, descendant in ipairs(workspace:GetDescendants()) do
-                    if descendant:IsA("ClickDetector") then
-                        local parent = descendant.Parent
-                        local position
-                        if parent then
-                            if parent:IsA("Model") and parent.PrimaryPart then
-                                position = parent.PrimaryPart.Position
-                            elseif parent:IsA("BasePart") then
-                                position = parent.Position
-                            end
-                        end
-                        if position and (position - rootPos).Magnitude <= config.fireRadius then
-                            for i = 1, config.repeatCount do
-                                pcall(fireclickdetector, descendant)
-                            end
-                        end
-                    end
-                end
-            end)
-        else
-            if connections.autoFireClick then
-                connections.autoFireClick:Disconnect()
-                connections.autoFireClick = nil
-            end
-        end
-    end
-})
-PTab:CreateButton({
-    Name = "Fire Nearest Prompt",
-    Callback = function()
-        local prompt = findNearestPrompt()
-        if prompt then
-            for i = 1, config.repeatCount do
-                if prompt:IsDescendantOf(workspace) then
-                    fireproximityprompt(prompt)
-                else
-                    break
-                end
-            end
-        else
-            print("No nearby prompts found within activation radius!")
-        end
-    end
-})
 local RunService = game:GetService("RunService")
 local Players    = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -2053,22 +3026,48 @@ end
         end,
     })
 _G.AutoEquipActive = _G.AutoEquipActive or false
+local function isInShadowRaid()
+    return Workspace:FindFirstChild("IsShadowRaid") or 
+           Workspace:FindFirstChild("ShadowRaidBool")
+end
 local function equipAllItems()
     if not player or not player.Character then return end
+    if not isInShadowRaid() then return end 
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return end
     local backpack = player:FindFirstChildOfClass("Backpack")
     if not backpack then return end
     for _, item in pairs(backpack:GetChildren()) do
-        if item:IsA("Tool") or item:IsA("HopperBin") then
+        if (item:IsA("Tool") or item:IsA("HopperBin")) and 
+           item.Name ~= "Gatekeeper Key" and 
+           item.Name ~= "Shadow Invitation" then
             pcall(function()
                 item.Parent = player.Character
             end)
         end
     end
 end
+local function unequipAllItems()
+    if not player or not player.Character then return end
+    for _, item in pairs(player.Character:GetChildren()) do
+        if (item:IsA("Tool") or item:IsA("HopperBin")) and 
+           item.Name ~= "Gatekeeper Key" and 
+           item.Name ~= "Shadow Invitation" then
+            pcall(function()
+                local backpack = player:FindFirstChildOfClass("Backpack")
+                if backpack then
+                    item.Parent = backpack
+                end
+            end)
+        end
+    end
+end
 local autoEquipConnection = nil
+local characterAddedConnection = nil
+local humanoidDiedConnection = nil
 ManTab:CreateToggle({
     Name = "Auto Equip All Items",
-    Flag = "lesbian3",
+    Flag = "lesbian8",
     CurrentValue = _G.AutoEquipActive,
     Callback = function(value)
         _G.AutoEquipActive = value
@@ -2076,14 +3075,53 @@ ManTab:CreateToggle({
             autoEquipConnection:Disconnect()
             autoEquipConnection = nil
         end
+        if characterAddedConnection then
+            characterAddedConnection:Disconnect()
+            characterAddedConnection = nil
+        end
+        if humanoidDiedConnection then
+            humanoidDiedConnection:Disconnect()
+            humanoidDiedConnection = nil
+        end
         if _G.AutoEquipActive then
-            equipAllItems()
-            autoEquipConnection = player.ChildAdded:Connect(function(child)
-                if child:IsA("Backpack") then
-                    task.wait(1)
+            if player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 and isInShadowRaid() then 
+                    task.wait(1) 
+                    equipAllItems()
+                end
+            end
+            characterAddedConnection = player.CharacterAdded:Connect(function(character)
+                task.wait(1)
+                humanoidDiedConnection = character:WaitForChild("Humanoid").Died:Connect(function()
+                    unequipAllItems()
+                end)
+                if isInShadowRaid() then 
                     equipAllItems()
                 end
             end)
+            autoEquipConnection = player.ChildAdded:Connect(function(child)
+                if child:IsA("Backpack") then
+                    task.wait(1)
+                    if player.Character and isInShadowRaid() then 
+                        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                        if humanoid and humanoid.Health > 0 then
+                            task.wait(0.5)
+                            equipAllItems()
+                        end
+                    end
+                end
+            end)
+            if player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoidDiedConnection = humanoid.Died:Connect(function()
+                        unequipAllItems()
+                    end)
+                end
+            end
+        else
+            unequipAllItems()
         end
     end
 })
