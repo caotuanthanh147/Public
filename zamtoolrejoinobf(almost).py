@@ -1309,6 +1309,11 @@ class ExecutorManager:
                         data = json.load(f)
                     status = data.get("status")
                     timestamp = int(data.get("timestamp", 0))
+                except Exception:
+                    stale_count += 1
+                    reason = "corrupted status file"
+                    status = None
+                    timestamp = None
                 if status == "disconnected":
                     reason = "status == disconnected"
                     stale_count = 2
