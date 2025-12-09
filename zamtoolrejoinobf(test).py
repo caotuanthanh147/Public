@@ -68,7 +68,7 @@ globals()["_change_acc"] = "0"
 globals()["is_runner_ez"] = False
 globals()["check_exec_enable"] = "1"
 globals()["codex_bypass_active"] = False
-globals()["force_rejoin_interval"] = "190"
+globals()["force_rejoin_interval"] = 190
 
 executors = {
     "Fluxus": "/storage/emulated/0/Fluxus/",
@@ -442,7 +442,7 @@ class FileManager:
                     codex_bypass_enabled = config.get("codex_bypass_enabled", False)
                     clear_cache_enabled = config.get("clear_cache_enabled", False)
                     autorun_enabled = config.get("autorun_enabled", False)
-                    force_rejoin_interval = config.get("force_rejoin_interval", "190")
+                    force_rejoin_interval = config.get("force_rejoin_interval", 190)
             else:
                 webhook_url = None
                 device_name = None
@@ -458,7 +458,7 @@ class FileManager:
                 codex_bypass_enabled = False
                 clear_cache_enabled = False
                 autorun_enabled = False
-                force_rejoin_interval = "190"
+                force_rejoin_interval = 190
         except Exception as e:
             print(f"\033[1;31m[ zam2109roblox.shop ] - Error loading configuration: {e}\033[0m")
             Utilities.log_error(f"Error loading configuration: {e}")
