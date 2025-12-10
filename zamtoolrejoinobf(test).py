@@ -36,8 +36,6 @@ def boot_time():
         
         
 autorun_enabled = False
-force_rejoin_interval = None
-
 package_lock = Lock()
 status_lock = Lock()
 rejoin_lock = Lock()
@@ -422,8 +420,7 @@ class FileManager:
 
     @staticmethod
     def _load_config():
-        global webhook_url, device_name, webhook_interval, close_and_rejoin_delay, reset_tab_interval, codex_bypass_enabled, clear_cache_enabled
-        global autorun_enabled, force_rejoin_interval
+        global webhook_url, device_name, webhook_interval, close_and_rejoin_delay, reset_tab_interval, codex_bypass_enabled, clear_cache_enabled, autorun_enabled  
         try:
             if os.path.exists(FileManager.CONFIG_FILE):
                 with open(FileManager.CONFIG_FILE, "r") as file:
@@ -442,7 +439,7 @@ class FileManager:
                     codex_bypass_enabled = config.get("codex_bypass_enabled", False)
                     clear_cache_enabled = config.get("clear_cache_enabled", False)
                     autorun_enabled = config.get("autorun_enabled", False)
-                    force_rejoin_interval = config.get("force_rejoin_interval", 190)
+                    globals()["force_rejoin_interval"] = config.get("force_rejoin_interval", 190)
             else:
                 webhook_url = None
                 device_name = None
@@ -458,14 +455,14 @@ class FileManager:
                 codex_bypass_enabled = False
                 clear_cache_enabled = False
                 autorun_enabled = False
-                force_rejoin_interval = 190
+                globals()["force_rejoin_interval"] = 190
         except Exception as e:
             print(f"\033[1;31m[ zam2109roblox.shop ] - Error loading configuration: {e}\033[0m")
             Utilities.log_error(f"Error loading configuration: {e}")
 
     @staticmethod
     def save_config():
-        global codex_bypass_enabled, clear_cache_enabled, autorun_enabled, force_rejoin_interval
+        global codex_bypass_enabled, clear_cache_enabled, autorun_enabled
         try:
             config = {
                 "webhook_url": webhook_url,
@@ -473,14 +470,14 @@ class FileManager:
                 "interval": webhook_interval,
                 "change_acc": globals().get("_change_acc", "0"),
                 "disable_ui": globals().get("_disable_ui", "0"),
-                "check_executor": globals()["check_exec_enable"],
+                "check_executor": globals().get("check_exec_enable", "1"),
                 "command_8_configured": globals().get("command_8_configured", False),
                 "lua_script_template": globals().get("lua_script_template", None),
                 "package_prefix": globals().get("package_prefix", "com.yuri"),
                 "codex_bypass_enabled": codex_bypass_enabled,
                 "clear_cache_enabled": clear_cache_enabled,
                 "autorun_enabled": autorun_enabled,
-                "force_rejoin_interval": force_rejoin_interval
+                "force_rejoin_interval": globals().get("force_rejoin_interval", 190)
             }
             with open(FileManager.CONFIG_FILE, "w") as file:
                 json.dump(config, file, indent=4, sort_keys=True)
@@ -1815,6 +1812,7 @@ def main():
                     globals()["force_rejoin_interval"] = float('inf')
                 else:
                     globals()["force_rejoin_interval"] = int(force_rejoin_input) * 60
+                    FileManager.save_config()
                 if globals()["force_rejoin_interval"] != float('inf') and globals()["force_rejoin_interval"] <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
