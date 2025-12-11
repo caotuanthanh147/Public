@@ -2,14 +2,20 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local userId = tostring(localPlayer.UserId)
-local function isPlayerValid()
-    return localPlayer and localPlayer.Parent and Players:FindFirstChild(localPlayer.Name) ~= nil
-end
-local function writeOnlineStatus()
-    local data = { 
-        status = "online", 
-        timestamp = os.time()
-    }
+local isActive = true
+Players.PlayerRemoving:Connect(function(player)
+    if player == localPlayer then
+        isActive = false
+    end
+end)
+local parentConn = localPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+    if not localPlayer.Parent then
+        isActive = false
+        parentConn:Disconnect()
+    end
+end)
+local function writeStatus(status)
+    local data = { status = status, timestamp = os.time() }
     local success, jsonText = pcall(function()
         return HttpService:JSONEncode(data)
     end)
@@ -19,8 +25,8 @@ local function writeOnlineStatus()
         end)
     end
 end
-writeOnlineStatus()
-while isPlayerValid() do
+writeStatus("online")
+while isActive do
     wait(30)
-    writeOnlineStatus()
+    writeStatus("online")
 end
