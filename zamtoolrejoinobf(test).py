@@ -1834,13 +1834,14 @@ def main():
                     print("\033[1;31m[ zam2109roblox.shop ] - No game ID or server link set up.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
-
+                
                 force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
                 force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
                 FileManager.save_config()
                 if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
+                
                     continue
 
                 codex_bypass_active = True
