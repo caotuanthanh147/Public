@@ -2105,11 +2105,8 @@ def main():
                 choice = input("\033[1;93m[ zam2109roblox.shop ] - Enable autorun on boot? (y/n): \033[0m").strip().lower()
         
                 if choice == 'y':
-            
                     boot_dir = "/data/data/com.termux/files/home/.termux/boot"
                     script_path = os.path.join(boot_dir, "zam_autorun.sh")
-            
-            
                     try:
                         os.makedirs(boot_dir, exist_ok=True, mode=0o700)
                     except:
@@ -2127,79 +2124,38 @@ export HOME=/data/data/com.termux/files/home
 export PREFIX=/data/data/com.termux/files/usr
 su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xterm-256color && cd /sdcard/Download && python zamtoolrejoinobf.py"
 """
-            
-            
                     with open(script_path, "w") as f:
                         f.write(script_content)
-            
-            
-            
                     os.chmod(script_path, 0o755)
-            
-            
                     import stat
                     st = os.stat(script_path)
                     if not (st.st_mode & stat.S_IEXEC):
-                
                         import subprocess
                         subprocess.run(["chmod", "+x", script_path])
-            
                     print("\033[1;32m✓ Autorun script created at:\033[0m")
                     print(f"\033[1;36m{script_path}\033[0m")
                     print("\n\033[1;33mChecking permissions...\033[0m")
-            
-            
                     if os.access(script_path, os.X_OK):
                         print("\033[1;32m✓ Script is executable\033[0m")
                     else:
                         print("\033[1;31m✗ Script is NOT executable - fixing...\033[0m")
                         os.chmod(script_path, 0o755)
-            
-            
-                    test = input("\033[1;93mTest script now? (y/n): \033[0m").strip().lower()
-                    if test == 'y':
-                        print("\033[1;36mTesting boot script...\033[0m")
-                        try:
-                            import subprocess
-                            result = subprocess.run(
-                                ["bash", script_path],
-                                capture_output=True,
-                                text=True,
-                                timeout=10
-                            )
-                            print(f"\033[1;32mTest exit code: {result.returncode}\033[0m")
-                            if result.stdout:
-                                print(f"\033[1;36mOutput: {result.stdout[:100]}...\033[0m")
-                        except subprocess.TimeoutExpired:
-                            print("\033[1;32m✓ Script is running (timed out as expected)\033[0m")
-                        except Exception as e:
-                            print(f"\033[1;31mTest error: {e}\033[0m")
-           
-            
                     autorun_enabled = True
-            
                 elif choice == 'n':
-            
                     script_path = "/data/data/com.termux/files/home/.termux/boot/zam_autorun.sh"
                     if os.path.exists(script_path):
                         os.remove(script_path)
                         print("\033[1;32m✓ Autorun script removed\033[0m")
-                
-                
                         error_log = "/sdcard/termux_boot_error.log"
                         if os.path.exists(error_log):
                             os.remove(error_log)
                     else:
                         print("\033[1;33m⚠ No autorun script found\033[0m")
-            
                     autorun_enabled = False
-            
                 else:
                     print("\033[1;31m✗ Invalid choice\033[0m")
-        
                 FileManager.save_config()
                 input("\033[1;32mPress Enter to return...\033[0m")
-        
             except Exception as e:
                 print(f"\033[1;31mError: {e}\033[0m")
                 Utilities.log_error(f"Autorun setup error: {e}")
