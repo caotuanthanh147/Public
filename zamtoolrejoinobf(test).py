@@ -1740,7 +1740,8 @@ def main():
 
     
     if globals().get("autorun_enabled", False):
-        global autorun_enabled, force_rejoin_interval
+        FileManager._load_config()
+        global autorun_enabled  
         server_links = FileManager.load_server_links()
         accounts = FileManager.load_accounts()
         if not accounts or not server_links:
@@ -1748,10 +1749,20 @@ def main():
             autorun_enabled = False
             FileManager.save_config()
         else:
-            
-            interval = force_rejoin_interval
-            if interval is None:
+            force_rejoin_interval = globals().get("force_rejoin_interval")
+            if force_rejoin_interval is None:
                 interval = float('inf')
+                print("\033[1;33m[ zam2109roblox.shop ] - Force rejoin interval not set, defaulting to disabled\033[0m")
+            elif isinstance(force_rejoin_interval, (int, float)):
+                if force_rejoin_interval <= 0:
+                    interval = float('inf')
+                    print(f"\033[1;33m[ zam2109roblox.shop ] - Invalid interval {force_rejoin_interval}, defaulting to disabled\033[0m")
+                else:
+                    interval = float(force_rejoin_interval)
+                    minutes = interval / 60
+                    print(f"\033[1;32m[ zam2109roblox.shop ] - Force rejoin interval: {minutes:.1f} minutes ({interval} seconds)\033[0m")
+                except (ValueError, TypeError):
+                    interval = float('inf')
             codex_bypass_active = True
             if codex_bypass_active and codex_bypass_enabled:
                 print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
