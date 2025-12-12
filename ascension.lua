@@ -1861,6 +1861,11 @@ local function startAutoRaid()
         coroutine.resume(chestCollectCoroutine)
     end
     if not hasProcessedProximity2 then
+        local Players = game:GetService("Players")
+        local playerCount = #Players:GetPlayers()
+        if playerCount > 1 then
+        return
+        end
         print("Step 1: Entering the castle...")
         local character = player.Character
         if character then
@@ -3070,6 +3075,11 @@ ManTab:CreateToggle({
     Flag = "lesbian8",
     CurrentValue = _G.AutoEquipActive,
     Callback = function(value)
+        local Players = game:GetService("Players")
+        local playerCount = #Players:GetPlayers()
+        if playerCount > 1 then
+        return
+        end
         _G.AutoEquipActive = value
         if autoEquipConnection then
             autoEquipConnection:Disconnect()
