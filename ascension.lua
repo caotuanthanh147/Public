@@ -1,55 +1,9 @@
-local s, e = pcall(function()
-task.spawn(function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/RelkzzRebranded/Bypassed---OBFUSCATED..../main/Adonis%20BYPASS.lua"))()
-end)
-end)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
    Name = "EpicHub",
    Icon = 4483345998,
    LoadingTitle = "Loading EpicHub...",
    LoadingSubtitle = "Please wait while the script initializes.",
-   Theme =  {
-    TextColor = Color3.fromRGB(240, 240, 240),
-    
-    Background = Color3.fromRGB(10, 10, 15),
-    Topbar = Color3.fromRGB(15, 15, 25),
-    Shadow = Color3.fromRGB(0, 0, 0),
-    
-    NotificationBackground = Color3.fromRGB(20, 20, 30),
-    NotificationActionsBackground = Color3.fromRGB(0, 255, 230),
-    
-    TabBackground = Color3.fromRGB(20, 20, 30),
-    TabStroke = Color3.fromRGB(0, 255, 230),
-    TabBackgroundSelected = Color3.fromRGB(0, 255, 230),
-    TabTextColor = Color3.fromRGB(200, 200, 200),
-    SelectedTabTextColor = Color3.fromRGB(0, 15, 20),
-    
-    ElementBackground = Color3.fromRGB(25, 25, 35),
-    ElementBackgroundHover = Color3.fromRGB(30, 30, 45),
-    SecondaryElementBackground = Color3.fromRGB(15, 15, 25),
-    ElementStroke = Color3.fromRGB(0, 255, 230),
-    SecondaryElementStroke = Color3.fromRGB(0, 200, 180),
-    
-    SliderBackground = Color3.fromRGB(40, 40, 50),
-    SliderProgress = Color3.fromRGB(0, 255, 230),
-    SliderStroke = Color3.fromRGB(0, 200, 180),
-    
-    ToggleBackground = Color3.fromRGB(30, 30, 40),
-    ToggleEnabled = Color3.fromRGB(0, 255, 230),
-    ToggleDisabled = Color3.fromRGB(80, 80, 90),
-    ToggleEnabledStroke = Color3.fromRGB(0, 200, 180),
-    ToggleDisabledStroke = Color3.fromRGB(60, 60, 70),
-    ToggleEnabledOuterStroke = Color3.fromRGB(0, 150, 130),
-    ToggleDisabledOuterStroke = Color3.fromRGB(40, 40, 50),
-    
-    DropdownSelected = Color3.fromRGB(0, 255, 230),
-    DropdownUnselected = Color3.fromRGB(30, 30, 40),
-    
-    InputBackground = Color3.fromRGB(20, 20, 30),
-    InputStroke = Color3.fromRGB(0, 200, 180),
-    PlaceholderColor = Color3.fromRGB(100, 100, 120)
-}, 
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "EpicHub",
@@ -114,33 +68,7 @@ ManTab:CreateToggle({
                                 end
                             end
                         end
-                    else
-                        for _, d in pairs(game.Workspace:GetDescendants()) do
-                            if d.ClassName == 'Humanoid' and d.Health > 0 then
-                                local isPlayerCharacter = false
-                                for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-                                    if player.Character and player.Character == d.Parent then
-                                        isPlayerCharacter = true
-                                        break
-                                    end
-                                end
-                                if not isPlayerCharacter then
-                                    local mobName = d.Parent and d.Parent.Name:lower() or ""
-                                    local isExcluded = mobName:find("shadow") or mobName:find("shade") or mobName:find("nyx") or mobName:find("nightmare")
-                                    if not isExcluded then
-                                        if mobName:find("master") then
-                                            if d.MaxHealth - d.Health >= 100 or d.Health <= 100 then
-                                                d.Health = 0
-                                            end
-                                        else
-                                            d.Health = 0
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    wait()
+                    wait(0.1)
                 end
             end)
             coroutine.resume(killAllCoroutine)
