@@ -68,6 +68,7 @@ ManTab:CreateToggle({
                                 end
                             end
                         end
+                        end
                     wait(0.1)
                 end
             end)
