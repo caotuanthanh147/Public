@@ -70,8 +70,6 @@ globals()["check_exec_enable"] = "1"
 globals()["codex_bypass_active"] = False
 
 executors = {
-    "Fluxus": "/storage/emulated/0/Fluxus/",
-    "Codex": "/storage/emulated/0/Codex/",
     "Codex Clone 001": "/storage/emulated/0/RobloxClone001/Codex/",
     "Codex Clone 002": "/storage/emulated/0/RobloxClone002/Codex/",
     "Codex Clone 003": "/storage/emulated/0/RobloxClone003/Codex/",
@@ -112,7 +110,6 @@ executors = {
     "Codex VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Codex/",
     "Codex VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Codex/",
     "Codex VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Codex/",
-    "Arceus X": "/storage/emulated/0/Arceus X/",
     "Arceus X Clone 001": "/storage/emulated/0/RobloxClone001/Arceus X/",
     "Arceus X Clone 002": "/storage/emulated/0/RobloxClone002/Arceus X/",
     "Arceus X Clone 003": "/storage/emulated/0/RobloxClone003/Arceus X/",
@@ -153,7 +150,6 @@ executors = {
     "Arceus X VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Arceus X/",
     "Arceus X VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Arceus X/",
     "Arceus X VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Arceus X/",
-    "RonixExploit": "/storage/emulated/0/RonixExploit/",
     "RonixExploit Clone 001": "/storage/emulated/0/RobloxClone001/RonixExploit/",
     "RonixExploit Clone 002": "/storage/emulated/0/RobloxClone002/RonixExploit/",
     "RonixExploit Clone 003": "/storage/emulated/0/RobloxClone003/RonixExploit/",
@@ -194,10 +190,14 @@ executors = {
     "RonixExploit VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/RonixExploit/",
     "RonixExploit VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/RonixExploit/",
     "RonixExploit VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/RonixExploit/",
+    "Arceus X": "/storage/emulated/0/Arceus X/",
     "Delta": "/storage/emulated/0/Delta/",
+    "RonixExploit": "/storage/emulated/0/RonixExploit/",
     "Cryptic": "/storage/emulated/0/Cryptic/",
     "KRNL": "/storage/emulated/0/krnl/",
     "Trigon": "/storage/emulated/0/Trigon/",
+    "Fluxus": "/storage/emulated/0/Fluxus/",
+    "Codex": "/storage/emulated/0/Codex/",
     "Cubix": "/storage/emulated/0/Cubix/",
     "FrostWare": "/storage/emulated/0/FrostWare/",
     "Evon": "/storage/emulated/0/Evon/",
@@ -435,7 +435,7 @@ class FileManager:
                     globals()["check_exec_enable"] = config.get("check_executor", "1")
                     globals()["command_8_configured"] = config.get("command_8_configured", False)
                     globals()["lua_script_template"] = config.get("lua_script_template", None)
-                    globals()["package_prefix"] = config.get("package_prefix", "com.roblox")
+                    globals()["package_prefix"] = config.get("package_prefix", "com.yuri")
                     close_and_rejoin_delay = config.get("close_and_rejoin_delay", None)
                     reset_tab_interval = config.get("reset_tab_interval", None)
                     codex_bypass_enabled = config.get("codex_bypass_enabled", False)
@@ -451,7 +451,7 @@ class FileManager:
                 globals()["check_exec_enable"] = "1"
                 globals()["command_8_configured"] = False
                 globals()["lua_script_template"] = None
-                globals()["package_prefix"] = "com.roblox"
+                globals()["package_prefix"] = "com.yuri"
                 close_and_rejoin_delay = None
                 reset_tab_interval = None
                 codex_bypass_enabled = False
@@ -475,7 +475,7 @@ class FileManager:
                 "check_executor": globals()["check_exec_enable"],
                 "command_8_configured": globals().get("command_8_configured", False),
                 "lua_script_template": globals().get("lua_script_template", None),
-                "package_prefix": globals().get("package_prefix", "com.roblox"),
+                "package_prefix": globals().get("package_prefix", "com.yuri"),
                 "codex_bypass_enabled": codex_bypass_enabled,
                 "clear_cache_enabled": clear_cache_enabled,
                 "autorun_enabled": autorun_enabled,
@@ -709,7 +709,7 @@ class RobloxManager:
     def get_roblox_packages():
         packages = []
         try:
-            package_prefix = globals().get("package_prefix", "com.roblox")
+            package_prefix = globals().get("package_prefix", "com.yuri")
             result = subprocess.run(f"pm list packages {package_prefix} | sed 's/package://'", shell=True, capture_output=True, text=True)
             if result.returncode == 0:
                 for line in result.stdout.strip().splitlines():
@@ -1882,7 +1882,7 @@ def main():
                     "5. Bee Swarm Simulator", "6. Anime Vanguards", "7. Pet GO",
                     "8. Pet Simulator 99", "9. Meme Sea", "10. Anime Adventures",
                     "11. Anime Last Stand", "12. Da Hood", "13. Da Hood VC", "14. Arise Crossover",
-                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other game or Private Server Link (per account)"
+                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other Games/Private Server Links"
                 ]
                 for game in games:
                     print(f"\033[96m{game}\033[0m")
@@ -2026,7 +2026,7 @@ def main():
 
         elif setup_type == "7":
             try:
-                current_prefix = globals().get("package_prefix", "com.roblox")
+                current_prefix = globals().get("package_prefix", "com.yuri")
                 print(f"\033[1;32m[ zam2109roblox.shop ] - Current package prefix: {current_prefix}\033[0m")
                 new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix (or press Enter to keep current): \033[0m").strip()
                 
@@ -2091,10 +2091,6 @@ def main():
             
                     script_content = """
 sleep 20
-if [ ! -x "/data/data/com.termux/files/usr/bin/python" ]; then
-    echo "Python not executable" > /sdcard/termux_boot_error.log
-    exit 1
-fi
 termux-wake-lock
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 export HOME=/data/data/com.termux/files/home
