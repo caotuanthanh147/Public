@@ -1254,7 +1254,7 @@ class ExecutorManager:
                         console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
 
     @staticmethod
-    def check_executor_status(package_name, continuous=True, max_wait_time=300):
+    def check_executor_status(package_name, continuous=True, max_wait_time=1100):
         retry_timeout = time.time() + max_wait_time
         while True:
             for workspace in globals()["workspace_paths"]:
@@ -1283,7 +1283,7 @@ class ExecutorManager:
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=300):
+    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=1100):
         user_id = str(globals()["_user_"][package_name])
         have_seen_file = False
         last_launch = globals()["_uid_"].get(user_id, 0)
@@ -1359,7 +1359,7 @@ class ExecutorManager:
                 status = data.get("status")
                 timestamp = data.get("timestamp", 0)
                 now = time.time()
-                if status == "online" and timestamp > 0 and (now - timestamp) <= 300:
+                if status == "online" and timestamp > 0 and (now - timestamp) <= 1100:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                     UIManager.update_status_table()
                     threading.Thread(
