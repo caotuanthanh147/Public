@@ -53,8 +53,8 @@ local function getPresence()
     return nil
 end
 local function presenceToLabel(p)
-    if p == 0 then return "disconnected" end
-    if p == 1 or p == 2 or p == 3 then return "online" end
+    if p == 0 or p == 1 or p == 3 then return "disconnected" end
+    if p == 2 then return "online" end
 end
 writeStatus("online")
 task.spawn(function()
