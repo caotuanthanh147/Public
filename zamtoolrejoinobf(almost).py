@@ -70,8 +70,6 @@ globals()["check_exec_enable"] = "1"
 globals()["codex_bypass_active"] = False
 
 executors = {
-    "Fluxus": "/storage/emulated/0/Fluxus/",
-    "Codex": "/storage/emulated/0/Codex/",
     "Codex Clone 001": "/storage/emulated/0/RobloxClone001/Codex/",
     "Codex Clone 002": "/storage/emulated/0/RobloxClone002/Codex/",
     "Codex Clone 003": "/storage/emulated/0/RobloxClone003/Codex/",
@@ -112,7 +110,6 @@ executors = {
     "Codex VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Codex/",
     "Codex VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Codex/",
     "Codex VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Codex/",
-    "Arceus X": "/storage/emulated/0/Arceus X/",
     "Arceus X Clone 001": "/storage/emulated/0/RobloxClone001/Arceus X/",
     "Arceus X Clone 002": "/storage/emulated/0/RobloxClone002/Arceus X/",
     "Arceus X Clone 003": "/storage/emulated/0/RobloxClone003/Arceus X/",
@@ -153,7 +150,6 @@ executors = {
     "Arceus X VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Arceus X/",
     "Arceus X VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Arceus X/",
     "Arceus X VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Arceus X/",
-    "RonixExploit": "/storage/emulated/0/RonixExploit/",
     "RonixExploit Clone 001": "/storage/emulated/0/RobloxClone001/RonixExploit/",
     "RonixExploit Clone 002": "/storage/emulated/0/RobloxClone002/RonixExploit/",
     "RonixExploit Clone 003": "/storage/emulated/0/RobloxClone003/RonixExploit/",
@@ -194,10 +190,14 @@ executors = {
     "RonixExploit VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/RonixExploit/",
     "RonixExploit VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/RonixExploit/",
     "RonixExploit VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/RonixExploit/",
+    "Arceus X": "/storage/emulated/0/Arceus X/",
     "Delta": "/storage/emulated/0/Delta/",
+    "RonixExploit": "/storage/emulated/0/RonixExploit/",
     "Cryptic": "/storage/emulated/0/Cryptic/",
     "KRNL": "/storage/emulated/0/krnl/",
     "Trigon": "/storage/emulated/0/Trigon/",
+    "Fluxus": "/storage/emulated/0/Fluxus/",
+    "Codex": "/storage/emulated/0/Codex/",
     "Cubix": "/storage/emulated/0/Cubix/",
     "FrostWare": "/storage/emulated/0/FrostWare/",
     "Evon": "/storage/emulated/0/Evon/",
@@ -435,7 +435,7 @@ class FileManager:
                     globals()["check_exec_enable"] = config.get("check_executor", "1")
                     globals()["command_8_configured"] = config.get("command_8_configured", False)
                     globals()["lua_script_template"] = config.get("lua_script_template", None)
-                    globals()["package_prefix"] = config.get("package_prefix", "com.roblox")
+                    globals()["package_prefix"] = config.get("package_prefix", "com.yuri")
                     close_and_rejoin_delay = config.get("close_and_rejoin_delay", None)
                     reset_tab_interval = config.get("reset_tab_interval", None)
                     codex_bypass_enabled = config.get("codex_bypass_enabled", False)
@@ -451,7 +451,7 @@ class FileManager:
                 globals()["check_exec_enable"] = "1"
                 globals()["command_8_configured"] = False
                 globals()["lua_script_template"] = None
-                globals()["package_prefix"] = "com.roblox"
+                globals()["package_prefix"] = "com.yuri"
                 close_and_rejoin_delay = None
                 reset_tab_interval = None
                 codex_bypass_enabled = False
@@ -475,7 +475,7 @@ class FileManager:
                 "check_executor": globals()["check_exec_enable"],
                 "command_8_configured": globals().get("command_8_configured", False),
                 "lua_script_template": globals().get("lua_script_template", None),
-                "package_prefix": globals().get("package_prefix", "com.roblox"),
+                "package_prefix": globals().get("package_prefix", "com.yuri"),
                 "codex_bypass_enabled": codex_bypass_enabled,
                 "clear_cache_enabled": clear_cache_enabled,
                 "autorun_enabled": autorun_enabled,
@@ -709,7 +709,7 @@ class RobloxManager:
     def get_roblox_packages():
         packages = []
         try:
-            package_prefix = globals().get("package_prefix", "com.roblox")
+            package_prefix = globals().get("package_prefix", "com.yuri")
             result = subprocess.run(f"pm list packages {package_prefix} | sed 's/package://'", shell=True, capture_output=True, text=True)
             if result.returncode == 0:
                 for line in result.stdout.strip().splitlines():
@@ -764,6 +764,7 @@ class RobloxManager:
     def launch_roblox(package_name, server_link):
         try:
             RobloxManager.kill_roblox_process(package_name)
+            Runner.write_package_status(user_id, "online")
             time.sleep(2)
 
             with status_lock:
@@ -1254,7 +1255,7 @@ class ExecutorManager:
                         console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
 
     @staticmethod
-    def check_executor_status(package_name, continuous=True, max_wait_time=300):
+    def check_executor_status(package_name, continuous=True, max_wait_time=600):
         retry_timeout = time.time() + max_wait_time
         while True:
             for workspace in globals()["workspace_paths"]:
@@ -1283,7 +1284,7 @@ class ExecutorManager:
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=300):
+    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=600):
         user_id = str(globals()["_user_"][package_name])
         have_seen_file = False
         last_launch = globals()["_uid_"].get(user_id, 0)
@@ -1359,7 +1360,7 @@ class ExecutorManager:
                 status = data.get("status")
                 timestamp = data.get("timestamp", 0)
                 now = time.time()
-                if status == "online" and timestamp > 0 and (now - timestamp) <= 300:
+                if status == "online" and (now - timestamp) <= 600:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                     UIManager.update_status_table()
                     threading.Thread(
@@ -1393,17 +1394,17 @@ class ExecutorManager:
             daemon=True
         ).start()
         next_package_event.set()
-    
-        @staticmethod
-        def reset_executor_file(package_name):
-            try:
-                for workspace in globals()["workspace_paths"]:
-                    id = globals()["_user_"][package_name]
-                    file_path = os.path.join(workspace, f"{id}.main")
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-            except:
-                pass
+
+    @staticmethod
+    def reset_executor_file(package_name):
+        try:
+            for workspace in globals()["workspace_paths"]:
+                id = globals()["_user_"][package_name]
+                file_path = os.path.join(workspace, f"{id}.main")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+        except:
+            pass
 
 class CodexBypass:
     @staticmethod
@@ -1568,6 +1569,24 @@ class CodexBypass:
                 time.sleep(5)
 
 class Runner:
+    @staticmethod
+    def write_package_status(user_id, status="online"):
+        try:
+            import json
+            import os
+            import time
+            data = {
+                "status": status,
+                "timestamp": int(time.time())
+            }
+            filename = f"{user_id}.status"
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=4)
+            print(f"\033[1;36m[ zam2109roblox.shop ] - Status file written: {filename}\033[0m")
+            return True
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error writing status file: {e}\033[0m")
+            return False
     @staticmethod
     def launch_package_sequentially(server_links):
         next_package_event = Event()
@@ -1810,12 +1829,14 @@ def main():
                     print("\033[1;31m[ zam2109roblox.shop ] - No game ID or server link set up.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
                     continue
-
+                
                 force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
                 force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
+                FileManager.save_config()
                 if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
                     print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
                     input("\033[1;32mPress Enter to return...\033[0m")
+                
                     continue
 
                 codex_bypass_active = True
@@ -1880,7 +1901,7 @@ def main():
                     "5. Bee Swarm Simulator", "6. Anime Vanguards", "7. Pet GO",
                     "8. Pet Simulator 99", "9. Meme Sea", "10. Anime Adventures",
                     "11. Anime Last Stand", "12. Da Hood", "13. Da Hood VC", "14. Arise Crossover",
-                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other game or Private Server Link (per account)"
+                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other Games/Private Server Links"
                 ]
                 for game in games:
                     print(f"\033[96m{game}\033[0m")
@@ -2024,7 +2045,7 @@ def main():
 
         elif setup_type == "7":
             try:
-                current_prefix = globals().get("package_prefix", "com.roblox")
+                current_prefix = globals().get("package_prefix", "com.yuri")
                 print(f"\033[1;32m[ zam2109roblox.shop ] - Current package prefix: {current_prefix}\033[0m")
                 new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix (or press Enter to keep current): \033[0m").strip()
                 
@@ -2080,11 +2101,8 @@ def main():
                 choice = input("\033[1;93m[ zam2109roblox.shop ] - Enable autorun on boot? (y/n): \033[0m").strip().lower()
         
                 if choice == 'y':
-            
                     boot_dir = "/data/data/com.termux/files/home/.termux/boot"
                     script_path = os.path.join(boot_dir, "zam_autorun.sh")
-            
-            
                     try:
                         os.makedirs(boot_dir, exist_ok=True, mode=0o700)
                     except:
@@ -2092,89 +2110,44 @@ def main():
             
                     script_content = """
 sleep 20
-if [ ! -x "/data/data/com.termux/files/usr/bin/python" ]; then
-    echo "Python not executable" > /sdcard/termux_boot_error.log
-    exit 1
-fi
 termux-wake-lock
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 export HOME=/data/data/com.termux/files/home
 export PREFIX=/data/data/com.termux/files/usr
 su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xterm-256color && cd /sdcard/Download && python zamtoolrejoinobf.py"
 """
-            
-            
                     with open(script_path, "w") as f:
                         f.write(script_content)
-            
-            
-            
                     os.chmod(script_path, 0o755)
-            
-            
                     import stat
                     st = os.stat(script_path)
                     if not (st.st_mode & stat.S_IEXEC):
-                
                         import subprocess
                         subprocess.run(["chmod", "+x", script_path])
-            
                     print("\033[1;32m✓ Autorun script created at:\033[0m")
                     print(f"\033[1;36m{script_path}\033[0m")
                     print("\n\033[1;33mChecking permissions...\033[0m")
-            
-            
                     if os.access(script_path, os.X_OK):
                         print("\033[1;32m✓ Script is executable\033[0m")
                     else:
                         print("\033[1;31m✗ Script is NOT executable - fixing...\033[0m")
                         os.chmod(script_path, 0o755)
-            
-            
-                    test = input("\033[1;93mTest script now? (y/n): \033[0m").strip().lower()
-                    if test == 'y':
-                        print("\033[1;36mTesting boot script...\033[0m")
-                        try:
-                            import subprocess
-                            result = subprocess.run(
-                                ["bash", script_path],
-                                capture_output=True,
-                                text=True,
-                                timeout=10
-                            )
-                            print(f"\033[1;32mTest exit code: {result.returncode}\033[0m")
-                            if result.stdout:
-                                print(f"\033[1;36mOutput: {result.stdout[:100]}...\033[0m")
-                        except subprocess.TimeoutExpired:
-                            print("\033[1;32m✓ Script is running (timed out as expected)\033[0m")
-                        except Exception as e:
-                            print(f"\033[1;31mTest error: {e}\033[0m")
-           
-            
                     autorun_enabled = True
-            
                 elif choice == 'n':
-            
                     script_path = "/data/data/com.termux/files/home/.termux/boot/zam_autorun.sh"
                     if os.path.exists(script_path):
                         os.remove(script_path)
                         print("\033[1;32m✓ Autorun script removed\033[0m")
-                
-                
                         error_log = "/sdcard/termux_boot_error.log"
                         if os.path.exists(error_log):
                             os.remove(error_log)
                     else:
                         print("\033[1;33m⚠ No autorun script found\033[0m")
-            
                     autorun_enabled = False
-            
                 else:
                     print("\033[1;31m✗ Invalid choice\033[0m")
-        
                 FileManager.save_config()
                 input("\033[1;32mPress Enter to return...\033[0m")
-        
             except Exception as e:
                 print(f"\033[1;31mError: {e}\033[0m")
                 Utilities.log_error(f"Autorun setup error: {e}")
