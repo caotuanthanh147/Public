@@ -763,8 +763,8 @@ class RobloxManager:
     @staticmethod
     def launch_roblox(package_name, server_link):
         try:
-            RobloxManager.kill_roblox_process(package_name)
             Runner.write_package_status(user_id, "online")
+            RobloxManager.kill_roblox_process(package_name)
             time.sleep(2)
 
             with status_lock:
@@ -1360,7 +1360,7 @@ class ExecutorManager:
                 status = data.get("status")
                 timestamp = data.get("timestamp", 0)
                 now = time.time()
-                if status == "online" and (now - timestamp) <= 600:
+                if status == "online" and timestamp > 0 and (now - timestamp) <= 600:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                     UIManager.update_status_table()
                     threading.Thread(
