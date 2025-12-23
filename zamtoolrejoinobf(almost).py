@@ -1254,7 +1254,7 @@ class ExecutorManager:
                         console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
 
     @staticmethod
-    def check_executor_status(package_name, continuous=True, max_wait_time=1100):
+    def check_executor_status(package_name, continuous=True, max_wait_time=90):
         retry_timeout = time.time() + max_wait_time
         while True:
             for workspace in globals()["workspace_paths"]:
@@ -1293,7 +1293,7 @@ class ExecutorManager:
             try:
                 status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
                 now = time.time()
-                if not status_file or not os.path.exists(status_file):
+                if not status_file or not os.path.exists(status_file) and check_executor_status:
                     start = time.time()
                     while time.time() - start < 5:
                         status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
@@ -1309,7 +1309,7 @@ class ExecutorManager:
                         if clear_cache_enabled:
                             RobloxManager.delete_cache_for_package(package_name)
                         time.sleep(8)
-                        RobloxManager.launch_roblox(package_name, server_link)
+                        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                         with status_lock:
                             globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                             UIManager.update_status_table()
@@ -1343,7 +1343,7 @@ class ExecutorManager:
                     if clear_cache_enabled:
                         RobloxManager.delete_cache_for_package(package_name)
                     time.sleep(8)
-                    RobloxManager.launch_roblox(package_name, server_link)
+                    threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                     with status_lock:
                         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                         UIManager.update_status_table()
@@ -1370,7 +1370,7 @@ class ExecutorManager:
         UIManager.update_status_table()
         try:
             status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
-            if not status_file or not os.path.exists(status_file):
+            if not status_file or not os.path.exists(status_file) and check_executor_status:
                 start = time.time()
                 while time.time() - start < 5:
                     status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
@@ -1408,7 +1408,7 @@ class ExecutorManager:
         print(f"\033[1;33m[ Tool ] - Rejoining {package_name}.\033[0m")
         globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
         UIManager.update_status_table()
-        RobloxManager.launch_roblox(package_name, server_link)
+        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
         UIManager.update_status_table()
         threading.Thread(
