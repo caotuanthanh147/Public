@@ -71,6 +71,6 @@ task.spawn(function()
                 writeStatus(label)
             end
         end
-        task.wait(1)
+        task.wait(15)
     end
 end)
