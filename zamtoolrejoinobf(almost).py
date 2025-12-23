@@ -793,7 +793,7 @@ class RobloxManager:
             time.sleep(20)
             with status_lock:
                 globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
-                time.sleep(60)
+                time.sleep(50)
                 UIManager.update_status_table()
 
         except Exception as e:
@@ -1295,7 +1295,7 @@ class ExecutorManager:
                 now = time.time()
                 if not status_file or not os.path.exists(status_file):
                     start = time.time()
-                    while time.time() - start < 300:
+                    while time.time() - start < 5:
                         status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
                         if status_file and os.path.exists(status_file):
                             break
@@ -1372,7 +1372,7 @@ class ExecutorManager:
             status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
             if not status_file or not os.path.exists(status_file):
                 start = time.time()
-                while time.time() - start < 300:
+                while time.time() - start < 5:
                     status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
                     if status_file and os.path.exists(status_file):
                         break
