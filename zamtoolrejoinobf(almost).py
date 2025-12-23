@@ -1299,7 +1299,7 @@ class ExecutorManager:
             try:
                 start_time = time.time()
                 executor_loaded = False
-                while time.time() - start_time < 180:
+                while time.time() - start_time < 30:
                     if ExecutorManager.check_executor_status(package_name):
                         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor has loaded successfully\033[0m"
                         UIManager.update_status_table()
@@ -1374,7 +1374,7 @@ class ExecutorManager:
                 
     @staticmethod
     def check_executor_and_rejoin(package_name, server_link, next_package_event):
-        user_id = globals()["user"][package_name]
+        user_id = str(globals()["_user_"][package_name])
         detected_executors = ExecutorManager.detect_executors()
         if detected_executors:
             globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking executor...\033[0m"
@@ -1384,7 +1384,7 @@ class ExecutorManager:
                 try:
                     start_time = time.time()
                     executor_loaded = False
-                    while time.time() - start_time < 180:
+                    while time.time() - start_time < 30:
                         if ExecutorManager.check_executor_status(package_name):
                             globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor has loaded successfully\033[0m"
                             UIManager.update_status_table()
