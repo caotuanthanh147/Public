@@ -763,7 +763,6 @@ class RobloxManager:
     @staticmethod
     def launch_roblox(package_name, server_link):
         try:
-            Runner.write_package_status(user_id, "online")
             RobloxManager.kill_roblox_process(package_name)
             time.sleep(2)
 
@@ -1255,7 +1254,7 @@ class ExecutorManager:
                         console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
 
     @staticmethod
-    def check_executor_status(package_name, continuous=True, max_wait_time=600):
+    def check_executor_status(package_name, continuous=True, max_wait_time=1100):
         retry_timeout = time.time() + max_wait_time
         while True:
             for workspace in globals()["workspace_paths"]:
@@ -1284,7 +1283,7 @@ class ExecutorManager:
     
     
     @staticmethod
-    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=600):
+    def monitor_executor_status(package_name, server_link, check_interval=15, stale_threshold=480):
         user_id = str(globals()["_user_"][package_name])
         have_seen_file = False
         last_launch = globals()["_uid_"].get(user_id, 0)
@@ -1295,12 +1294,29 @@ class ExecutorManager:
                 status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
                 now = time.time()
                 if not status_file or not os.path.exists(status_file):
-                    if not have_seen_file:
-                        if now - last_launch < grace_after_launch:
-                            time.sleep(short_interval)
-                            continue
-                    time.sleep(check_interval)
-                    continue
+                    start = time.time()
+                    while time.time() - start < 300:
+                        status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
+                        if status_file and os.path.exists(status_file):
+                            break
+                        time.sleep(5)
+                    if not status_file or not os.path.exists(status_file):
+                        print(f"[AutoRejoin] {package_name}: status file missing, rejoining...")
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;31mRejoining...\033[0m"
+                            UIManager.update_status_table()
+                        RobloxManager.kill_roblox_process(package_name)
+                        if clear_cache_enabled:
+                            RobloxManager.delete_cache_for_package(package_name)
+                        time.sleep(8)
+                        RobloxManager.launch_roblox(package_name, server_link)
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                            UIManager.update_status_table()
+                        have_seen_file = False
+                        last_launch = time.time()
+                        time.sleep(20)
+                        continue
                 have_seen_file = True
                 should_rejoin = False
                 rejoin_reason = ""
@@ -1354,13 +1370,20 @@ class ExecutorManager:
         UIManager.update_status_table()
         try:
             status_file, executor_used = ExecutorManager.find_status_file_for_user(user_id)
+            if not status_file or not os.path.exists(status_file):
+                start = time.time()
+                while time.time() - start < 300:
+                    status_file, _ = ExecutorManager.find_status_file_for_user(user_id)
+                    if status_file and os.path.exists(status_file):
+                        break
+                    time.sleep(5)
             if status_file and os.path.exists(status_file):
                 with open(status_file, "r") as f:
                     data = json.load(f)
                 status = data.get("status")
                 timestamp = data.get("timestamp", 0)
                 now = time.time()
-                if status == "online" and timestamp > 0 and (now - timestamp) <= 600:
+                if status == "online" and timestamp > 0 and (now - timestamp) <= 480:
                     globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                     UIManager.update_status_table()
                     threading.Thread(
@@ -1569,24 +1592,6 @@ class CodexBypass:
                 time.sleep(5)
 
 class Runner:
-    @staticmethod
-    def write_package_status(user_id, status="online"):
-        try:
-            import json
-            import os
-            import time
-            data = {
-                "status": status,
-                "timestamp": int(time.time())
-            }
-            filename = f"{user_id}.status"
-            with open(filename, "w") as f:
-                json.dump(data, f, indent=4)
-            print(f"\033[1;36m[ zam2109roblox.shop ] - Status file written: {filename}\033[0m")
-            return True
-        except Exception as e:
-            print(f"\033[1;31m[ zam2109roblox.shop ] - Error writing status file: {e}\033[0m")
-            return False
     @staticmethod
     def launch_package_sequentially(server_links):
         next_package_event = Event()
