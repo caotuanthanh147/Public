@@ -208,6 +208,31 @@ end
 _G.LoopCancel = false
 Alert("Ready! Starting Update Loop.")
 while wait() do
+    local otherPlayersCount = 0
+    for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= LocalPlayer then
+            otherPlayersCount = otherPlayersCount + 1
+        end
+    end
+    if otherPlayersCount > 0 then
+        Alert("Multiple players detected! Pausing farm and resetting...")
+        getgenv().TomatoAutoFarm = false
+        local character = LocalPlayer.Character
+        if character then
+            character:BreakJoints()
+        end
+        repeat
+            wait(2)
+            otherPlayersCount = 0
+            for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+                if player ~= LocalPlayer then
+                    otherPlayersCount = otherPlayersCount + 1
+                end
+            end
+        until otherPlayersCount == 0 and LocalPlayer.Character
+        Alert("Back to solo! Resuming farm...")
+        getgenv().TomatoAutoFarm = true
+    end
     local function Cancel()
         Alert("Update Loop cancelled.")
         if MapDetect then
