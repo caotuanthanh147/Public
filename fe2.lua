@@ -1,13 +1,7 @@
 getgenv().TomatoAutoFarm = true
 local ALERTS_ENABLED = true
-local EXITREGION_MAX_ATTEMPTS = 50
-local CHECK_DELAY = 0
-local BUTTON_DELAY = 0
-local EXITREGION_WAIT = 0
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Multiplayer = Workspace.Multiplayer
-local TARGET_POSITION = Vector3.new(-20, -144, 53)
-local TELEPORT_RADIUS = 50
 local TELEPORT_DESTINATION = workspace.Lobby.PlayHere
 local CLMAIN = LocalPlayer.PlayerScripts.CL_MAIN_GameScript
 local CLMAINenv = getsenv(CLMAIN)
@@ -55,8 +49,8 @@ local function CheckNearTargetPosition()
     local character = GetChar()
     local HumanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not HumanoidRootPart then return false end
-    local distance = (HumanoidRootPart.Position - TARGET_POSITION).Magnitude
-    return distance <= TELEPORT_RADIUS
+    local distance = (HumanoidRootPart.Position - Vector3.new(-20, -144, 53)).Magnitude
+    return distance <= 50
 end
 local function TeleportToLobby()
     local character = GetChar()
@@ -129,7 +123,7 @@ local function OnMapLoad(Map)
     end)
     local Attempts = 0
     local DifferentScan = false
-    while task.wait(CHECK_DELAY) and Check("InGame") do
+    while task.wait(0.01) and Check("InGame") do
         local ExitRegion = Map:FindFirstChild("ExitRegion", true)
         local HumanoidRootPart = GetChar().HumanoidRootPart
         Humanoid.Jump = true
@@ -152,7 +146,7 @@ local function OnMapLoad(Map)
                         HumanoidRootPart.Velocity = Vector3.new(0, 100, 0)
                         task.wait(.1)
                         HumanoidRootPart.Anchored = true
-                        task.wait(BUTTON_DELAY)
+                        task.wait(0.001)
                     end
                 end
             end
@@ -161,7 +155,7 @@ local function OnMapLoad(Map)
             end
         elseif ExitRegion then
             HumanoidRootPart.Anchored = false
-            if Attempts < EXITREGION_MAX_ATTEMPTS then
+            if Attempts < 50 then
                 Attempts += 1
                 HumanoidRootPart.CFrame = ExitRegion.CFrame 
                 Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
@@ -177,7 +171,7 @@ local function OnMapLoad(Map)
         end
     end
     Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    task.wait(EXITREGION_WAIT)
+    task.wait(0.001)
     Alert("Complete.")
     GodMode:Disconnect()
     GodMode = nil
@@ -215,7 +209,7 @@ while wait() do
         end
     end
     if otherPlayersCount > 0 then
-        Alert("Multiple players detected! Pausing farm and resetting...")
+        Alert("Players detected! Pausing farm...")
         getgenv().TomatoAutoFarm = false
         local character = LocalPlayer.Character
         if character then
@@ -230,7 +224,7 @@ while wait() do
                 end
             end
         until otherPlayersCount == 0 and LocalPlayer.Character
-        Alert("Back to solo! Resuming farm...")
+        Alert("Resuming farm...")
         getgenv().TomatoAutoFarm = true
     end
     local function Cancel()
