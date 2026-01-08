@@ -1,6 +1,34 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+    LocalPlayer = Players.LocalPlayer
+end
+if not LocalPlayer.Character or not LocalPlayer.Character.Parent then
+    LocalPlayer.CharacterAdded:Wait()
+end
+local isRebirthing = false
+local RebirthRemote = game:GetService("ReplicatedStorage").Remote.ReqRebirth
+local function GetPlayerLevel()
+    local Lv = LocalPlayer.PlayerGui.GameGui.HUD.Main.GameStats.Stats.XPStats.Icon.Info.Text
+    return tonumber(Lv) or 0
+end
+local function CheckAndRebirth()
+    if isRebirthing then return end
+    local level = GetPlayerLevel()
+    if level >= 100 then
+        isRebirthing = true
+        Alert("Max Level! Rebrithing...")
+        RebirthRemote:FireServer()
+        task.wait(1)
+        isRebirthing = false
+    end
+end
+local Character = LocalPlayer.Character
+Character:WaitForChild("Humanoid")
+Character:WaitForChild("HumanoidRootPart")
 getgenv().TomatoAutoFarm = true
 local ALERTS_ENABLED = true
-local LocalPlayer = game:GetService("Players").LocalPlayer
 local Multiplayer = Workspace.Multiplayer
 local TELEPORT_DESTINATION = workspace.Lobby.PlayHere
 local CLMAIN = LocalPlayer.PlayerScripts.CL_MAIN_GameScript
@@ -202,6 +230,7 @@ end
 _G.LoopCancel = false
 Alert("Ready! Starting Update Loop.")
 while wait() do
+    CheckAndRebirth()
     local otherPlayersCount = 0
     for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
         if player ~= LocalPlayer then
