@@ -1,17 +1,10 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then
-    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
-    LocalPlayer = Players.LocalPlayer
-end
-if not LocalPlayer.Character or not LocalPlayer.Character.Parent then
-    LocalPlayer.CharacterAdded:Wait()
-end
 local isRebirthing = false
 local RebirthRemote = game:GetService("ReplicatedStorage").Remote.ReqRebirth
 local function GetPlayerLevel()
-    local Lv = LocalPlayer.PlayerGui.GameGui.HUD.Main.GameStats.Stats.XPStats.Icon.Info.Text
-    return tonumber(Lv) or 0
+    local Lv = game:GetService("Players").LocalPlayer.PlayerGui.GameGui.HUD.Main.GameStats.Stats.XPStats.Icon.Info.Text
+    return tonumber(Lv)
 end
 local function CheckAndRebirth()
     if isRebirthing then return end
