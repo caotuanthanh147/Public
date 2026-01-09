@@ -11,7 +11,6 @@ local function CheckAndRebirth()
     local level = GetPlayerLevel()
     if level >= 100 then
         isRebirthing = true
-        Alert("Max Level! Rebrithing...")
         RebirthRemote:FireServer()
         task.wait(1)
         isRebirthing = false
