@@ -1,20 +1,26 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Remote = ReplicatedStorage:WaitForChild("Remote")
+local RebirthRemote = Remote.ReqRebirth
 local isRebirthing = false
-local RebirthRemote = game:GetService("ReplicatedStorage").Remote.ReqRebirth
 local function GetPlayerLevel()
     local Lv = game:GetService("Players").LocalPlayer.PlayerGui.GameGui.HUD.Main.GameStats.Stats.XPStats.Icon.Info.Text
     return tonumber(Lv)
 end
 local function CheckAndRebirth()
-    if isRebirthing then return end
+    if isRebirthing then return false end
     local level = GetPlayerLevel()
     if level >= 100 then
         isRebirthing = true
-        RebirthRemote:FireServer()
+        local passkey = Remote.ReqPasskey:InvokeServer()
+        RebirthRemote:FireServer(-passkey)
+        RebirthRemote:FireServer(passkey)
         task.wait(1)
         isRebirthing = false
+        return true
     end
+    return false
 end
 local Character = LocalPlayer.Character
 Character:WaitForChild("Humanoid")
