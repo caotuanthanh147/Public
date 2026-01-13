@@ -137,7 +137,12 @@ local function clickRestOption()
     return false
 end
 local function autoEventLoop()
+    local loopStart = tick() 
     while getgenv().AutoEvent do
+        if tick() - loopStart > 300 then
+            Events.BeginTeleport:FireServer(true) 
+            break
+        end
         if hasEnemies() then
             task.wait(1)
         else
@@ -154,7 +159,7 @@ local function autoEventLoop()
                         attempts = attempts + 1
                     end
                 else
-                    task.wait(0.2) 
+                    task.wait(0.2)
                 end
             else
                 task.wait(0.2)
