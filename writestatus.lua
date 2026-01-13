@@ -17,18 +17,6 @@ local function writeStatus(status)
         })
     )
 end
-local parentConn
-parentConn = localPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
-    if not localPlayer.Parent then
-        running = false
-        parentConn:Disconnect()
-    end
-end)
-Players.PlayerRemoving:Connect(function(p)
-    if p == localPlayer then
-        running = false
-    end
-end)
 local function markDisconnected()
     if running then
         writeStatus("disconnected")
@@ -51,7 +39,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.1)
+        task.wait(0.5)
     end
 end)
 CoreGui.DescendantAdded:Connect(function(o)
