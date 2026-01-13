@@ -139,7 +139,7 @@ end
 local function autoEventLoop()
     local loopStart = tick() 
     while getgenv().AutoEvent do
-        if tick() - loopStart > 300 then
+        if tick() - loopStart > 240 then
             Events.BeginTeleport:FireServer(true) 
             break
         end
