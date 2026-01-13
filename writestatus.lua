@@ -26,22 +26,6 @@ local function markDisconnected()
         end
     end
 end
-task.spawn(function()
-    while running do
-        local rg = CoreGui:FindFirstChild("RobloxPromptGui")
-        if rg then
-            local overlay = rg:FindFirstChild("promptOverlay")
-            if overlay then
-                local err = overlay:FindFirstChild("ErrorPrompt")
-                if err then
-                    markDisconnected()
-                    break
-                end
-            end
-        end
-        task.wait(0.5)
-    end
-end)
 CoreGui.DescendantAdded:Connect(function(o)
     if not running then return end
     if o.Name == "ErrorPrompt" then
@@ -50,10 +34,6 @@ CoreGui.DescendantAdded:Connect(function(o)
 end)
 writeStatus("online")
 while running do
-    if not localPlayer or not localPlayer.Parent then
-        running = false
-        break
-    end
     writeStatus("online")
     task.wait(15)
 end
