@@ -5,7 +5,7 @@ local localPlayer = Players.LocalPlayer
 local USER_ID = tostring(localPlayer.UserId)
 local STATUS_FILE = USER_ID .. ".status"
 local running = true
-local DEFAULT_TEXTS = {"Warning", "Label", ""} 
+local DEFAULT_TEXTS = {"Warning", "Label", ""}
 local function writeStatus(status)
     if not running then return end
     writefile(
@@ -57,16 +57,6 @@ local function markDisconnected()
         end
     end
 end
-task.spawn(function()
-    while running do
-        local hasError = checkDisconnect()
-        if hasError then
-            markDisconnected()
-            break
-        end
-        task.wait(0.5)
-    end
-end)
 CoreGui.DescendantAdded:Connect(function(descendant)
     if not running then return end
     local fullName = descendant:GetFullName()
@@ -80,6 +70,11 @@ CoreGui.DescendantAdded:Connect(function(descendant)
 end)
 writeStatus("online")
 while running do
+    local hasError = checkDisconnect()
+    if hasError then
+        markDisconnected()
+        break
+    end
     writeStatus("online")
-    task.wait(15) 
+    task.wait(15)
 end
