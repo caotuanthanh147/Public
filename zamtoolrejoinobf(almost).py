@@ -1325,7 +1325,7 @@ class ExecutorManager:
                     RobloxManager.kill_roblox_process(package_name)
                     if clear_cache_enabled:
                         RobloxManager.delete_cache_for_package(package_name)
-                    time.sleep(8)
+                    time.sleep(2)
                     threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                     with status_lock:
                         globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
@@ -1380,7 +1380,7 @@ class ExecutorManager:
         RobloxManager.kill_roblox_process(package_name)
         if clear_cache_enabled:
             RobloxManager.delete_cache_for_package(package_name)
-        time.sleep(10)
+        time.sleep(2)
         print(f"\033[1;33m[ Tool ] - Rejoining {package_name}.\033[0m")
         globals()["package_statuses"][package_name]["Status"] = "\033[1;36mRejoining\033[0m"
         UIManager.update_status_table()
@@ -2089,8 +2089,7 @@ def main():
                     except:
                         pass
             
-                    script_content = """
-sleep 20
+                    script_content = """sleep 5
 termux-wake-lock
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 export HOME=/data/data/com.termux/files/home
@@ -2105,9 +2104,6 @@ su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xte
                     if not (st.st_mode & stat.S_IEXEC):
                         import subprocess
                         subprocess.run(["chmod", "+x", script_path])
-                    print("\033[1;32m✓ Autorun script created at:\033[0m")
-                    print(f"\033[1;36m{script_path}\033[0m")
-                    print("\n\033[1;33mChecking permissions...\033[0m")
                     if os.access(script_path, os.X_OK):
                         print("\033[1;32m✓ Script is executable\033[0m")
                     else:
