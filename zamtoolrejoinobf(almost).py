@@ -1349,7 +1349,8 @@ class ExecutorManager:
                 
                 
     @staticmethod
-    def check_executor_and_rejoin(server_links, next_package_event):
+    def check_executor_and_rejoin(server_links):
+    next_package_event = Event()
         try:
             for package_name, server_link in server_links:
                 user_id = globals()["_user_"][package_name]
@@ -1610,7 +1611,7 @@ class Runner:
             if globals()["check_exec_enable"] == "1":
                 threading.Thread(
                     target=ExecutorManager.check_executor_and_rejoin,
-                    args=(server_link, next_package_event),
+                    args=(server_link),
                     daemon=True
                 ).start()
             else:
