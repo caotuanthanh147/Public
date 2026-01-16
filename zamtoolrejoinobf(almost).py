@@ -1369,7 +1369,7 @@ class ExecutorManager:
                             UIManager.update_status_table()
                         threading.Thread(
                             target=ExecutorManager.monitor_executor_status,
-                            args=(package_name, server_links),
+                            args=(server_links),
                             daemon=True
                         ).start()
                         next_package_event.set()
@@ -1392,7 +1392,7 @@ class ExecutorManager:
                     UIManager.update_status_table()
                 threading.Thread(
                     target=ExecutorManager.monitor_executor_status,
-                    args=(package_name, server_links),
+                    args=(server_links),
                     daemon=True
                 ).start()
             next_package_event.set()
@@ -1610,7 +1610,7 @@ class Runner:
             if globals()["check_exec_enable"] == "1":
                 threading.Thread(
                     target=ExecutorManager.check_executor_and_rejoin,
-                    args=(package_name, server_link, next_package_event),
+                    args=(server_link, next_package_event),
                     daemon=True
                 ).start()
             else:
