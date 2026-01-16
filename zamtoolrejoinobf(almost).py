@@ -1611,7 +1611,7 @@ class Runner:
             if globals()["check_exec_enable"] == "1":
                 threading.Thread(
                     target=ExecutorManager.check_executor_and_rejoin,
-                    args=(server_link),
+                    args=(server_links),
                     daemon=True
                 ).start()
             else:
