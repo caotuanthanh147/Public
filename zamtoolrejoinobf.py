@@ -1530,13 +1530,6 @@ class Runner:
                 print(f"\033[1;31mError launching Roblox for {package_name}: {e}\033[0m")
                 globals()["package_statuses"][package_name]["Status"] = "\033[1;31mLaunch failed\033[0m"
                 UIManager.update_status_table()
-            if globals()["check_exec_enable"] == "1":
-                threading.Thread(
-                    target=ExecutorManager.status_rejoin,
-                    args=(server_links,),
-                    daemon=True
-                ).start()
-            else:
                 next_package_event.set()
             next_package_event.wait()
 
