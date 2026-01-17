@@ -1268,10 +1268,12 @@ class ExecutorManager:
             time.sleep(20)
 
     @staticmethod
-    def find_status(user_id):
+    def find_status(package_name):
         try:
+            user_id = str(globals()["_user_"].get(package_name))
+            if not user_id:
+                return None, None
             for workspace in globals().get("workspace_paths", []):
-                user_id = str(globals()["_user_"][package_name])
                 file_path = os.path.join(workspace, f"{user_id}.status")
                 if os.path.exists(file_path):
                     return file_path, None
@@ -1284,44 +1286,46 @@ class ExecutorManager:
     @staticmethod
     def status_rejoin(server_links):
         next_package_event = Event()
-            try:
-                for package_name, server_link in server_links:
-                    user_id = globals()["_user_"][package_name]
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
-                        UIManager.update_status_table()
-                    status_file, executor_used = ExecutorManager.find_status(user_id)
-                    if status_file and os.path.exists(status_file):
-                        with open(status_file, "r") as f:
-                            data = json.load(f)
-                        status = data.get("status")
-                        timestamp = data.get("timestamp", 0)
-                        now = time.time()
-                        if status == "online" and timestamp > 0 and (now - timestamp) <= 480:
-                            with status_lock:
-                                globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
-                                UIManager.update_status_table()
-                            next_package_event.set()
-                            return
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
-                        UIManager.update_status_table()
-                    time.sleep(5)
-                    RobloxManager.kill_roblox_process(package_name)
-                    if clear_cache_enabled:
-                        RobloxManager.delete_cache_for_package(package_name)
-                    time.sleep(2)
-                    threading.Thread(
-                        target=RobloxManager.launch_roblox,
-                        args=(package_name, server_link),
-                        daemon=True
-                    ).start()
-                    with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
-                        UIManager.update_status_table()
-                next_package_event.set()
-            except Exception as e:
-                print(f"[status_rejoin] Error: {e}")
+        try:
+            for package_name, server_link in server_links:
+                user_id = globals()["_user_"].get(package_name)
+                if not user_id:
+                    continue
+                with status_lock:
+                    globals()["package_statuses"].setdefault(package_name, {})["Status"] = "\033[1;33mChecking status...\033[0m"
+                    UIManager.update_status_table()
+                status_file, executor_used = ExecutorManager.find_status(package_name)
+                if status_file and os.path.exists(status_file):
+                    with open(status_file, "r") as f:
+                        data = json.load(f)
+                    status = data.get("status")
+                    timestamp = data.get("timestamp", 0)
+                    now = time.time()
+                    if status == "online" and timestamp > 0 and (now - timestamp) <= 480:
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
+                            UIManager.update_status_table()
+                        next_package_event.set()
+                        return
+                with status_lock:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline or not responding. Rejoining...\033[0m"
+                    UIManager.update_status_table()
+                time.sleep(5)
+                RobloxManager.kill_roblox_process(package_name)
+                if clear_cache_enabled:
+                    RobloxManager.delete_cache_for_package(package_name)
+                time.sleep(2)
+                threading.Thread(
+                    target=RobloxManager.launch_roblox,
+                    args=(package_name, server_link),
+                    daemon=True
+                ).start()
+                with status_lock:
+                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
+                    UIManager.update_status_table()
+            next_package_event.set()
+        except Exception as e:
+            print(f"[status_rejoin] Error: {e}")
 
     @staticmethod
     def reset_executor_file(package_name):
