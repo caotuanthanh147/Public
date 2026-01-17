@@ -1278,11 +1278,12 @@ class ExecutorManager:
             return None, None
         except Exception:
             return None, None
+
+    
                 
     @staticmethod
-    def status_rejoin(server_links, stop_event):
+    def status_rejoin(server_links):
         next_package_event = Event()
-        while not stop_event.is_set():
             try:
                 for package_name, server_link in server_links:
                     user_id = globals()["_user_"][package_name]
@@ -1316,7 +1317,7 @@ class ExecutorManager:
                         daemon=True
                     ).start()
                     with status_lock:
-                        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
                         UIManager.update_status_table()
                 next_package_event.set()
             except Exception as e:
@@ -1685,7 +1686,7 @@ def main():
             for task in [
                 (Runner.monitor_presence, (server_links, stop_main_event)),
                 (Runner.force_rejoin, (server_links, interval, stop_main_event)),
-                (ExecutorManager.status_rejoin, (server_links, stop_main_event)),
+                (ExecutorManager.status_rejoin, (server_links,)),
                 (Runner.update_status_table_periodically, ())
             ]:
                 threading.Thread(target=task[0], args=task[1], daemon=True).start()
@@ -1755,7 +1756,7 @@ def main():
                 for task in [
                     (Runner.monitor_presence, (server_links, stop_main_event)),
                     (Runner.force_rejoin, (server_links, force_rejoin_interval, stop_main_event)),
-                    (ExecutorManager.status_rejoin, (server_links, stop_main_event)),
+                    (ExecutorManager.status_rejoin, (server_links,)),
                     (Runner.update_status_table_periodically, ())
                 ]:
                     threading.Thread(target=task[0], args=task[1], daemon=True).start()
@@ -2012,7 +2013,8 @@ def main():
                     except:
                         pass
             
-                    script_content = """sleep 10
+                    script_content = """
+sleep 20
 termux-wake-lock
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 export HOME=/data/data/com.termux/files/home
