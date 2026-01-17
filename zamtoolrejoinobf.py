@@ -1642,7 +1642,7 @@ class Runner:
                             if clear_cache_enabled:
                                 RobloxManager.delete_cache_for_package(package_name)
                             time.sleep(2)
-                            threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start() the 
+                            threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                         else:
                             with status_lock:
                                 globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
