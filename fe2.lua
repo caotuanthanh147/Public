@@ -22,9 +22,11 @@ local function CheckAndRebirth()
     end
     return false
 end
-while wait(15) do
-CheckAndRebirth()
-end
+task.spawn(function()
+    while task.wait(15) do
+        CheckAndRebirth()
+    end
+end)
 local Character = LocalPlayer.Character
 Character:WaitForChild("Humanoid")
 Character:WaitForChild("HumanoidRootPart")
