@@ -22,6 +22,9 @@ local function CheckAndRebirth()
     end
     return false
 end
+while wait(15) do
+CheckAndRebirth()
+end
 local Character = LocalPlayer.Character
 Character:WaitForChild("Humanoid")
 Character:WaitForChild("HumanoidRootPart")
@@ -149,7 +152,7 @@ local function OnMapLoad(Map)
     end)
     local Attempts = 0
     local DifferentScan = false
-    while task.wait(0.01) and Check("InGame") do
+    while task.wait(0.1) and Check("InGame") do
         local ExitRegion = Map:FindFirstChild("ExitRegion", true)
         local HumanoidRootPart = GetChar().HumanoidRootPart
         Humanoid.Jump = true
@@ -228,7 +231,6 @@ end
 _G.LoopCancel = false
 Alert("Ready! Starting Update Loop.")
 while wait() do
-    CheckAndRebirth()
     local otherPlayersCount = 0
     for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
         if player ~= LocalPlayer then
