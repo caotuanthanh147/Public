@@ -4,7 +4,7 @@ local cgui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local memoryThresh = 1200
-local memoryEnabled = false
+local memoryEnabled = true
 local memoryConnection
 local webhookURL = "https://discord.com/api/webhooks/1366639235188133999/n_z3dLMYFqUTrimhI3s_HZNFWfcX9GDh0nTVOzvWkQ9DBkHCgtDaAiUJBQv4KggFTUxe"
 local userID = "479476519308099585"
