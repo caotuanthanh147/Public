@@ -766,37 +766,37 @@ class RobloxManager:
             ExecutorManager.reset_executor_file(package_name)
             RobloxManager.kill_roblox_process(package_name)
             time.sleep(2)
-
+    
             with status_lock:
                 globals()["_uid_"][globals()["_user_"][package_name]] = time.time()
                 globals()["package_statuses"][package_name]["Status"] = f"\033[1;36mOpening Roblox for {package_name}...\033[0m"
                 UIManager.update_status_table()
-
+    
             subprocess.run([
-                'am', 'start',
+                'am', 'start', '--user', '0',
                 '-a', 'android.intent.action.MAIN',
+                '-c', 'android.intent.category.LAUNCHER',
                 '-n', f'{package_name}/com.roblox.client.startup.ActivitySplash'
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
+    
             time.sleep(10)
-
             with status_lock:
                 globals()["package_statuses"][package_name]["Status"] = f"\033[1;36mJoining Roblox for {package_name}...\033[0m"
                 UIManager.update_status_table()
-
+    
             subprocess.run([
-                'am', 'start',
+                'am', 'start', '--user', '0',
                 '-a', 'android.intent.action.VIEW',
                 '-n', f'{package_name}/com.roblox.client.ActivityProtocolLaunch',
                 '-d', server_link
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
+    
             time.sleep(20)
             with status_lock:
                 globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
                 time.sleep(60)
                 UIManager.update_status_table()
-
+    
         except Exception as e:
             error_message = f"Error launching Roblox for {package_name}: {e}"
             with status_lock:
