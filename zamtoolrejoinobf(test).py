@@ -1564,7 +1564,6 @@ class Runner:
                 
     @staticmethod
     def monitor_status(server_links, stop_event):
-        have_seen_file = {}
         last_launchs = {}
         while not stop_event.is_set():
             try:
@@ -1576,36 +1575,37 @@ class Runner:
                         continue
                     now = time.time()
                     last_launch = last_launchs.get(package_name, globals()["_uid_"].get(user_id, 0))
-                    seen = have_seen_file.get(package_name, False)
                     status_file, executor_used = ExecutorManager.find_status(package_name)
                     if not status_file or not os.path.exists(status_file):
-                        if not seen and (now - last_launch) < 90:
-                            time.sleep(5)
+                        if (now - last_launch) > 480:
+                            rejoin = True
+                            reason = "status file missing"
+                        else:
+                            time.sleep(15)
                             continue
-                        time.sleep(15)
-                        continue
-                    have_seen_file[package_name] = True
-                    should_rejoin = False
-                    rejoin_reason = ""
+                    else:
+                        rejoin = False
+                        reason = ""
                     try:
-                        with open(status_file, "r") as f:
-                            data = json.load(f)
-                        status = data.get("status")
-                        try:
-                            timestamp = int(float(data.get("timestamp", 0)))
-                        except Exception:
-                            timestamp = 0
-                        if status == "disconnected":
-                            should_rejoin = True
-                            rejoin_reason = "status == disconnected"
-                        elif timestamp > 0 and (now - timestamp) > 480:
-                            should_rejoin = True
-                            rejoin_reason = f"stale timestamp ({int(now - timestamp)}s > 480s)"
+                        if not rejoin:
+                            with open(status_file, "r") as f:
+                                data = json.load(f)
+                            status = data.get("status")
+                            try:
+                                timestamp = int(float(data.get("timestamp", 0)))
+                            except Exception:
+                                timestamp = 0
+                            if status == "disconnected":
+                                rejoin = True
+                                reason = "status == disconnected"
+                            elif timestamp > 0 and (now - timestamp) > 50:
+                                rejoin = True
+                                reason = f"stale timestamp ({int(now - timestamp)}s > 480s)"
                     except Exception:
                         time.sleep(15)
                         continue
-                    if should_rejoin:
-                        print(f"[AutoRejoin] {package_name}: {rejoin_reason}, rejoining...")
+                    if rejoin:
+                        print(f"[AutoRejoin] {package_name}: {reason}, rejoining...")
                         with status_lock:
                             globals()["package_statuses"].setdefault(package_name, {})["Status"] = "\033[1;31mRejoining...\033[0m"
                             UIManager.update_status_table()
@@ -1621,7 +1621,6 @@ class Runner:
                                 os.remove(status_file)
                             except Exception:
                                 pass
-                        have_seen_file[package_name] = False
                         last_launchs[package_name] = time.time()
                         time.sleep(20)
                         continue
@@ -1652,7 +1651,7 @@ class Runner:
 
 def check_activation_status():
     try:
-        response = requests.get("https://raw.githubusercontent.com/nghvit/module/refs/heads/main/status/customize", timeout=5)
+        response = requests.get("https://raw.githubusercontent.com/nghvit/module/refs/heads/main/status/customize", timeout=5) # true
         response.raise_for_status()
         content = response.text.strip()
         if content == "true":
