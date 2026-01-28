@@ -46,7 +46,7 @@ local function markDisconnected()
     end
 end
 writeStatus("online")
-while running do
+while running and task.wait(15) do
     local hasError = checkDisconnect()
     if hasError then
         markDisconnected()
