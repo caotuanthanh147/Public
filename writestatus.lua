@@ -17,24 +17,9 @@ local function writeStatus(status)
     )
 end
 local function checkDisconnect()
-    local success1, errorTitle = pcall(function()
-        return CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.TitleFrame.ErrorTitle
-    end)
     local success2, errorMessage = pcall(function()
         return CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea.ErrorFrame.ErrorMessage
     end)
-    if success1 and errorTitle then
-        local isDefault = false
-        for _, defaultText in ipairs(DEFAULT_TEXTS) do
-            if errorTitle.Text == defaultText then
-                isDefault = true
-                break
-            end
-        end
-        if not isDefault then
-            return true
-        end
-    end
     if success2 and errorMessage then
         local isDefault = false
         for _, defaultText in ipairs(DEFAULT_TEXTS) do
@@ -51,23 +36,15 @@ local function checkDisconnect()
 end
 local function markDisconnected()
     if running then
+        task.wait(5)
         if checkDisconnect() then
+            task.wait(5)
             writeStatus("disconnected")
             running = false
+            task.wait(5)
         end
     end
 end
-CoreGui.DescendantAdded:Connect(function(descendant)
-    if not running then return end
-    local fullName = descendant:GetFullName()
-    if string.find(fullName, "ErrorTitle") or string.find(fullName, "ErrorMessage") then
-        task.wait(0.1)
-        local hasError = checkDisconnect()
-        if hasError then
-            markDisconnected()
-        end
-    end
-end)
 writeStatus("online")
 while running do
     local hasError = checkDisconnect()
