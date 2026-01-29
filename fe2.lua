@@ -1,3 +1,6 @@
+game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("AddedWaiting"):FireServer()
+
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,7 +36,6 @@ Character:WaitForChild("HumanoidRootPart")
 getgenv().TomatoAutoFarm = true
 local ALERTS_ENABLED = true
 local Multiplayer = Workspace.Multiplayer
-local TELEPORT_DESTINATION = workspace.Lobby.PlayHere
 local CLMAIN = LocalPlayer.PlayerScripts.CL_MAIN_GameScript
 local CLMAINenv = getsenv(CLMAIN)
 local gameAlert = CLMAINenv.newAlert
@@ -84,15 +86,7 @@ local function CheckNearTargetPosition()
     return distance <= 50
 end
 local function TeleportToLobby()
-    local character = GetChar()
-    local HumanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not HumanoidRootPart then return end
-    if TELEPORT_DESTINATION and TELEPORT_DESTINATION:IsA("Part") then
-        HumanoidRootPart.CFrame = TELEPORT_DESTINATION.CFrame
-        Alert("Teleported to Lobby PlayHere!")
-    else
-        Alert("Warning: Teleport destination not found!")
-    end
+game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("AddedWaiting"):FireServer()
 end
 local MapDetect
 local ConnectMap
