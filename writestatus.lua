@@ -3,14 +3,14 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local localPlayer = Players.LocalPlayer
 local USER_ID = tostring(localPlayer.UserId)
-local STATUS_FILE = USER_ID .. ".status"
-local function writeStatus(status)
+local MAIN_FILE = USER_ID .. ".main"
+local function writeMainFile()
     writefile(
-        STATUS_FILE,
+        MAIN_FILE,
         HttpService:JSONEncode({
-            status = status,
+            status = "online",
             timestamp = os.time()
         })
     )
 end
-writeStatus("online")
+writeMainFile()

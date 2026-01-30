@@ -246,7 +246,70 @@ class FileManager:
     SERVER_LINKS_FILE = "Shouko.dev/server-link.txt"
     ACCOUNTS_FILE = "Shouko.dev/account.txt"
     CONFIG_FILE = "Shouko.dev/config-wh.json"
-
+    
+    
+    @staticmethod
+    def xuat(cookie_path):
+        if not os.path.exists(cookie_path):
+            print(f"[ERROR] Cookie file not found: {cookie_path}")
+            return None
+        try:
+            conn = sqlite3.connect(cookie_path)
+            cursor = conn.cursor()
+            query = """
+            SELECT value, encrypted_value 
+            FROM cookies 
+            WHERE name = '.ROBLOSECURITY' AND host_key LIKE '%roblox.com'
+            """
+            cursor.execute(query)
+            row = cursor.fetchone()
+            if not row:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = cursor.fetchall()
+                print(f"[DEBUG] Available tables: {tables}")
+                for table_name, in tables:
+                    if 'cookie' in table_name.lower():
+                        try:
+                            cursor.execute(f"SELECT * FROM {table_name} LIMIT 1")
+                            columns = [description[0] for description in cursor.description]
+                            print(f"[DEBUG] Table '{table_name}' columns: {columns}")
+                            if 'name' in columns:
+                                cursor.execute(f"""
+                                    SELECT value, encrypted_value 
+                                    FROM {table_name} 
+                                    WHERE name = '.ROBLOSECURITY'
+                                """)
+                                row = cursor.fetchone()
+                                if row:
+                                    break
+                        except:
+                            continue
+            conn.close()
+            if row:
+                value, encrypted_value = row
+                if not value and encrypted_value:
+                    try:
+                        if isinstance(encrypted_value, bytes):
+                            return encrypted_value.decode('utf-8', errors='ignore')
+                        return str(encrypted_value)
+                    except:
+                        return str(encrypted_value)
+                elif value:
+                    return value
+                else:
+                    print(f"[ERROR] Found .ROBLOSECURITY row but both value and encrypted_value are empty")
+                    return None
+            else:
+                print(f"[ERROR] .ROBLOSECURITY cookie not found in database")
+                return None
+        except sqlite3.Error as e:
+            print(f"[ERROR] SQLite error: {e}")
+            return None
+        except Exception as e:
+            print(f"[ERROR] Unexpected error: {e}")
+            return None
+            
+            
     @staticmethod
     def save_server_links(server_links):
         try:
