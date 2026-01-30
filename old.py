@@ -1693,7 +1693,7 @@ def main():
     
     if not globals().get("command_8_configured", False):
         globals()["check_exec_enable"] = "1"
-        globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+        globals()["lua_script_template"] = 'https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
         config_file = os.path.join("zam2109roblox.shop", "checkui.lua")
         try:
             os.makedirs("zam2109roblox.shop", exist_ok=True)
@@ -1899,11 +1899,11 @@ def main():
 
                 if config_choice.lower() == "q":
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
                     print("\033[1;32m[ zam2109roblox.shop ] - Default set: Executor + Shouko Check\033[0m")
                 elif config_choice == "1":
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
                     print("\033[1;32m[ zam2109roblox.shop ] - Set to Executor + Shouko Check\033[0m")
                 elif config_choice == "2":
                     globals()["check_exec_enable"] = "0"
@@ -1912,7 +1912,7 @@ def main():
                 else:
                     print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice. Keeping default.\033[0m")
                     globals()["check_exec_enable"] = "1"
-                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+                    globals()["lua_script_template"] = 'https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
 
                 config_file = os.path.join("Shouko.dev", "checkui.lua")
                 if globals()["lua_script_template"]:
