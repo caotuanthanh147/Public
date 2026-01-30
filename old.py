@@ -1528,38 +1528,38 @@ class Runner:
     @staticmethod
     def monitor_presence(server_links, stop_event):
         in_game_status = {package_name: False for package_name, _ in server_links}
-            
+        
         while not stop_event.is_set():
             try:
-                if globals()["check_exec_enable"] == "0":
-                    for package_name, server_link in server_links:
-                        ckhuy = FileManager.xuat(f"/data/data/{package_name}/app_webview/Default/Cookies")
-                        user_id = globals()["_user_"][package_name]
-                            
-                        presence_type = RobloxManager.check_user_online(user_id, ckhuy)
-                        
-                        if not in_game_status[package_name]:
-                            if presence_type == 2:
-                                with status_lock:
-                                    globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
-                                    UIManager.update_status_table()
-                                in_game_status[package_name] = True
-                                print(f"\033[1;32m[ zam2109roblox.shop ] - {user_id} is now In-Game, monitoring started.\033[0m")
-                            continue 
-                            
-                        if presence_type != 2:
-                            with status_lock:
-                                globals()["package_statuses"][package_name]["Status"] = "\033[1;31mNot In-Game, Rejoining!\033[0m"
-                                UIManager.update_status_table()
-                            print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
-                            RobloxManager.kill_roblox_process(package_name)
-                            RobloxManager.delete_cache_for_package(package_name)
-                            time.sleep(2)
-                            threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
-                        else:
+                for package_name, server_link in server_links:
+                    ckhuy = FileManager.xuat(f"/data/data/{package_name}/app_webview/Default/Cookies")
+                    user_id = globals()["_user_"][package_name]
+                    
+                    presence_type = RobloxManager.check_user_online(user_id, ckhuy)
+                    
+                    if not in_game_status[package_name]:
+                        if presence_type == 2:
                             with status_lock:
                                 globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
                                 UIManager.update_status_table()
+                            in_game_status[package_name] = True
+                            print(f"\033[1;32m[ zam2109roblox.shop ] - {user_id} is now In-Game, monitoring started.\033[0m")
+                        continue 
+                    
+                    if presence_type != 2:
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;31mNot In-Game, Rejoining!\033[0m"
+                            UIManager.update_status_table()
+                        print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
+                        RobloxManager.kill_roblox_process(package_name)
+                        if clear_cache_enabled:
+                            RobloxManager.delete_cache_for_package(package_name)
+                        time.sleep(2)
+                        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
+                    else:
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
+                            UIManager.update_status_table()
                 time.sleep(60)
             except Exception as e:
                 Utilities.log_error(f"Error in presence monitor: {e}")
