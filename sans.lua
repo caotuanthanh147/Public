@@ -671,7 +671,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
-local FOLLOW_DISTANCE = -1
+local FOLLOW_DISTANCE = 1.5
 local FOLLOW_SPEED = 1000000000
 local scanInterval = 0.25
 local clickInterval = 0.0001
@@ -713,9 +713,16 @@ local function findTarget()
 end
 local function getPos(targetHRP)
     local base = targetHRP.CFrame
-    local forward = base.LookVector * -FOLLOW_DISTANCE
-    local frontPos = targetHRP.Position + forward
-    return CFrame.new(frontPos, targetHRP.Position)
+    local lv = base.LookVector
+    local horiz = Vector3.new(lv.X, 0, lv.Z)
+    if horiz.Magnitude <= 0.001 then
+        horiz = Vector3.new(0, 0, -1) 
+    else
+        horiz = horiz.Unit
+    end
+    local frontPos = targetHRP.Position + horiz * FOLLOW_DISTANCE
+    frontPos = Vector3.new(frontPos.X, targetHRP.Position.Y, frontPos.Z)
+    return CFrame.new(frontPos, frontPos + horiz)
 end
 local function click(targetModel)
     if not targetModel then return end
