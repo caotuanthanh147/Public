@@ -7,16 +7,15 @@ local isActive = true
 local function startFarming()
     isActive = true
     while getgenv().AutoFarm and isActive do
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local allDescendants = Sanses:GetDescendants()
-            for _, descendant in ipairs(allDescendants) do
-                if not getgenv().AutoFarm or not isActive then break end
-                if descendant:IsA("ClickDetector") then
-                    local parent = descendant.Parent
-                    if parent then
-                        fireclickdetector(descendant)
-                    end
+        local allDescendants = Sanses:GetDescendants()
+        for _, descendant in ipairs(allDescendants) do
+            if not getgenv().AutoFarm or not isActive then 
+                break 
+            end
+            if descendant:IsA("ClickDetector") then
+                local parent = descendant.Parent
+                if parent then
+                    fireclickdetector(descendant)
                 end
             end
         end
