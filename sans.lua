@@ -27,7 +27,6 @@ if player.Character then
     spawn(startFarming)
 end
 player.CharacterAdded:Connect(function(character)
-    task.wait()
     if getgenv().AutoFarm then
         spawn(startFarming)
     end
