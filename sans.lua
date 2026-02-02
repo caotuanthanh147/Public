@@ -30,6 +30,3 @@ player.CharacterAdded:Connect(function(character)
         spawn(startFarming)
     end
 end)
-player.CharacterRemoving:Connect(function()
-    isActive = false
-end)
