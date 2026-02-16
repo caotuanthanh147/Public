@@ -1,5 +1,15 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local function r()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+        end
+    end
+end
 local function findInstances(targetName, className)
     local results = {}
     local searchRoot = Workspace
@@ -278,5 +288,9 @@ end,
 ["WALL_OF"] = function()
     print("Running WALL_OF action")
     fireTouchInterests("EndCheckpoint")
+end,
+["Normal_Dance"] = function()
+    print("Running Normal_Dance action")
+    r()
 end,
 }
