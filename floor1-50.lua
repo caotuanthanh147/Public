@@ -1,4 +1,23 @@
+local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local function findInstances(targetName, className)
+    local results = {}
+    local searchRoot = Workspace
+    if targetName then
+        local obj = Workspace:FindFirstChild(targetName)
+        if obj and obj:IsA("Folder") then
+            searchRoot = obj
+        end
+    end
+    for _, descendant in ipairs(searchRoot:GetDescendants()) do
+        if descendant:IsA(className) then
+            if not targetName or descendant.Name == targetName or (descendant.Parent and descendant.Parent.Name == targetName) then
+                table.insert(results, descendant)
+            end
+        end
+    end
+    return results
+end
 local function getLocalHRP(timeoutSeconds)
     local plr = Players.LocalPlayer
     if not plr then return nil end
@@ -11,68 +30,109 @@ local function getLocalHRP(timeoutSeconds)
     end
     return char:FindFirstChild("HumanoidRootPart")
 end
-local function findTouchTransmittersForTarget(targetName)
-    local matches = {}
-    local total = 0
-    for _, descendant in ipairs(workspace:GetDescendants()) do
-        if descendant:IsA("TouchTransmitter") then
-            total = total + 1
-            local parentName = (descendant.Parent and descendant.Parent.Name) or ""
-            if (not targetName) or descendant.Name == targetName or parentName == targetName then
-                local part = descendant:FindFirstAncestorWhichIsA("BasePart")
-                if part then
-                    table.insert(matches, {transmitter = descendant, part = part})
-                end
+local function teleportToTarget(targetName, offsetY)
+    offsetY = offsetY or 3
+    local parts = findInstances(targetName, "BasePart")
+    if #parts == 0 then
+        local models = findInstances(targetName, "Model")
+        for _, model in ipairs(models) do
+            local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+            if part then
+                parts = {part}
+                break
             end
         end
     end
-    return matches, total
+    if #parts == 0 then return false end
+    local targetPart = parts[1]
+    local player = Players.LocalPlayer
+    if not player then return false end
+    local char = player.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = targetPart.CFrame * CFrame.new(0, offsetY, 0)
+    return true
 end
-local function touchTransmitter(targetName, opts)
+local function fireProximityPrompts(targetName, offsetY)
+    local prompts = findInstances(targetName, "ProximityPrompt")
+    if #prompts == 0 then return false end
+    local teleportTarget
+    if targetName then
+        teleportTarget = Workspace:FindFirstChild(targetName, true)
+    end
+    if not teleportTarget then
+        teleportTarget = prompts[1].Parent
+    end
+    local yOffset = 3
+    if offsetY then
+        if type(offsetY) == "number" then
+            yOffset = offsetY
+        elseif typeof(offsetY) == "Vector3" then
+            yOffset = offsetY.Y
+        end
+    end
+    if teleportTarget then
+        teleportToTarget(teleportTarget.Name, yOffset)
+        task.wait(0.3)
+    end
+    for _, prompt in ipairs(prompts) do
+        if fireproximityprompt then
+            fireproximityprompt(prompt)
+        end
+        task.wait(0.05)
+    end
+    return true
+end
+local function fireClickDetectors(targetName)
+    local detectors = findInstances(targetName, "ClickDetector")
+    if #detectors == 0 then return false end
+    for _, detector in ipairs(detectors) do
+        if fireclickdetector then
+            fireclickdetector(detector)
+        end
+        task.wait(0.05)
+    end
+    return true
+end
+local function fireTouchInterests(targetName, opts)
     opts = opts or {}
-    local maxWait = opts.maxWait or 5           
-    local interval = opts.interval or 0.15      
+    local maxWait = opts.maxWait or 5
+    local interval = opts.interval or 0.15
     local hrpTimeout = opts.hrpTimeout or 3
     local root = getLocalHRP(hrpTimeout)
     if not root then
-        warn("touchTransmitter: no HumanoidRootPart for LocalPlayer")
-        return
+        return false
     end
     local elapsed = 0
-    local lastTotal = 0
     while elapsed <= maxWait do
-        local matches, total = findTouchTransmittersForTarget(targetName)
-        lastTotal = total
-        if #matches > 0 then
-            print(("TouchTransmitter found for target: %s (matches=%d, scanned=%d)"):format(tostring(targetName), #matches, total))
-            for _, entry in ipairs(matches) do
-                local part = entry.part
-                local ok, err = pcall(function()
-                    if firetouchinterest then
-                        firetouchinterest(part, root, 1)
-                        task.wait()
-                        firetouchinterest(part, root, 0)
-                    else
-                        local ok2, orig = pcall(function() return part.CFrame end)
-                        if ok2 then
-                            local origCF = orig
+        local transmitters = findInstances(targetName, "TouchTransmitter")
+        if #transmitters > 0 then
+            for _, tx in ipairs(transmitters) do
+                local part = tx:FindFirstAncestorWhichIsA("BasePart")
+                if part then
+                    local ok, err = pcall(function()
+                        if firetouchinterest then
+                            firetouchinterest(part, root, 1)
+                            task.wait()
+                            firetouchinterest(part, root, 0)
+                        else
+                            local origCF = part.CFrame
                             part.CFrame = root.CFrame
                             task.wait(0.05)
                             part.CFrame = origCF
                         end
+                    end)
+                    if not ok then
                     end
-                end)
-                if not ok then
-                    warn("touchTransmitter: fire error for part", part and part:GetFullName() or "unknown", "-", err)
                 end
-                task.wait(0.05) 
+                task.wait(0.05)
             end
             return true
         end
         task.wait(interval)
         elapsed = elapsed + interval
     end
-    warn(("touchTransmitter: no matching TouchTransmitter for target '%s' after %.2fs (scanned %d transmitters)"):format(tostring(targetName), maxWait, lastTotal))
     return false
 end
 return {
@@ -116,4 +176,36 @@ return {
         print("Running WhoKilledYouObby action")
         touchTransmitter("WinPart")
     end,
+    ["GumballMachine"] = function()
+        print("Running GumballMachine action")
+        fireTouchInterests("WinPart")
+    end,
+    ["3008_Room"] = function()
+        print("Running 3008_Room action")
+        fireClickDetectors("Lampert")
+    end,
+    ["Superhighway"] = function()
+        print("Running Superhighway action")
+        fireTouchInterests("WinPoint")
+    end,
+    ["SuperDropper"] = function()
+        print("Running SuperDropper action")
+        fireTouchInterests("WinPool")
+    end,
+    ["RandomMazeWindows"] = function()
+        print("Running RandomMazeWindows action")
+        fireTouchInterests("Build")
+    end,
+    ["Jeremy"] = function()
+        print("Running Jeremy action")
+        teleportToTarget("Button", 3)
+    end,
+    ["FunnyMaze"] = function()
+        print("Running FunnyMaze action")
+        fireClickDetectors("FinalNotes")
+    end,
+    ["SnowySlope"] = function()
+    print("Running SnowySlope action")
+    fireTouchInterests("WinPart")
+end,
 }
