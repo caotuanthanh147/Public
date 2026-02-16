@@ -302,7 +302,7 @@ end,
     }
     for _, location in ipairs(generatorLocations) do
         fireProximityPrompts(location, 3)
-        task.wait(0.5)
+        task.wait(1)
     end
 end,
 ["WALL_OF"] = function()
@@ -312,5 +312,13 @@ end,
 ["Normal_Dance"] = function()
     print("Running Normal_Dance action")
     r()
+end,
+["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function()
+    print("Running SLIDE_9999999999_FEET_DOWN_RAINBOW action")
+    fireTouchInterests("MiddleRing")
+end,
+["CliffsideChaos"] = function()
+    print("Running CliffsideChaos action")
+    teleportToTarget("Roof", 3)
 end,
 }
