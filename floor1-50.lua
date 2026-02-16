@@ -135,6 +135,7 @@ local function fireTouchInterests(targetName, opts)
     end
     return false
 end
+wait(3)
 return {
     ["MozelleSquidGames"] = function()
         print("Running MozelleSquidGames action")
@@ -199,6 +200,10 @@ return {
     ["Jeremy"] = function()
         print("Running Jeremy action")
         teleportToTarget("Button", 3)
+    end,
+    ["BrokenSchool"] = function()
+        print("Running Jeremy action")
+        teleportToTarget("Roof", 3)
     end,
     ["FunnyMaze"] = function()
         print("Running FunnyMaze action")
