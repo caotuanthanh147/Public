@@ -255,4 +255,28 @@ end,
         task.wait(0.2)
     end
 end,
+["ElevatorShaft"] = function()
+    print("Running ElevatorShaft action")
+    fireProximityPrompts("Levers", 3)
+end,
+["SurvivalTheArea51"] = function()
+    print("Running SurvivalTheArea51 action")
+    local generatorLocations = {
+        "AngryWallRoom",
+        "DougRoom", 
+        "JeremyRoom",
+        "KillerRoom",
+        "Generator",
+        "EndRoom"
+    }
+    
+    for _, location in ipairs(generatorLocations) do
+        fireProximityPrompts(location, 3)
+        task.wait(0.5)
+    end
+end,
+["WALL_OF"] = function()
+    print("Running WALL_OF action")
+    fireTouchInterests("EndCheckpoint")
+end,
 }
