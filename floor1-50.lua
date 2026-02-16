@@ -1,83 +1,62 @@
-local function getRoot()
-	local char = (speaker and speaker.Character) or (game.Players.LocalPlayer and game.Players.LocalPlayer.Character)
-	if not char then return nil end
-	local root = (type(getRoot) == "function" and getRoot(char)) or char:FindFirstChildWhichIsA("BasePart")
-	return root
-end
-local function fti(parent, rootPart)
-	if not parent then return end
-	local root = getRoot()
-	if not root then return end
-	local function trigger(part)
-		if firetouchinterest then
-			task.spawn(function()
-				firetouchinterest(part, root, 1)  
-				task.wait()
-				firetouchinterest(part, root, 0)  
-			end)
-		else
-			part.CFrame = root.CFrame
+local function touchTransmitter(targetName)
+	local root = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart
+	local function touch(x)
+		x = x:FindFirstAncestorWhichIsA("Part")
+		if x then
+			if firetouchinterest then
+				task.spawn(function()
+					firetouchinterest(x, root, 1)
+					wait()
+					firetouchinterest(x, root, 0)
+				end)
+			end
+			x.CFrame = root.CFrame
 		end
 	end
-	if parent.ClassName == "TouchInterest" or parent:IsA("TouchTransmitter") then
-		local part = parent:FindFirstAncestorWhichIsA("BasePart")
-		if part then trigger(part) end
-		return
-	end
-	for _, desc in ipairs(parent:GetDescendants()) do
-		if desc.ClassName == "TouchInterest" or desc:IsA("TouchTransmitter") then
-			local part = desc:FindFirstAncestorWhichIsA("BasePart")
-			if part then trigger(part) end
+	if targetName then
+		for _, descendant in ipairs(workspace:GetDescendants()) do
+			if descendant:IsA("TouchTransmitter") and (descendant.Name == targetName or descendant.Parent.Name == targetName) then
+				touch(descendant)
+			end
 		end
-	end
-end
-local function getFloor()
-	local currentRoom = workspace.Values.CurrentRoom.Value
-	if currentRoom and currentRoom.Name ~= "elevator" then
-		local floorName = currentRoom.Name
-		local floorModel = workspace:FindFirstChild(floorName)
-		if floorModel then
-			return floorModel
+	else
+		for _, descendant in ipairs(workspace:GetDescendants()) do
+			if descendant:IsA("TouchTransmitter") then
+				touch(descendant)
+			end
 		end
-	end
-	return nil
-end
-local function touch(rootPart)
-	local floorModel = getFloor()
-	if floorModel then
-		fti(floorModel, rootPart)
 	end
 end
 
 return {
     ["MozelleSquidGames"] = function()
-        touch(workspace.MozelleSquidGames.Needed.Winner)
+        touchTransmitter("Winner")
     end,
     ["StanelyRoom"] = function()
-        touch(workspace.StanelyRoom.Build.Generated.Ending.EndTouch)
+        touchTransmitter("EndTouch")
     end,
     ["FloodFillMine"] = function()
-        touch(workspace.FloodFillMine.Build.Shield.Bubble)
+        touchTransmitter("Bubble")
     end,
     ["Splitsville_Wipeout"] = function()
-        touch(workspace.Splitsville_Wipeout.Checkpoints.EndCheckpoint)
+        touchTransmitter("EndCheckpoint")
     end,
     ["Obby"] = function()
-        touch(workspace.Obby.Build.EndPart)
+        touchTransmitter("EndPart")
     end,
     ["IntenseObby"] = function()
-        touch(workspace.IntenseObby.ENDBLOCK)
+        touchTransmitter("ENDBLOCK")
     end,
     ["FindThePath"] = function()
-        touch(workspace.FindThePath.Build.End.win_zone)
+        touchTransmitter("win_zone")
     end,
     ["GASA4"] = function()
-        touch(workspace.GASA4.Build.ExtractionBox)
+        touchTransmitter("ExtractionBox")
     end,
     ["Minefield"] = function()
-        touch(workspace.Minefield.Build.WinPart)
+        touchTransmitter("WinPart")
     end,
     ["WhoKilledYouObby"] = function()
-        touch(workspace.WhoKilledYouObby.Build.Ending.WinPart)
+        touchTransmitter("WinPart")
     end,
 }
