@@ -113,25 +113,80 @@ local function fireTouchInterests(targetName, opts)
 end
 wait(7)
 return {
-    ["MozelleSquidGames"] = function() fireTouchInterests("Winner") end,
-    ["StanelyRoom"] = function() fireTouchInterests("EndTouch") end,
-    ["FloodFillMine"] = function() fireTouchInterests("Bubble") end,
-    ["Splitsville_Wipeout"] = function() fireTouchInterests("EndCheckpoint") end,
-    ["Obby"] = function() fireTouchInterests("EndPart") end,
-    ["IntenseObby"] = function() fireTouchInterests("ENDBLOCK") end,
-    ["FindThePath"] = function() fireTouchInterests("win_zone") end,
-    ["GASA4"] = function() fireTouchInterests("ExtractionBox") end,
-    ["Minefield"] = function() fireTouchInterests("WinPart") end,
-    ["WhoKilledYouObby"] = function() fireTouchInterests("WinPart") end,
-    ["GumballMachine"] = function() fireTouchInterests("WinPart") end,
-    ["3008_Room"] = function() fireClickDetectors("Lampert") end,
-    ["Superhighway"] = function() fireTouchInterests("WinPoint") end,
-    ["SuperDropper"] = function() fireTouchInterests("WinPool") end,
-    ["RandomMazeWindows"] = function() fireTouchInterests("Build") end,
-    ["Jeremy"] = function() teleportToTarget("Button", 3) end,
-    ["BrokenSchool"] = function() teleportToTarget("Roof", 3) end,
-    ["SnowySlope"] = function() fireTouchInterests("WinPart") end,
+    ["MozelleSquidGames"] = function()
+        print("Running MozelleSquidGames action")
+        fireTouchInterests("Winner")
+    end,
+    ["StanelyRoom"] = function()
+        print("Running StanelyRoom action")
+        fireTouchInterests("EndTouch")
+    end,
+    ["FloodFillMine"] = function()
+        print("Running FloodFillMine action")
+        fireTouchInterests("Bubble")
+    end,
+    ["Splitsville_Wipeout"] = function()
+        print("Running Splitsville_Wipeout action")
+        fireTouchInterests("EndCheckpoint")
+    end,
+    ["Obby"] = function()
+        print("Running Obby action")
+        fireTouchInterests("EndPart")
+    end,
+    ["IntenseObby"] = function()
+        print("Running IntenseObby action")
+        fireTouchInterests("ENDBLOCK")
+    end,
+    ["FindThePath"] = function()
+        print("Running FindThePath action")
+        fireTouchInterests("win_zone")
+    end,
+    ["GASA4"] = function()
+        print("Running GASA4 action")
+        fireTouchInterests("ExtractionBox")
+    end,
+    ["Minefield"] = function()
+        print("Running Minefield action")
+        fireTouchInterests("WinPart")
+    end,
+    ["WhoKilledYouObby"] = function()
+        print("Running WhoKilledYouObby action")
+        fireTouchInterests("WinPart")
+    end,
+    ["GumballMachine"] = function()
+        print("Running GumballMachine action")
+        fireTouchInterests("WinPart")
+    end,
+    ["3008_Room"] = function()
+        print("Running 3008_Room action")
+        fireClickDetectors("Lampert")
+    end,
+    ["Superhighway"] = function()
+        print("Running Superhighway action")
+        fireTouchInterests("WinPoint")
+    end,
+    ["SuperDropper"] = function()
+        print("Running SuperDropper action")
+        fireTouchInterests("WinPool")
+    end,
+    ["RandomMazeWindows"] = function()
+        print("Running RandomMazeWindows action")
+        fireTouchInterests("Build")
+    end,
+    ["Jeremy"] = function()
+        print("Running Jeremy action")
+        teleportToTarget("Button", 3)
+    end,
+    ["BrokenSchool"] = function()
+        print("Running BrokenSchool action")
+        teleportToTarget("Roof", 3)
+    end,
+    ["SnowySlope"] = function()
+        print("Running SnowySlope action")
+        fireTouchInterests("WinPart")
+    end,
     ["Forest_TwoStudCamp"] = function()
+        print("Running Forest_TwoStudCamp action")
         task.wait(10)
         for i = 1, 30 do
             fireProximityPrompts("Firewood", 3)
@@ -141,6 +196,7 @@ return {
         end
     end,
     ["FunnyMaze"] = function()
+        print("Running FunnyMaze action")
         local finalNotes = Workspace.FunnyMaze.Build.FinalNotes
         for _, child in ipairs(finalNotes:GetChildren()) do
             local detector = child:FindFirstChildOfClass("ClickDetector")
@@ -151,29 +207,57 @@ return {
         end
     end,
     ["UES"] = function()
+        print("Running UES action")
         for i = 1, 50 do
             fireProximityPrompts("cardboard_box", 3)
             task.wait(2)
         end
     end,
     ["ButtonCompetition"] = function()
+        print("Running ButtonCompetition action")
         task.wait(3)
         for i = 1, 100 do
             fireClickDetectors("Button")
             task.wait(0.2)
         end
     end,
-    ["ElevatorShaft"] = function() fireProximityPrompts("Levers", 3) end,
+    ["ElevatorShaft"] = function()
+        print("Running ElevatorShaft action")
+        fireProximityPrompts("Levers", 3)
+    end,
     ["SurvivalTheArea51"] = function()
+        print("Running SurvivalTheArea51 action")
         for _, location in ipairs({"AngryWallRoom", "DougRoom", "JeremyRoom", "KillerRoom", "Generator", "EndRoom"}) do
             fireProximityPrompts(location, 3)
             task.wait(1)
         end
     end,
-    ["WALL_OF"] = function() fireTouchInterests("EndCheckpoint") end,
-    ["Normal_Dance"] = r,
-    ["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function() fireTouchInterests("MiddleRing") end,
-    ["CliffsideChaos"] = function() teleportToTarget("Roof", 3) end,
-    ["bugbo"] = function() fireClickDetectors("Rocks") end,
-    ["InfectedRacing"] = r,
+    ["WALL_OF"] = function()
+        print("Running WALL_OF action")
+        fireTouchInterests("EndCheckpoint")
+    end,
+    ["Normal_Dance"] = function()
+        print("Running Normal_Dance action")
+        r()
+    end,
+    ["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function()
+        print("Running SLIDE_9999999999_FEET_DOWN_RAINBOW action")
+        fireTouchInterests("MiddleRing")
+    end,
+    ["CliffsideChaos"] = function()
+        print("Running CliffsideChaos action")
+        teleportToTarget("Roof", 3)
+    end,
+    ["bugbo"] = function()
+        print("Running bugbo action")
+        fireClickDetectors("Rocks")
+    end,
+    ["InfectedRacing"] = function()
+        print("Running InfectedRacing action")
+        r()
+    end,
+    ["SuspiciouslyLongRoom"] = function()
+        print("Running SuspiciouslyLongRoom action")
+        fireTouchInterests("EndCheckpoint")
+    end,
 }
