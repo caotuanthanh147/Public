@@ -138,43 +138,43 @@ end
 return {
     ["MozelleSquidGames"] = function()
         print("Running MozelleSquidGames action")
-        touchTransmitter("Winner")
+        fireTouchInterests("Winner")
     end,
     ["StanelyRoom"] = function()
         print("Running StanelyRoom action")
-        touchTransmitter("EndTouch")
+        fireTouchInterests("EndTouch")
     end,
     ["FloodFillMine"] = function()
         print("Running FloodFillMine action")
-        touchTransmitter("Bubble")
+        fireTouchInterests("Bubble")
     end,
     ["Splitsville_Wipeout"] = function()
         print("Running Splitsville_Wipeout action")
-        touchTransmitter("EndCheckpoint")
+        fireTouchInterests("EndCheckpoint")
     end,
     ["Obby"] = function()
         print("Running Obby action")
-        touchTransmitter("EndPart")
+        fireTouchInterests("EndPart")
     end,
     ["IntenseObby"] = function()
         print("Running IntenseObby action")
-        touchTransmitter("ENDBLOCK")
+        fireTouchInterests("ENDBLOCK")
     end,
     ["FindThePath"] = function()
         print("Running FindThePath action")
-        touchTransmitter("win_zone")
+        fireTouchInterests("win_zone")
     end,
     ["GASA4"] = function()
         print("Running GASA4 action")
-        touchTransmitter("ExtractionBox")
+        fireTouchInterests("ExtractionBox")
     end,
     ["Minefield"] = function()
         print("Running Minefield action")
-        touchTransmitter("WinPart")
+        fireTouchInterests("WinPart")
     end,
     ["WhoKilledYouObby"] = function()
         print("Running WhoKilledYouObby action")
-        touchTransmitter("WinPart")
+        fireTouchInterests("WinPart")
     end,
     ["GumballMachine"] = function()
         print("Running GumballMachine action")
