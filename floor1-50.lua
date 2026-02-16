@@ -4,14 +4,9 @@ local function findInstances(targetName, className)
     local results = {}
     local searchRoot = Workspace
     if targetName then
-        local customRoot = customSearchRoots[targetName]
-        if customRoot then
-            searchRoot = customRoot
-        else
-            local obj = Workspace:FindFirstChild(targetName)
-            if obj and obj:IsA("Folder") then
-                searchRoot = obj
-            end
+        local obj = Workspace:FindFirstChild(targetName)
+        if obj and obj:IsA("Folder") then
+            searchRoot = obj
         end
     end
     for _, descendant in ipairs(searchRoot:GetDescendants()) do
