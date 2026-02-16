@@ -224,9 +224,29 @@ end,
     local maxAttempts = 30
     task.wait(10)
     for i = 1, maxAttempts do
-        fireProximityPrompts("Firewood", 3)
+        local firewoodPrompts = findInstances("Firewood", "ProximityPrompt")
+        if #firewoodPrompts > 0 then
+            teleportToTarget("Firewood", 3)
+            task.wait(0.3)
+            for _, prompt in ipairs(firewoodPrompts) do
+                if fireproximityprompt then
+                    fireproximityprompt(prompt)
+                end
+                task.wait(0.05)
+            end
+        end
         task.wait(0.3)
-        fireProximityPrompts("Cauldron", 3)
+        local cauldronPrompts = findInstances("Cauldron", "ProximityPrompt")
+        if #cauldronPrompts > 0 then
+            teleportToTarget("Cauldron", 3)
+            task.wait(0.3)
+            for _, prompt in ipairs(cauldronPrompts) do
+                if fireproximityprompt then
+                    fireproximityprompt(prompt)
+                end
+                task.wait(0.05)
+            end
+        end
         task.wait(0.5)
     end
 end,
@@ -253,7 +273,8 @@ end,
 end,
 ["ButtonCompetition"] = function()
     print("Running ButtonCompetition action")
-    local maxAttempts = 30
+    wait(3)
+    local maxAttempts = 100
     for attempt = 1, maxAttempts do
         local buttons = findInstances("Button", "ClickDetector")
         for _, button in ipairs(buttons) do
@@ -279,7 +300,6 @@ end,
         "Generator",
         "EndRoom"
     }
-    
     for _, location in ipairs(generatorLocations) do
         fireProximityPrompts(location, 3)
         task.wait(0.5)
