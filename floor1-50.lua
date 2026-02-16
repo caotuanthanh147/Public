@@ -1,12 +1,20 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local customSearchRoots = {
+    FinalNotes = workspace.FunnyMaze.Build.FinalNotes,
+}
 local function findInstances(targetName, className)
     local results = {}
     local searchRoot = Workspace
     if targetName then
-        local obj = Workspace:FindFirstChild(targetName)
-        if obj and obj:IsA("Folder") then
-            searchRoot = obj
+        local customRoot = customSearchRoots[targetName]
+        if customRoot then
+            searchRoot = customRoot
+        else
+            local obj = Workspace:FindFirstChild(targetName)
+            if obj and obj:IsA("Folder") then
+                searchRoot = obj
+            end
         end
     end
     for _, descendant in ipairs(searchRoot:GetDescendants()) do
@@ -135,7 +143,7 @@ local function fireTouchInterests(targetName, opts)
     end
     return false
 end
-wait(3)
+wait(7)
 return {
     ["MozelleSquidGames"] = function()
         print("Running MozelleSquidGames action")
@@ -212,5 +220,48 @@ return {
     ["SnowySlope"] = function()
     print("Running SnowySlope action")
     fireTouchInterests("WinPart")
+end,
+["Forest_TwoStudCamp"] = function()
+    print("Running Forest_TwoStudCamp action")
+    local maxAttempts = 30
+    task.wait(10)
+    for i = 1, maxAttempts do
+        fireProximityPrompts("Firewood", 3)
+        task.wait(0.3)
+        fireProximityPrompts("Cauldron", 3)
+        task.wait(0.5)
+    end
+end,
+["FunnyMaze"] = function()
+    print("Running FunnyMaze action")
+    local detectors = findInstances("FinalNotes", "ClickDetector")
+    for _, detector in ipairs(detectors) do
+        if fireclickdetector then
+            fireclickdetector(detector)
+        end
+        task.wait(0.05)
+    end
+end,
+["UES"] = function()
+    print("Running UES action")
+    local maxAttempts = 20
+    for i = 1, maxAttempts do
+        fireProximityPrompts("cardboard_box", 3)
+        task.wait(0.3)
+    end
+end,
+["ButtonCompetition"] = function()
+    print("Running ButtonCompetition action")
+    local maxAttempts = 30
+    for attempt = 1, maxAttempts do
+        local buttons = findInstances("Button", "ClickDetector")
+        for _, button in ipairs(buttons) do
+            if fireclickdetector then
+                fireclickdetector(button)
+            end
+            task.wait(0.05)
+        end
+        task.wait(0.2)
+    end
 end,
 }
