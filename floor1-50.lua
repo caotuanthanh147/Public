@@ -1,8 +1,5 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-local customSearchRoots = {
-    FinalNotes = workspace.FunnyMaze.Build.FinalNotes,
-}
 local function findInstances(targetName, className)
     local results = {}
     local searchRoot = Workspace
@@ -213,10 +210,6 @@ return {
         print("Running Jeremy action")
         teleportToTarget("Roof", 3)
     end,
-    ["FunnyMaze"] = function()
-        print("Running FunnyMaze action")
-        fireClickDetectors("FinalNotes")
-    end,
     ["SnowySlope"] = function()
     print("Running SnowySlope action")
     fireTouchInterests("WinPart")
@@ -234,12 +227,15 @@ end,
 end,
 ["FunnyMaze"] = function()
     print("Running FunnyMaze action")
-    local detectors = findInstances("FinalNotes", "ClickDetector")
-    for _, detector in ipairs(detectors) do
-        if fireclickdetector then
-            fireclickdetector(detector)
+    local finalNotes = Workspace:FindFirstChild("FunnyMaze"):FindFirstChild("Build"):FindFirstChild("FinalNotes")
+    if finalNotes then
+        for _, child in ipairs(finalNotes:GetChildren()) do
+            local detector = child:FindFirstChildOfClass("ClickDetector")
+            if detector and fireclickdetector then
+                fireclickdetector(detector)
+            end
+            task.wait(0.05)
         end
-        task.wait(0.05)
     end
 end,
 ["UES"] = function()
