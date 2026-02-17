@@ -372,11 +372,16 @@ end,
     r()
 end,
 ["PetCaptureDeluxe"] = function()
+    task.wait(10)
     print("Running PetCaptureDeluxe action")
     fireProximityPrompts("ActiveMonsters", 3)
 end,
 ["UnsteadyFloor"] = function()
     print("Running UnsteadyFloor action")
     fireTouchInterests("END")
+end,
+["THEROCK"] = function()
+    print("Running THEROCK action")
+    fireTouchInterests("Buttons")
 end,
 }
