@@ -260,4 +260,11 @@ return {
         print("Running SuspiciouslyLongRoom action")
         fireTouchInterests("EndCheckpoint")
     end,
+    ["TeapotDodgeball"] = function()
+    print("Running TeapotDodgeball action")
+    while true do
+        fireTouchInterests("Finish")
+        task.wait(3)
+    end
+end,
 }
