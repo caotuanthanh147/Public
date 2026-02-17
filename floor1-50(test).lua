@@ -253,26 +253,29 @@ end,
 ["Forest_TwoStudCamp"] = function()
     print("Running Forest_TwoStudCamp action")
     task.wait(10)
-
-    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local root = getLocalHRP()
     if not root then return end
-
-    local firewoodPart = workspace.Forest_TwoStudCamp.Build.Firewood:GetChildren()[3]
-    root.CFrame = firewoodPart.CFrame * CFrame.new(0, 0, -3)
-    for j = 1, 3 do
-        fireproximityprompt(firewoodPart.ProximityPrompt)
-        task.wait(0.3)
+    local forest = workspace:WaitForChild("Forest_TwoStudCamp")
+    local build = forest:WaitForChild("Build")
+    local firewoodFolder = build:WaitForChild("Firewood")
+    local firePrompt = firewoodFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
+    if firePrompt and firePrompt.Parent and firePrompt.Parent:IsA("BasePart") then
+        root.CFrame = firePrompt.Parent.CFrame * CFrame.new(0, 0, -3)
+        for j = 1, 2 do
+            fireproximityprompt(firePrompt)
+            task.wait(0.3)
+        end
     end
-
     task.wait(0.3)
-
-    local cauldronPart = workspace.Forest_TwoStudCamp.Build.Cauldron.PromptPart
+    local cauldronPart = build:WaitForChild("Cauldron"):WaitForChild("PromptPart")
     root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
-    for j = 1, 3 do
-        fireproximityprompt(cauldronPart.ProximityPrompt)
-        task.wait(0.3)
+    local cauldronPrompt = cauldronPart:FindFirstChildWhichIsA("ProximityPrompt", true)
+    if cauldronPrompt then
+        for j = 1, 2 do
+            fireproximityprompt(cauldronPrompt)
+            task.wait(0.3)
+        end
     end
-
     task.wait(0.5)
 end,
     ["FunnyMaze"] = function()
@@ -446,21 +449,20 @@ end,
             :WaitForChild("ActiveMonsters")
 
     if activeMonsters then
-        for _, descendant in pairs(activeMonsters:GetDescendants()) do
-            if descendant:IsA("ProximityPrompt") and fireproximityprompt then
-                local part = descendant.Parent
-                if part then
-                    local char = Players.LocalPlayer.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                        task.wait(0.3)
-                    end
+        local descendant = activeMonsters:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if descendant and fireproximityprompt then
+            local part = descendant.Parent
+            if part then
+                local char = Players.LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
+                    task.wait(0.3)
                 end
-
-                fireproximityprompt(descendant)
-                task.wait(0.1)
             end
+
+            fireproximityprompt(descendant)
+            task.wait(0.1)
         end
     end
 end,
@@ -484,8 +486,7 @@ end,
     print("Running PizzaDelivery action")
     local root = getLocalHRP(3)
     if not root then return end
-    local pizzaDelivery = workspace:WaitForChild("PizzaDelivery")
-    local build = pizzaDelivery:WaitForChild("Build")
+    local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
     local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
     local function touchPart(part)
@@ -494,45 +495,18 @@ end,
             firetouchinterest(part, root, 1)
             task.wait()
             firetouchinterest(part, root, 0)
-        else
-            local old = root.CFrame
-            root.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-            task.wait(0.15)
-            root.CFrame = old
-        end
-        task.wait(0.05)
-    end
-    local pizzas = pizzaBoxesFolder:GetChildren()
-    local touchedPizzas = {}
-    local pizzaCount = 0
-    local tries = 0
-    while pizzaCount < 10 and tries < 300 do
-        tries += 1
-        local pick = pizzas[math.random(1, #pizzas)]
-        if pick and not touchedPizzas[pick] then
-            touchedPizzas[pick] = true
-            if pick:IsA("BasePart") and pick:FindFirstChild("TouchInterest") then
-                touchPart(pick)
-                pizzaCount += 1
-            end
         end
     end
-    local doors = {}
-    for _, obj in pairs(pizzaDoorsFolder:GetDescendants()) do
-        if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
-            table.insert(doors, obj)
+    for _, pizza in ipairs(pizzaBoxesFolder:GetChildren()) do
+        if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
+            touchPart(pizza)
+            task.wait(0.02)
         end
     end
-    local touchedDoors = {}
-    local doorCount = 0
-    tries = 0
-    while doorCount < 10 and tries < 400 do
-        tries += 1
-        local pick = doors[math.random(1, #doors)]
-        if pick and not touchedDoors[pick] then
-            touchedDoors[pick] = true
-            touchPart(pick)
-            doorCount += 1
+    for _, door in ipairs(pizzaDoorsFolder:GetDescendants()) do
+        if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
+            touchPart(door)
+            task.wait(0.02)
         end
     end
 end,
@@ -622,6 +596,10 @@ end,
 end,
 ["HotelFloor6"] = function()
     print("Running HotelFloor6 action")
+    r()
+end,
+["ColorTheTiles"] = function()
+    print("Running ColorTheTiles action")
     r()
 end,
 }
