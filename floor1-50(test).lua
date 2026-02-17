@@ -271,27 +271,24 @@ end,
             end
         end
     end,
-    ["UES"] = function()
-        print("Running UES action")
-        for i = 1, 50 do
-            fireProximityPrompts("cardboard_box", 3)
-            task.wait(4)
-        end
-    end,
+["UES"] = function()
+    print("Running UES action")
+    fireProximityPrompts("cardboard_box", 3)
+    task.wait(4)
+end,
 ["ButtonCompetition"] = function()
     print("Running ButtonCompetition action")
+    task.wait(10)
 
     local buttonsFolder = Workspace
         :WaitForChild("ButtonCompetition")
         :WaitForChild("Build")
         :WaitForChild("Buttons")
 
-    for _, child in ipairs(buttonsFolder:GetDescendants()) do
+    for _, child in pairs(buttonsFolder:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
         if detector and fireclickdetector then
-            task.spawn(function()
-                fireclickdetector(detector)
-            end)
+            fireclickdetector(detector)
         end
     end
 end,
@@ -391,7 +388,7 @@ end,
             local prim = child:FindFirstChild("Prim")
             if prim then
                 local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and prim:IsA("BasePart") then
+                if hrp then
                     hrp.CFrame = prim.CFrame * CFrame.new(0, 3, 0)
                     task.wait(0.3)
                 end
@@ -425,10 +422,10 @@ end,
             :WaitForChild("Build")
             :WaitForChild("ActiveMonsters")
     if activeMonsters then
-        for _, descendant in ipairs(activeMonsters:GetDescendants()) do
+        for _, descendant in pairs(activeMonsters:GetDescendants()) do
             if descendant:IsA("ProximityPrompt") and fireproximityprompt then
                 local part = descendant.Parent
-                if part and part:IsA("BasePart") then
+                if part then
                     local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
