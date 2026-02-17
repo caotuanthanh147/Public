@@ -316,10 +316,7 @@ end,
     end,
     ["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function()
         print("Running SLIDE_9999999999_FEET_DOWN_RAINBOW action")
-        while true do
         fireTouchInterests("MiddleRing")
-        task.wait(2)
-        end
     end,
     ["CliffsideChaos"] = function()
         print("Running CliffsideChaos action")
@@ -340,10 +337,8 @@ end,
     end,
     ["TeapotDodgeball"] = function()
     print("Running TeapotDodgeball action")
-    while true do
         fireTouchInterests("Finish")
-        task.wait(3)
-    end
+        task.wait(0.5)
 end,
 ["SlimYim"] = function()
     print("Running SlimYim action")
@@ -423,5 +418,9 @@ end,
 ["ElevatorInsideAx5"] = function()
     print("Running ElevatorInsideAx5 action")
     r()
+end,
+["FunTimesAtSquishyFlood"] = function()
+    print("Running FunTimesAtSquishyFlood action")
+    fireTouchInterests("Winparts")
 end,
 }
