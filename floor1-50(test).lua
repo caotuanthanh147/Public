@@ -295,10 +295,17 @@ end,
         end
     end
 end,
-    ["ElevatorShaft"] = function()
-        print("Running ElevatorShaft action")
-        fireProximityPrompts("Levers", 3)
-    end,
+["ElevatorShaft"] = function()
+    print("Running ElevatorShaft action")
+    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    for _, lever in pairs(workspace.ElevatorShaft.Build.Levers:GetDescendants()) do
+        local prompt = lever.ClickPart.ProximityPrompt
+        root.CFrame = lever.ClickPart.CFrame * CFrame.new(0, 0, -3)
+        fireproximityprompt(prompt)
+        task.wait(0.3)
+    end
+end,
 ["SurvivalTheArea51"] = function()
     print("Running SurvivalTheArea51 action")
     local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -335,11 +342,16 @@ end,
         print("Running CliffsideChaos action")
         teleportToTarget("Roof", 3)
     end,
-    ["bugbo"] = function()
-        print("Running bugbo action")
-        task.wait(10)
-        fireClickDetectors("Rocks")
-    end,
+["bugbo"] = function()
+    print("Running bugbo action")
+    task.wait(10)
+    for _, child in pairs(workspace.bugbo.Rocks:GetDescendants()) do
+        local detector = child:FindFirstChildOfClass("ClickDetector")
+        if detector then
+            fireclickdetector(detector)
+        end
+    end
+end,
     ["InfectedRacing"] = function()
         print("Running InfectedRacing action")
         r()
