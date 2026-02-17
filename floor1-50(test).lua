@@ -220,7 +220,7 @@ return {
     ["SuperDropper"] = function()
         print("Running SuperDropper action")
         fireTouchInterests("WinPool")
-        task.wait(3)
+        task.wait(0.5)
         fireTouchInterests("ReturnPortal")
     end,
     ["RandomMazeWindows"] = function()
@@ -229,18 +229,15 @@ return {
     end,
 ["Jeremy"] = function()
     print("Running Jeremy action")
-
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
-
     local jeremy = workspace:WaitForChild("Jeremy")
     local build = jeremy:WaitForChild("Build")
     local button = build:WaitForChild("Button")
     local clicker = button:WaitForChild("Clicker")
-
-    root.CFrame = clicker.CFrame * CFrame.new(0, -2, 0)
+    root.CFrame = clicker.CFrame * CFrame.new(0, 0.5 0)
 end,
     ["BrokenSchool"] = function()
         print("Running BrokenSchool action")
@@ -252,7 +249,6 @@ end,
     end,
 ["Forest_TwoStudCamp"] = function()
     print("Running Forest_TwoStudCamp action")
-    task.wait(10)
     local root = getLocalHRP()
     if not root then return end
     local forest = workspace:WaitForChild("Forest_TwoStudCamp")
@@ -261,20 +257,16 @@ end,
     local firePrompt = firewoodFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
     if firePrompt and firePrompt.Parent and firePrompt.Parent:IsA("BasePart") then
         root.CFrame = firePrompt.Parent.CFrame * CFrame.new(0, 0, -3)
-        for j = 1, 2 do
-            fireproximityprompt(firePrompt)
-            task.wait(0.3)
-        end
+        fireproximityprompt(firePrompt)
+        task.wait(0.3)
     end
     task.wait(0.3)
     local cauldronPart = build:WaitForChild("Cauldron"):WaitForChild("PromptPart")
     root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
     local cauldronPrompt = cauldronPart:FindFirstChildWhichIsA("ProximityPrompt", true)
     if cauldronPrompt then
-        for j = 1, 2 do
-            fireproximityprompt(cauldronPrompt)
-            task.wait(0.3)
-        end
+        fireproximityprompt(cauldronPrompt)
+        task.wait(0.3)
     end
     task.wait(0.5)
 end,
@@ -296,13 +288,10 @@ end,
 end,
 ["ButtonCompetition"] = function()
     print("Running ButtonCompetition action")
-    task.wait(10)
-
     local buttonsFolder = Workspace
         :WaitForChild("ButtonCompetition")
         :WaitForChild("Build")
         :WaitForChild("Buttons")
-
     for _, child in pairs(buttonsFolder:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
         if detector and fireclickdetector then
@@ -369,11 +358,9 @@ end,
 ["bugbo"] = function()
     print("Running bugbo action")
     task.wait(10)
-
     local rocks = workspace:WaitForChild("bugbo")
         :WaitForChild("Build")
         :WaitForChild("Rocks")
-
     for _, child in pairs(rocks:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
         if detector and fireclickdetector then
@@ -402,7 +389,6 @@ end,
 ["JermpopFactory"] = function()
     print("Running JermpopFactory action")
     local Workspace = game:GetService("Workspace")
-
     local cleanupButtons =
         Workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
@@ -439,15 +425,12 @@ end,
 end,
 ["PetCaptureDeluxe"] = function()
     print("Running PetCaptureDeluxe action")
-
     local Players = game:GetService("Players")
     local Workspace = game:GetService("Workspace")
-
     local activeMonsters =
         Workspace:WaitForChild("PetCaptureDeluxe")
             :WaitForChild("Build")
             :WaitForChild("ActiveMonsters")
-
     if activeMonsters then
         local descendant = activeMonsters:FindFirstChildWhichIsA("ProximityPrompt", true)
         if descendant and fireproximityprompt then
@@ -460,7 +443,6 @@ end,
                     task.wait(0.3)
                 end
             end
-
             fireproximityprompt(descendant)
             task.wait(0.1)
         end
@@ -512,7 +494,7 @@ end,
 end,
 ["PizzaDelivery"] = function()
     print("Running PizzaDelivery action")
-    local root = getLocalHRP(3)
+    local root = getLocalHRP(1)
     if not root then return end
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
@@ -551,11 +533,9 @@ end,
 end,
 ["CardboardRoom"] = function()
     print("Running CardboardRoom action")
-
     local cardboardRoom = Workspace:WaitForChild("CardboardRoom")
     local build = cardboardRoom:WaitForChild("Build")
     local doors = build:WaitForChild("Doors")
-
     for _, descendant in ipairs(doors:GetDescendants()) do
         if descendant:IsA("ClickDetector") and fireclickdetector then
             fireclickdetector(descendant)
@@ -565,7 +545,7 @@ end,
 ["InfectionApartment"] = function()
     print("Running InfectionApartment action")
     local Players = game:GetService("Players")
-    local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local hrp = getLocalHRP(1)
     if not hrp then return end
     local powerBoxes = workspace:WaitForChild("InfectionApartment")
         :WaitForChild("Immune")
