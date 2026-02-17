@@ -9,6 +9,9 @@ local function r()
         end
     end
 end
+Area51Stats = Area51Stats or {
+    counts = {}, 
+}
 PizzaDeliveryStats = PizzaDeliveryStats or {
     pizzas = 0,
     doors = 0,
@@ -324,16 +327,13 @@ end,
 end,
 ["SurvivalTheArea51"] = function()
     print("Running SurvivalTheArea51 action")
-
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
-
     local area = workspace:WaitForChild("SurvivalTheArea51")
     local build = area:WaitForChild("Build")
-
-    local prompts = {
+    local gens = {
         build:WaitForChild("JeremyRoom"):WaitForChild("Generator"),
         build:WaitForChild("KillerRoom"):WaitForChild("Generator"),
         build:WaitForChild("DougRoom"):WaitForChild("Generator"),
@@ -341,15 +341,34 @@ end,
         build:WaitForChild("Generator"),
         build:WaitForChild("EndRoom"):WaitForChild("Generator"),
     }
-
-    for _, part in ipairs(prompts) do
-        root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
-
-        local prompt = part:WaitForChild("ProximityPrompt")
-        fireproximityprompt(prompt)
-
-        task.wait(1)
+    for _, genPart in ipairs(gens) do
+        if Area51Stats.counts[genPart] == nil then
+            Area51Stats.counts[genPart] = 0
+        end
     end
+    local minCount = math.huge
+    for _, genPart in ipairs(gens) do
+        local c = Area51Stats.counts[genPart] or 0
+        if c < minCount then
+            minCount = c
+        end
+    end
+    local targets = {}
+    for _, genPart in ipairs(gens) do
+        local c = Area51Stats.counts[genPart] or 0
+        if c == minCount then
+            table.insert(targets, genPart)
+        end
+    end
+    if #targets == 0 then return end
+    local part = targets[math.random(1, #targets)]
+    root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
+    local prompt = part:WaitForChild("ProximityPrompt")
+    if fireproximityprompt then
+        fireproximityprompt(prompt)
+    end
+    Area51Stats.counts[part] += 1
+    task.wait(1)
 end,
     ["WALL_OF"] = function()
         print("Running WALL_OF action")
@@ -599,6 +618,31 @@ end,
             PizzaDeliveryTouched.doors[pick] = true
             touchPart(pick)
             PizzaDeliveryStats.doors += 1
+        end
+    end
+end,
+["Birthday"] = function()
+    print("Running Birthday action")
+    local destructibles = workspace:WaitForChild("Birthday")
+        :WaitForChild("Build")
+        :WaitForChild("destructible")
+    for _, obj in ipairs(destructibles:GetDescendants()) do
+        if obj:IsA("ClickDetector") and fireclickdetector then
+            fireclickdetector(obj)
+            task.wait()
+        end
+    end
+end,
+["CardboardRoom"] = function()
+    print("Running CardboardRoom action")
+
+    local cardboardRoom = Workspace:WaitForChild("CardboardRoom")
+    local build = cardboardRoom:WaitForChild("Build")
+    local doors = build:WaitForChild("Doors")
+
+    for _, descendant in ipairs(doors:GetDescendants()) do
+        if descendant:IsA("ClickDetector") and fireclickdetector then
+            fireclickdetector(descendant)
         end
     end
 end,
