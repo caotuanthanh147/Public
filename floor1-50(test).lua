@@ -331,8 +331,7 @@ end,
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
-    local area = workspace:WaitForChild("SurvivalTheArea51")
-    local build = area:WaitForChild("Build")
+    local build = workspace:WaitForChild("SurvivalTheArea51"):WaitForChild("Build")
     local gens = {
         build:WaitForChild("JeremyRoom"):WaitForChild("Generator"),
         build:WaitForChild("KillerRoom"):WaitForChild("Generator"),
@@ -341,34 +340,19 @@ end,
         build:WaitForChild("Generator"),
         build:WaitForChild("EndRoom"):WaitForChild("Generator"),
     }
-    for _, genPart in ipairs(gens) do
-        if Area51Stats.counts[genPart] == nil then
-            Area51Stats.counts[genPart] = 0
+    for i = 1, #gens do
+        local part = gens[i]
+        local prompt = part and part:FindFirstChildOfClass("ProximityPrompt")
+        if prompt and prompt.Enabled then
+            root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
+            task.wait(0.2)
+            if fireproximityprompt then
+                fireproximityprompt(prompt)
+            end
+            task.wait(1)
+            return
         end
     end
-    local minCount = math.huge
-    for _, genPart in ipairs(gens) do
-        local c = Area51Stats.counts[genPart] or 0
-        if c < minCount then
-            minCount = c
-        end
-    end
-    local targets = {}
-    for _, genPart in ipairs(gens) do
-        local c = Area51Stats.counts[genPart] or 0
-        if c == minCount then
-            table.insert(targets, genPart)
-        end
-    end
-    if #targets == 0 then return end
-    local part = targets[math.random(1, #targets)]
-    root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
-    local prompt = part:WaitForChild("ProximityPrompt")
-    if fireproximityprompt then
-        fireproximityprompt(prompt)
-    end
-    Area51Stats.counts[part] += 1
-    task.wait(1)
 end,
     ["WALL_OF"] = function()
         print("Running WALL_OF action")
@@ -643,6 +627,34 @@ end,
     for _, descendant in ipairs(doors:GetDescendants()) do
         if descendant:IsA("ClickDetector") and fireclickdetector then
             fireclickdetector(descendant)
+        end
+    end
+end,
+["InfectionApartment"] = function()
+    print("Running InfectionApartment action")
+    local Players = game:GetService("Players")
+    local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local powerBoxes = workspace:WaitForChild("InfectionApartment")
+        :WaitForChild("Immune")
+        :WaitForChild("PowerBoxes")
+    local boxes = powerBoxes:GetChildren()
+    for i = 1, #boxes do
+        local child = boxes[i]
+        local valve = child and child:FindFirstChild("Valve")
+        if valve then
+            local availableIcon = valve:FindFirstChild("AvaliableIcon")
+            if availableIcon and availableIcon.Enabled == true then
+                local valvePrompt = valve:FindFirstChild("ValvePrompt")
+                local prompt = valvePrompt and valvePrompt:FindFirstChildOfClass("ProximityPrompt")
+                if prompt and fireproximityprompt then
+                    hrp.CFrame = valve.CFrame * CFrame.new(0, 0, -3)
+                    task.wait(0.25)
+                    fireproximityprompt(prompt)
+                    task.wait(0.2)
+                    return
+                end
+            end
         end
     end
 end,
