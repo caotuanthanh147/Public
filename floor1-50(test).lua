@@ -50,21 +50,71 @@ local function teleportToTarget(targetName, offsetY)
     hrp.CFrame = parts[1].CFrame * CFrame.new(0, offsetY or 3, 0)
     return true
 end
-local function fireProximityPrompts(targetName, offsetY)
+local Workspace = game:GetService("Workspace")
+local function getRefPartFromPrompt(prompt)
+    local parent = prompt and prompt.Parent
+    if not parent then return nil end
+    if parent:IsA("BasePart") then
+        return parent
+    elseif parent:IsA("Model") then
+        return parent.PrimaryPart or parent:FindFirstChildWhichIsA("BasePart")
+    end
+    return nil
+end
+local function fireProximityPrompts(targetName, offsetY, opts)
+    opts = opts or {}
+    offsetY = type(offsetY) == "number" and offsetY or 3
     local prompts = findInstances(targetName, "ProximityPrompt")
     if #prompts == 0 then return false end
-    local teleportTarget = Workspace:FindFirstChild(targetName, true) or prompts[1].Parent
-    if teleportTarget then
-        teleportToTarget(teleportTarget.Name, type(offsetY) == "number" and offsetY or 3)
-        task.wait(0.3)
-    end
-    for _, prompt in ipairs(prompts) do
+    local root = getLocalHRP(opts.hrpTimeout or 3)
+    if not root then
+        local fallbackParent = prompts[1].Parent
+        if fallbackParent then
+            teleportToTarget(fallbackParent.Name, offsetY)
+            task.wait(opts.postTeleportWait or 0.3)
+        end
         if fireproximityprompt then
-            fireproximityprompt(prompt)
-            task.wait(0.05)
+            fireproximityprompt(prompts[1])
+            return true
+        end
+        return false
+    end
+    local closestPrompt, closestPart, closestDist = nil, nil, math.huge
+    for _, prompt in ipairs(prompts) do
+        local refPart = getRefPartFromPrompt(prompt)
+        if refPart then
+            local dist = (refPart.Position - root.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closestPrompt = prompt
+                closestPart = refPart
+            end
         end
     end
-    return true
+    if not closestPrompt then
+        closestPrompt = prompts[1]
+        closestPart = getRefPartFromPrompt(closestPrompt)
+    end
+    if closestPrompt and closestPart then
+        local teleportTarget = closestPrompt.Parent
+        if teleportTarget then
+            teleportToTarget(teleportTarget.Name, offsetY)
+            task.wait(opts.postTeleportWait or 0.3)
+        else
+            root.CFrame = closestPart.CFrame + Vector3.new(0, offsetY, 0)
+            task.wait(opts.postTeleportWait or 0.08)
+        end
+        if fireproximityprompt then
+            fireproximityprompt(closestPrompt)
+            task.wait(opts.afterFireWait or 0.05)
+            return true
+        else
+            root.CFrame = closestPart.CFrame + Vector3.new(0, offsetY, 0)
+            task.wait(opts.afterFireWait or 0.1)
+            return true
+        end
+    end
+    return false
 end
 local function fireClickDetectors(targetName)
     local detectors = findInstances(targetName, "ClickDetector")
@@ -213,14 +263,22 @@ return {
             task.wait(2)
         end
     end,
-    ["ButtonCompetition"] = function()
-        print("Running ButtonCompetition action")
-        task.wait(3)
-        for i = 1, 100 do
-            fireClickDetectors("Button")
-            task.wait(0.2)
+["ButtonCompetition"] = function()
+    print("Running ButtonCompetition action")
+
+    local buttonsFolder = Workspace
+        :WaitForChild("ButtonCompetition")
+        :WaitForChild("Build")
+        :WaitForChild("Buttons")
+
+    for _, child in ipairs(buttonsFolder:GetChildren()) do
+        local detector = child:FindFirstChildOfClass("ClickDetector")
+        if detector and fireclickdetector then
+            fireclickdetector(detector)
         end
-    end,
+        task.wait(0.05)
+    end
+end,
     ["ElevatorShaft"] = function()
         print("Running ElevatorShaft action")
         fireProximityPrompts("Levers", 3)
@@ -242,7 +300,10 @@ return {
     end,
     ["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function()
         print("Running SLIDE_9999999999_FEET_DOWN_RAINBOW action")
+        while true do
         fireTouchInterests("MiddleRing")
+        task.wait(2)
+        end
     end,
     ["CliffsideChaos"] = function()
         print("Running CliffsideChaos action")
@@ -250,6 +311,7 @@ return {
     end,
     ["bugbo"] = function()
         print("Running bugbo action")
+        task.wait(10)
         fireClickDetectors("Rocks")
     end,
     ["InfectedRacing"] = function()
@@ -266,5 +328,55 @@ return {
         fireTouchInterests("Finish")
         task.wait(3)
     end
+end,
+["SlimYim"] = function()
+    print("Running SlimYim action")
+    r()
+end,
+["JermpopFactory"] = function()
+    print("Running JermpopFactory action")
+    local Workspace = game:GetService("Workspace")
+
+    local cleanupButtons =
+        Workspace:WaitForChild("JermpopFactory")
+        :WaitForChild("Build")
+        :WaitForChild("CleanupButtons")
+    if cleanupButtons then
+        for _, child in pairs(cleanupButtons:GetChildren()) do
+            local prim = child:FindFirstChild("Prim")
+            if prim then
+                local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and prim:IsA("BasePart") then
+                    hrp.CFrame = prim.CFrame * CFrame.new(0, 3, 0)
+                    task.wait(0.3)
+                end
+                local prompt = prim:FindFirstChildOfClass("ProximityPrompt")
+                if prompt and fireproximityprompt then
+                    fireproximityprompt(prompt)
+                end
+            end
+            task.wait(0.1)
+        end
+    end
+end,
+["RedBallTemple"] = function()
+    print("Running RedBallTemple action")
+    r()
+end,
+["RedballDiner"] = function()
+    print("Running RedballDiner action")
+    r()
+end,
+["OldRobloxHouse"] = function()
+    print("Running OldRobloxHouse action")
+    r()
+end,
+["PetCaptureDeluxe"] = function()
+    print("Running PetCaptureDeluxe action")
+    fireProximityPrompts("ActiveMonsters", 3)
+end,
+["UnsteadyFloor"] = function()
+    print("Running UnsteadyFloor action")
+    fireTouchInterests("END")
 end,
 }
