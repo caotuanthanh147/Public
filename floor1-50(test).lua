@@ -299,13 +299,26 @@ end,
         print("Running ElevatorShaft action")
         fireProximityPrompts("Levers", 3)
     end,
-    ["SurvivalTheArea51"] = function()
-        print("Running SurvivalTheArea51 action")
-        for _, location in ipairs({"AngryWallRoom", "DougRoom", "JeremyRoom", "KillerRoom", "Generator", "EndRoom"}) do
-            fireProximityPrompts(location, 3)
-            task.wait(1)
-        end
-    end,
+["SurvivalTheArea51"] = function()
+    print("Running SurvivalTheArea51 action")
+    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local prompts = {
+        workspace.SurvivalTheArea51.Build.JeremyRoom.Generator,
+        workspace.SurvivalTheArea51.Build.KillerRoom.Generator,
+        workspace.SurvivalTheArea51.Build.DougRoom.Generator,
+        workspace.SurvivalTheArea51.Build.AngryWallRoom.Generator,
+        workspace.SurvivalTheArea51.Build.Generator,
+        workspace.SurvivalTheArea51.Build.EndRoom.Generator,
+    }
+
+    for _, part in ipairs(prompts) do
+        root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
+        fireproximityprompt(part.ProximityPrompt)
+        task.wait(1)
+    end
+end,
     ["WALL_OF"] = function()
         print("Running WALL_OF action")
         fireTouchInterests("EndCheckpoint")
@@ -333,7 +346,7 @@ end,
     end,
     ["SuspiciouslyLongRoom"] = function()
         print("Running SuspiciouslyLongRoom action")
-        fireTouchInterests("EndCheckpoint")
+        fireTouchInterests("WinPool")
     end,
     ["TeapotDodgeball"] = function()
     print("Running TeapotDodgeball action")
