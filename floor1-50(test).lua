@@ -223,10 +223,21 @@ return {
         print("Running RandomMazeWindows action")
         fireTouchInterests("Build")
     end,
-    ["Jeremy"] = function()
-        print("Running Jeremy action")
-        teleportToTarget("Button", 3)
-    end,
+["Jeremy"] = function()
+    print("Running Jeremy action")
+
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+
+    local jeremy = workspace:WaitForChild("Jeremy")
+    local build = jeremy:WaitForChild("Build")
+    local button = build:WaitForChild("Button")
+    local clicker = button:WaitForChild("Clicker")
+
+    root.CFrame = clicker.CFrame * CFrame.new(0, -2, 0)
+end,
     ["BrokenSchool"] = function()
         print("Running BrokenSchool action")
         teleportToTarget("Roof", 3)
