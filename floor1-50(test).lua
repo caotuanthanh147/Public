@@ -2,7 +2,7 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local function r()
     if not _G.ResetEnabled then return end
-
+    if inLob() then return end
     local character = Players.LocalPlayer.Character
     if not character then return end
 
@@ -618,6 +618,10 @@ end,
 end,
 ["MozellesCastle"] = function()
     print("Running MozellesCastle action")
+    r()
+end,
+["HotelFloor6"] = function()
+    print("Running HotelFloor6 action")
     r()
 end,
 }
