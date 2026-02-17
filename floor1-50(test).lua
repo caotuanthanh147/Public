@@ -308,21 +308,30 @@ end,
 end,
 ["SurvivalTheArea51"] = function()
     print("Running SurvivalTheArea51 action")
-    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+
+    local area = workspace:WaitForChild("SurvivalTheArea51")
+    local build = area:WaitForChild("Build")
 
     local prompts = {
-        workspace.SurvivalTheArea51.Build.JeremyRoom.Generator,
-        workspace.SurvivalTheArea51.Build.KillerRoom.Generator,
-        workspace.SurvivalTheArea51.Build.DougRoom.Generator,
-        workspace.SurvivalTheArea51.Build.AngryWallRoom.Generator,
-        workspace.SurvivalTheArea51.Build.Generator,
-        workspace.SurvivalTheArea51.Build.EndRoom.Generator,
+        build:WaitForChild("JeremyRoom"):WaitForChild("Generator"),
+        build:WaitForChild("KillerRoom"):WaitForChild("Generator"),
+        build:WaitForChild("DougRoom"):WaitForChild("Generator"),
+        build:WaitForChild("AngryWallRoom"):WaitForChild("Generator"),
+        build:WaitForChild("Generator"),
+        build:WaitForChild("EndRoom"):WaitForChild("Generator"),
     }
 
     for _, part in ipairs(prompts) do
         root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
-        fireproximityprompt(part.ProximityPrompt)
+
+        local prompt = part:WaitForChild("ProximityPrompt")
+        fireproximityprompt(prompt)
+
         task.wait(1)
     end
 end,
