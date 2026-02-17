@@ -362,10 +362,16 @@ end,
 ["bugbo"] = function()
     print("Running bugbo action")
     task.wait(10)
-    for _, child in pairs(workspace.bugbo.Rocks:GetDescendants()) do
+
+    local rocks = workspace:WaitForChild("bugbo")
+        :WaitForChild("Build")
+        :WaitForChild("Rocks")
+
+    for _, child in pairs(rocks:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
-        if detector then
+        if detector and fireclickdetector then
             fireclickdetector(detector)
+            task.wait(0.05)
         end
     end
 end,
@@ -426,23 +432,28 @@ end,
 end,
 ["PetCaptureDeluxe"] = function()
     print("Running PetCaptureDeluxe action")
+
+    local Players = game:GetService("Players")
     local Workspace = game:GetService("Workspace")
 
-    local ActiveMonsters =
+    local activeMonsters =
         Workspace:WaitForChild("PetCaptureDeluxe")
             :WaitForChild("Build")
             :WaitForChild("ActiveMonsters")
+
     if activeMonsters then
         for _, descendant in pairs(activeMonsters:GetDescendants()) do
             if descendant:IsA("ProximityPrompt") and fireproximityprompt then
                 local part = descendant.Parent
                 if part then
-                    local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    local char = Players.LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
                         task.wait(0.3)
                     end
                 end
+
                 fireproximityprompt(descendant)
                 task.wait(0.1)
             end
@@ -464,5 +475,61 @@ end,
 ["FunTimesAtSquishyFlood"] = function()
     print("Running FunTimesAtSquishyFlood action")
     fireTouchInterests("Winparts")
+end,
+["PizzaDelivery"] = function()
+    print("Running PizzaDelivery action")
+    local root = getLocalHRP(3)
+    if not root then return end
+    local pizzaDelivery = workspace:WaitForChild("PizzaDelivery")
+    local build = pizzaDelivery:WaitForChild("Build")
+    local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
+    local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
+    local function touchPart(part)
+        if not part or not part:IsA("BasePart") then return end
+        if firetouchinterest then
+            firetouchinterest(part, root, 1)
+            task.wait()
+            firetouchinterest(part, root, 0)
+        else
+            local old = root.CFrame
+            root.CFrame = part.CFrame * CFrame.new(0, 3, 0)
+            task.wait(0.15)
+            root.CFrame = old
+        end
+        task.wait(0.05)
+    end
+    local pizzas = pizzaBoxesFolder:GetChildren()
+    local touchedPizzas = {}
+    local pizzaCount = 0
+    local tries = 0
+    while pizzaCount < 10 and tries < 300 do
+        tries += 1
+        local pick = pizzas[math.random(1, #pizzas)]
+        if pick and not touchedPizzas[pick] then
+            touchedPizzas[pick] = true
+            if pick:IsA("BasePart") and pick:FindFirstChild("TouchInterest") then
+                touchPart(pick)
+                pizzaCount += 1
+            end
+        end
+    end
+    local doors = {}
+    for _, obj in pairs(pizzaDoorsFolder:GetDescendants()) do
+        if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+            table.insert(doors, obj)
+        end
+    end
+    local touchedDoors = {}
+    local doorCount = 0
+    tries = 0
+    while doorCount < 10 and tries < 400 do
+        tries += 1
+        local pick = doors[math.random(1, #doors)]
+        if pick and not touchedDoors[pick] then
+            touchedDoors[pick] = true
+            touchPart(pick)
+            doorCount += 1
+        end
+    end
 end,
 }
