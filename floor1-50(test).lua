@@ -271,7 +271,7 @@ return {
         :WaitForChild("Build")
         :WaitForChild("Buttons")
 
-    for _, child in ipairs(buttonsFolder:GetChildren()) do
+    for _, child in ipairs(buttonsFolder:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
         if detector and fireclickdetector then
             fireclickdetector(detector)
@@ -372,9 +372,24 @@ end,
     r()
 end,
 ["PetCaptureDeluxe"] = function()
-    task.wait(10)
     print("Running PetCaptureDeluxe action")
-    fireProximityPrompts("ActiveMonsters", 3)
+    local activeMonsters = Workspace.PetCaptureDeluxe.Build.ActiveMonsters
+    if activeMonsters then
+        for _, descendant in ipairs(activeMonsters:GetDescendants()) do
+            if descendant:IsA("ProximityPrompt") and fireproximityprompt then
+                local part = descendant.Parent
+                if part and part:IsA("BasePart") then
+                    local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
+                        task.wait(0.3)
+                    end
+                end
+                fireproximityprompt(descendant)
+                task.wait(0.1)
+            end
+        end
+    end
 end,
 ["UnsteadyFloor"] = function()
     print("Running UnsteadyFloor action")
@@ -383,5 +398,9 @@ end,
 ["THEROCK"] = function()
     print("Running THEROCK action")
     fireTouchInterests("Buttons")
+end,
+["ElevatorInsideAx5"] = function()
+    print("Running ElevatorInsideAx5 action")
+    r()
 end,
 }
