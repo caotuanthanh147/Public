@@ -235,16 +235,31 @@ return {
         print("Running SnowySlope action")
         fireTouchInterests("WinPart")
     end,
-    ["Forest_TwoStudCamp"] = function()
-        print("Running Forest_TwoStudCamp action")
-        task.wait(10)
-        for i = 1, 30 do
-            fireProximityPrompts("Firewood", 3)
-            task.wait(0.3)
-            fireProximityPrompts("Cauldron", 3)
-            task.wait(0.5)
-        end
-    end,
+["Forest_TwoStudCamp"] = function()
+    print("Running Forest_TwoStudCamp action")
+    task.wait(10)
+
+    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local firewoodPart = workspace.Forest_TwoStudCamp.Build.Firewood:GetChildren()[3]
+    root.CFrame = firewoodPart.CFrame * CFrame.new(0, 0, -3)
+    for j = 1, 3 do
+        fireproximityprompt(firewoodPart.ProximityPrompt)
+        task.wait(0.3)
+    end
+
+    task.wait(0.3)
+
+    local cauldronPart = workspace.Forest_TwoStudCamp.Build.Cauldron.PromptPart
+    root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
+    for j = 1, 3 do
+        fireproximityprompt(cauldronPart.ProximityPrompt)
+        task.wait(0.3)
+    end
+
+    task.wait(0.5)
+end,
     ["FunnyMaze"] = function()
         print("Running FunnyMaze action")
         local finalNotes = Workspace.FunnyMaze.Build.FinalNotes
@@ -260,7 +275,7 @@ return {
         print("Running UES action")
         for i = 1, 50 do
             fireProximityPrompts("cardboard_box", 3)
-            task.wait(2)
+            task.wait(4)
         end
     end,
 ["ButtonCompetition"] = function()
@@ -274,9 +289,10 @@ return {
     for _, child in ipairs(buttonsFolder:GetDescendants()) do
         local detector = child:FindFirstChildOfClass("ClickDetector")
         if detector and fireclickdetector then
-            fireclickdetector(detector)
+            task.spawn(function()
+                fireclickdetector(detector)
+            end)
         end
-        task.wait(0.05)
     end
 end,
     ["ElevatorShaft"] = function()
@@ -342,7 +358,7 @@ end,
         :WaitForChild("Build")
         :WaitForChild("CleanupButtons")
     if cleanupButtons then
-        for _, child in pairs(cleanupButtons:GetChildren()) do
+        for _, child in pairs(cleanupButtons:GetDescendants()) do
             local prim = child:FindFirstChild("Prim")
             if prim then
                 local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -373,7 +389,12 @@ end,
 end,
 ["PetCaptureDeluxe"] = function()
     print("Running PetCaptureDeluxe action")
-    local activeMonsters = Workspace.PetCaptureDeluxe.Build.ActiveMonsters
+    local Workspace = game:GetService("Workspace")
+
+    local ActiveMonsters =
+        Workspace:WaitForChild("PetCaptureDeluxe")
+            :WaitForChild("Build")
+            :WaitForChild("ActiveMonsters")
     if activeMonsters then
         for _, descendant in ipairs(activeMonsters:GetDescendants()) do
             if descendant:IsA("ProximityPrompt") and fireproximityprompt then
