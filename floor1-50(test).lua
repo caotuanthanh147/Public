@@ -1,13 +1,15 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local function r()
+    if not _G.ResetEnabled then return end
+
     local character = Players.LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-        end
-    end
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 end
 Area51Stats = Area51Stats or {
     counts = {}, 
@@ -657,5 +659,9 @@ end,
             end
         end
     end
+end,
+["MozellesCastle"] = function()
+    print("Running MozellesCastle action")
+    r()
 end,
 }
