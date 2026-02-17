@@ -11,17 +11,6 @@ local function r()
 
     humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 end
-Area51Stats = Area51Stats or {
-    counts = {}, 
-}
-PizzaDeliveryStats = PizzaDeliveryStats or {
-    pizzas = 0,
-    doors = 0,
-}
-PizzaDeliveryTouched = PizzaDeliveryTouched or {
-    pizzas = {},
-    doors = {},
-}
 local function findInstances(targetName, className)
     local results = {}
     local searchRoot = Workspace
@@ -231,6 +220,8 @@ return {
     ["SuperDropper"] = function()
         print("Running SuperDropper action")
         fireTouchInterests("WinPool")
+        task.wait(3)
+        fireTouchInterests("ReturnPortal")
     end,
     ["RandomMazeWindows"] = function()
         print("Running RandomMazeWindows action")
@@ -545,13 +536,11 @@ end,
         end
     end
 end,
-
 ["PizzaDelivery"] = function()
     print("Running PizzaDelivery action")
     local root = getLocalHRP(3)
     if not root then return end
-    local pizzaDelivery = workspace:WaitForChild("PizzaDelivery")
-    local build = pizzaDelivery:WaitForChild("Build")
+    local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
     local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
     local function touchPart(part)
@@ -560,50 +549,18 @@ end,
             firetouchinterest(part, root, 1)
             task.wait()
             firetouchinterest(part, root, 0)
-        else
-            local old = root.CFrame
-            root.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-            task.wait(0.15)
-            root.CFrame = old
         end
     end
-    local pizzas = pizzaBoxesFolder:GetChildren()
-    if #pizzas > 0 then
-        local touchedCount = 0
-        for _ in pairs(PizzaDeliveryTouched.pizzas) do
-            touchedCount += 1
-        end
-        if touchedCount >= #pizzas then
-            PizzaDeliveryTouched.pizzas = {}
-        end
-        local pick = pizzas[math.random(1, #pizzas)]
-        if pick and not PizzaDeliveryTouched.pizzas[pick] then
-            PizzaDeliveryTouched.pizzas[pick] = true
-            if pick:IsA("BasePart") and pick:FindFirstChild("TouchInterest") then
-                touchPart(pick)
-                PizzaDeliveryStats.pizzas += 1
-            end
+    for _, pizza in ipairs(pizzaBoxesFolder:GetChildren()) do
+        if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
+            touchPart(pizza)
+            task.wait(0.02)
         end
     end
-    local doors = {}
-    for _, obj in pairs(pizzaDoorsFolder:GetDescendants()) do
-        if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
-            table.insert(doors, obj)
-        end
-    end
-    if #doors > 0 then
-        local touchedCount = 0
-        for _ in pairs(PizzaDeliveryTouched.doors) do
-            touchedCount += 1
-        end
-        if touchedCount >= #doors then
-            PizzaDeliveryTouched.doors = {}
-        end
-        local pick = doors[math.random(1, #doors)]
-        if pick and not PizzaDeliveryTouched.doors[pick] then
-            PizzaDeliveryTouched.doors[pick] = true
-            touchPart(pick)
-            PizzaDeliveryStats.doors += 1
+    for _, door in ipairs(pizzaDoorsFolder:GetDescendants()) do
+        if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
+            touchPart(door)
+            task.wait(0.02)
         end
     end
 end,
@@ -615,7 +572,6 @@ end,
     for _, obj in ipairs(destructibles:GetDescendants()) do
         if obj:IsA("ClickDetector") and fireclickdetector then
             fireclickdetector(obj)
-            task.wait()
         end
     end
 end,
