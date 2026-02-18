@@ -285,14 +285,29 @@ end,
     end
 end,
 ["ElevatorShaft"] = function()
-    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    for _, lever in pairs(workspace.ElevatorShaft.Build.Levers:GetDescendants()) do
-        local prompt = lever.ClickPart.ProximityPrompt
-        root.CFrame = lever.ClickPart.CFrame * CFrame.new(0, 0, -3)
-        fireproximityprompt(prompt)
-        task.wait(0.3)
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local leversFolder = workspace:WaitForChild("ElevatorShaft")
+        :WaitForChild("Build")
+        :WaitForChild("Levers")
+    local levers = {}
+    for _, obj in ipairs(leversFolder:GetDescendants()) do
+        if obj.Name == "ClickPart" and obj:IsA("BasePart") then
+            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if prompt then
+                table.insert(levers, {clickPart = obj, prompt = prompt})
+            end
+        end
     end
+    if #levers == 0 then return end
+    local pick = levers[math.random(1, #levers)]
+    root.CFrame = pick.clickPart.CFrame
+    if fireproximityprompt then
+        fireproximityprompt(pick.prompt)
+    end
+    task.wait(0.3)
 end,
 ["SurvivalTheArea51"] = function()
     local Players = game:GetService("Players")
