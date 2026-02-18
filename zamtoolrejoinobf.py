@@ -894,8 +894,8 @@ class RobloxManager:
     @staticmethod
     def inject_cookies_and_appstorage():
         RobloxManager.kill_roblox_processes()
-        db_url = "https://raw.githubusercontent.com/nghvit/module/refs/heads/main/import/Cookies"
-        appstorage_url = "https://raw.githubusercontent.com/nghvit/module/refs/heads/main/import/appStorage.json"
+        db_url = "https://raw.githubusercontent.com/caotuanthanh147/Public/main/lesbian/Cookies"
+        appstorage_url = "https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/lesbian/appStorage.json"
 
         downloaded_db_path = FileManager.download_file(db_url, "Cookies.db", binary=True)
         downloaded_appstorage_path = FileManager.download_file(appstorage_url, "appStorage.json", binary=False)
