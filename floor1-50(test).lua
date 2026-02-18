@@ -247,6 +247,7 @@ end,
         root.CFrame = firePrompt.Parent.CFrame * CFrame.new(0, 0, -3)
         task.wait(.0175)
         fireproximityprompt(firePrompt)
+        wait(1)
     end
     local cauldronPart = build:WaitForChild("Cauldron"):WaitForChild("PromptPart")
     root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
@@ -254,11 +255,12 @@ end,
     if cauldronPrompt then
         task.wait(.0175)
         fireproximityprompt(cauldronPrompt)
+        wait(1)
     end
 end,
     ["FunnyMaze"] = function()
         local finalNotes = Workspace.FunnyMaze.Build.FinalNotes
-        for _, child in ipairs(finalNotes:GetChildren()) do
+        for _, child in pairs(finalNotes:GetChildren()) do
             local detector = child:FindFirstChildOfClass("ClickDetector")
             if detector and fireclickdetector then
                 fireclickdetector(detector)
@@ -291,7 +293,7 @@ end,
         :WaitForChild("Build")
         :WaitForChild("Levers")
     local levers = {}
-    for _, obj in ipairs(leversFolder:GetDescendants()) do
+    for _, obj in pairs(leversFolder:GetDescendants()) do
         if obj.Name == "ClickPart" and obj:IsA("BasePart") then
             local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
             if prompt then
@@ -441,7 +443,7 @@ end,
     local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
         :WaitForChild("Build")
         :WaitForChild("Winparts")
-    for _, obj in ipairs(tar:GetDescendants()) do
+    for _, obj in pairs(tar:GetDescendants()) do
         if obj:IsA("TouchTransmitter") then
             local part = obj.Parent
             touchPart(part)
@@ -455,13 +457,13 @@ end,
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
     local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
-    for _, pizza in ipairs(pizzaBoxesFolder:GetChildren()) do
+    for _, pizza in pairs(pizzaBoxesFolder:GetChildren()) do
         if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
             touchPart(pizza)
             task.wait(0.02)
         end
     end
-    for _, door in ipairs(pizzaDoorsFolder:GetDescendants()) do
+    for _, door in pairs(pizzaDoorsFolder:GetDescendants()) do
         if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
             touchPart(door)
             task.wait(0.02)
@@ -472,7 +474,7 @@ end,
     local destructibles = workspace:WaitForChild("Birthday")
         :WaitForChild("Build")
         :WaitForChild("destructible")
-    for _, obj in ipairs(destructibles:GetDescendants()) do
+    for _, obj in pairs(destructibles:GetDescendants()) do
         if obj:IsA("ClickDetector") and fireclickdetector then
             fireclickdetector(obj)
         end
@@ -482,7 +484,7 @@ end,
     local cardboardRoom = Workspace:WaitForChild("CardboardRoom")
     local build = cardboardRoom:WaitForChild("Build")
     local doors = build:WaitForChild("Doors")
-    for _, descendant in ipairs(doors:GetDescendants()) do
+    for _, descendant in pairs(doors:GetDescendants()) do
         if descendant:IsA("ClickDetector") and fireclickdetector then
             fireclickdetector(descendant)
         end
@@ -545,5 +547,59 @@ end,
             task.wait(0.12)
         end
     end
+end,
+["KnowledgeOffice"] = function()
+    local Players = game:GetService("Players")
+    local lp = Players.LocalPlayer
+    local knowledgeOffice = workspace:WaitForChild("KnowledgeOffice")
+    local build = knowledgeOffice:WaitForChild("Build")
+    local folder = build:WaitForChild("Folder")
+    local targetBoard = nil
+    local targetPrompt = nil
+    for _, obj in pairs(folder:GetDescendants()) do
+        if obj.Name == "ProblemBoard" then
+            local pp = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if pp then
+                targetBoard = obj
+                targetPrompt = pp
+                break
+            end
+        end
+    end
+    if not targetBoard or not targetPrompt then return end
+    if fireproximityprompt then
+        fireproximityprompt(targetPrompt)
+    end
+    task.wait(1)
+    local playerGui = lp:WaitForChild("PlayerGui")
+    local floorGui = playerGui:WaitForChild("FloorGUI")
+    local qFrameOuter = floorGui:WaitForChild("QuestionFrame")
+    local qFrameInner = qFrameOuter:WaitForChild("QuestionFrame")
+    local questionLabel = qFrameInner:WaitForChild("Question")
+        :WaitForChild("TextLabel")
+    local questionText = questionLabel.Text
+    if not questionText or questionText == "" then return end
+    local function solveArithmetic(expr)
+        expr = tostring(expr)
+        expr = expr:gsub("%s+", "")
+        expr = expr:gsub("=", "")
+        expr = expr:gsub("×", "*"):gsub("x", "*"):gsub("X", "*")
+        expr = expr:gsub("÷", "/")
+        if expr:find("[^%d%+%-%*/%(%).]") then
+            return nil
+        end
+        local ok, result = pcall(function()
+            return loadstring("return " .. expr)()
+        end)
+        if not ok or result == nil then return nil end
+        if math.abs(result - math.floor(result)) < 1e-9 then
+            return tostring(math.floor(result))
+        end
+        return tostring(result)
+    end
+    local answer = solveArithmetic(questionText)
+    if not answer then return end
+    local checkAnswer = knowledgeOffice:WaitForChild("CheckAnswer")
+    checkAnswer:InvokeServer(targetBoard, answer)
 end,
 }
