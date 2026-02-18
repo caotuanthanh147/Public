@@ -52,7 +52,6 @@ local function teleportToTarget(targetName, offsetY)
     hrp.CFrame = parts[1].CFrame * CFrame.new(0, offsetY or 3, 0)
     return true
 end
-local Workspace = game:GetService("Workspace")
 local function getRefPartFromPrompt(prompt)
     local parent = prompt and prompt.Parent
     if not parent then return nil end
@@ -237,7 +236,7 @@ return {
     local build = jeremy:WaitForChild("Build")
     local button = build:WaitForChild("Button")
     local clicker = button:WaitForChild("Clicker")
-    root.CFrame = clicker.CFrame * CFrame.new(0, 0.5 0)
+    root.CFrame = clicker.CFrame * CFrame.new(0, 0.5, 0)
 end,
     ["BrokenSchool"] = function()
         print("Running BrokenSchool action")
@@ -388,7 +387,6 @@ end,
 end,
 ["JermpopFactory"] = function()
     print("Running JermpopFactory action")
-    local Workspace = game:GetService("Workspace")
     local cleanupButtons =
         Workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
@@ -426,7 +424,6 @@ end,
 ["PetCaptureDeluxe"] = function()
     print("Running PetCaptureDeluxe action")
     local Players = game:GetService("Players")
-    local Workspace = game:GetService("Workspace")
     local activeMonsters =
         Workspace:WaitForChild("PetCaptureDeluxe")
             :WaitForChild("Build")
@@ -467,34 +464,6 @@ end,
 ["PizzaDelivery"] = function()
     print("Running PizzaDelivery action")
     local root = getLocalHRP(3)
-    if not root then return end
-    local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
-    local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
-    local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
-    local function touchPart(part)
-        if not part or not part:IsA("BasePart") then return end
-        if firetouchinterest then
-            firetouchinterest(part, root, 1)
-            task.wait()
-            firetouchinterest(part, root, 0)
-        end
-    end
-    for _, pizza in ipairs(pizzaBoxesFolder:GetChildren()) do
-        if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
-            touchPart(pizza)
-            task.wait(0.02)
-        end
-    end
-    for _, door in ipairs(pizzaDoorsFolder:GetDescendants()) do
-        if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
-            touchPart(door)
-            task.wait(0.02)
-        end
-    end
-end,
-["PizzaDelivery"] = function()
-    print("Running PizzaDelivery action")
-    local root = getLocalHRP(1)
     if not root then return end
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
