@@ -1,5 +1,13 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local function touchPart(part)
+    if not part or not part:IsA("BasePart") then return end
+    if firetouchinterest then
+        firetouchinterest(part, root, 1)
+        task.wait()
+        firetouchinterest(part, root, 0)
+    end
+end
 local function r()
     if not _G.ResetEnabled then return end
     if inLob() then return end
@@ -459,7 +467,18 @@ end,
 end,
 ["FunTimesAtSquishyFlood"] = function()
     print("Running FunTimesAtSquishyFlood action")
-    fireTouchInterests("Winparts")
+
+    local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
+        :WaitForChild("Build")
+        :WaitForChild("Winparts")
+
+    for _, obj in ipairs(tar:GetDescendants()) do
+        if obj:IsA("TouchTransmitter") then
+            local part = obj.Parent
+            touchPart(part)
+            task.wait(0.05)
+        end
+    end
 end,
 ["PizzaDelivery"] = function()
     print("Running PizzaDelivery action")
@@ -468,14 +487,6 @@ end,
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
     local pizzaBoxesFolder = build:WaitForChild("PizzaBoxes")
     local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
-    local function touchPart(part)
-        if not part or not part:IsA("BasePart") then return end
-        if firetouchinterest then
-            firetouchinterest(part, root, 1)
-            task.wait()
-            firetouchinterest(part, root, 0)
-        end
-    end
     for _, pizza in ipairs(pizzaBoxesFolder:GetChildren()) do
         if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
             touchPart(pizza)
