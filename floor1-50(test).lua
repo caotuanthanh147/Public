@@ -514,4 +514,23 @@ end,
 ["FourCorners"] = function()
     r()
 end,
+["FloodFillMine"] = function()
+    local hrp = getLocalHRP(1)
+    if not hrp then return end
+    local area = workspace:WaitForChild("FloodFillMine")
+    local build = area:WaitForChild("Build")
+    local blocksFolder = build:WaitForChild("Blocks")
+    local currentRoomValue = workspace:WaitForChild("Values"):WaitForChild("CurrentRoom").Value
+    local breakRemote = currentRoomValue:WaitForChild("BreakBlock")
+    local blocks = blocksFolder:GetChildren()
+    for i = 1, #blocks do
+        local block = blocks[i]
+        if block and block:IsA("BasePart") and block.Name == "CoinBlock" then
+            hrp.CFrame = block.CFrame * CFrame.new(0, 3, 0)
+            task.wait(0.08)
+            breakRemote:FireServer(block.Position)
+            task.wait(0.12)
+        end
+    end
+end,
 }
