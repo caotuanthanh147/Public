@@ -173,69 +173,53 @@ end
 wait(7)
 return {
     ["MozelleSquidGames"] = function()
-        print("Running MozelleSquidGames action")
         fireTouchInterests("Winner")
     end,
     ["StanelyRoom"] = function()
-        print("Running StanelyRoom action")
         fireTouchInterests("EndTouch")
     end,
     ["FloodFillMine"] = function()
-        print("Running FloodFillMine action")
         fireTouchInterests("Bubble")
     end,
     ["Splitsville_Wipeout"] = function()
-        print("Running Splitsville_Wipeout action")
         fireTouchInterests("EndCheckpoint")
     end,
     ["Obby"] = function()
-        print("Running Obby action")
         fireTouchInterests("EndPart")
     end,
     ["IntenseObby"] = function()
-        print("Running IntenseObby action")
         fireTouchInterests("ENDBLOCK")
     end,
     ["FindThePath"] = function()
-        print("Running FindThePath action")
         fireTouchInterests("win_zone")
     end,
     ["GASA4"] = function()
-        print("Running GASA4 action")
         fireTouchInterests("ExtractionBox")
     end,
     ["Minefield"] = function()
-        print("Running Minefield action")
         fireTouchInterests("WinPart")
     end,
     ["WhoKilledYouObby"] = function()
-        print("Running WhoKilledYouObby action")
         fireTouchInterests("WinPart")
     end,
     ["GumballMachine"] = function()
-        print("Running GumballMachine action")
         fireTouchInterests("WinPart")
     end,
     ["3008_Room"] = function()
-        print("Running 3008_Room action")
         fireClickDetectors("Lampert")
     end,
     ["Superhighway"] = function()
-        print("Running Superhighway action")
         fireTouchInterests("WinPoint")
     end,
     ["SuperDropper"] = function()
-        print("Running SuperDropper action")
         fireTouchInterests("WinPool")
         task.wait(0.5)
         fireTouchInterests("ReturnPortal")
     end,
     ["RandomMazeWindows"] = function()
-        print("Running RandomMazeWindows action")
         fireTouchInterests("Build")
     end,
 ["Jeremy"] = function()
-    print("Running Jeremy action")
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
@@ -247,15 +231,12 @@ return {
     root.CFrame = clicker.CFrame * CFrame.new(0, 0.5, 0)
 end,
     ["BrokenSchool"] = function()
-        print("Running BrokenSchool action")
         teleportToTarget("Roof", 3)
     end,
     ["SnowySlope"] = function()
-        print("Running SnowySlope action")
         fireTouchInterests("WinPart")
     end,
 ["Forest_TwoStudCamp"] = function()
-    print("Running Forest_TwoStudCamp action")
     local root = getLocalHRP()
     if not root then return end
     local forest = workspace:WaitForChild("Forest_TwoStudCamp")
@@ -278,7 +259,6 @@ end,
     task.wait(0.5)
 end,
     ["FunnyMaze"] = function()
-        print("Running FunnyMaze action")
         local finalNotes = Workspace.FunnyMaze.Build.FinalNotes
         for _, child in ipairs(finalNotes:GetChildren()) do
             local detector = child:FindFirstChildOfClass("ClickDetector")
@@ -289,12 +269,10 @@ end,
         end
     end,
 ["UES"] = function()
-    print("Running UES action")
     fireProximityPrompts("cardboard_box", 3)
     task.wait(4)
 end,
 ["ButtonCompetition"] = function()
-    print("Running ButtonCompetition action")
     local buttonsFolder = Workspace
         :WaitForChild("ButtonCompetition")
         :WaitForChild("Build")
@@ -307,7 +285,6 @@ end,
     end
 end,
 ["ElevatorShaft"] = function()
-    print("Running ElevatorShaft action")
     local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
     for _, lever in pairs(workspace.ElevatorShaft.Build.Levers:GetDescendants()) do
@@ -318,7 +295,6 @@ end,
     end
 end,
 ["SurvivalTheArea51"] = function()
-    print("Running SurvivalTheArea51 action")
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
@@ -347,23 +323,18 @@ end,
     end
 end,
     ["WALL_OF"] = function()
-        print("Running WALL_OF action")
         fireTouchInterests("EndCheckpoint")
     end,
     ["Normal_Dance"] = function()
-        print("Running Normal_Dance action")
         r()
     end,
     ["SLIDE_9999999999_FEET_DOWN_RAINBOW"] = function()
-        print("Running SLIDE_9999999999_FEET_DOWN_RAINBOW action")
         fireTouchInterests("MiddleRing")
     end,
     ["CliffsideChaos"] = function()
-        print("Running CliffsideChaos action")
         teleportToTarget("Roof", 3)
     end,
 ["bugbo"] = function()
-    print("Running bugbo action")
     task.wait(10)
     local rocks = workspace:WaitForChild("bugbo")
         :WaitForChild("Build")
@@ -377,24 +348,19 @@ end,
     end
 end,
     ["InfectedRacing"] = function()
-        print("Running InfectedRacing action")
         r()
     end,
     ["SuspiciouslyLongRoom"] = function()
-        print("Running SuspiciouslyLongRoom action")
         fireTouchInterests("WinPool")
     end,
     ["TeapotDodgeball"] = function()
-    print("Running TeapotDodgeball action")
         fireTouchInterests("Finish")
         task.wait(0.5)
 end,
 ["SlimYim"] = function()
-    print("Running SlimYim action")
     r()
 end,
 ["JermpopFactory"] = function()
-    print("Running JermpopFactory action")
     local cleanupButtons =
         Workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
@@ -418,19 +384,15 @@ end,
     end
 end,
 ["RedBallTemple"] = function()
-    print("Running RedBallTemple action")
     r()
 end,
 ["RedballDiner"] = function()
-    print("Running RedballDiner action")
     r()
 end,
 ["OldRobloxHouse"] = function()
-    print("Running OldRobloxHouse action")
     r()
 end,
 ["PetCaptureDeluxe"] = function()
-    print("Running PetCaptureDeluxe action")
     local Players = game:GetService("Players")
     local activeMonsters =
         Workspace:WaitForChild("PetCaptureDeluxe")
@@ -454,24 +416,18 @@ end,
     end
 end,
 ["UnsteadyFloor"] = function()
-    print("Running UnsteadyFloor action")
     fireTouchInterests("END")
 end,
 ["THEROCK"] = function()
-    print("Running THEROCK action")
     fireTouchInterests("Buttons")
 end,
 ["ElevatorInsideAx5"] = function()
-    print("Running ElevatorInsideAx5 action")
     r()
 end,
 ["FunTimesAtSquishyFlood"] = function()
-    print("Running FunTimesAtSquishyFlood action")
-
     local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
         :WaitForChild("Build")
         :WaitForChild("Winparts")
-
     for _, obj in ipairs(tar:GetDescendants()) do
         if obj:IsA("TouchTransmitter") then
             local part = obj.Parent
@@ -481,7 +437,6 @@ end,
     end
 end,
 ["PizzaDelivery"] = function()
-    print("Running PizzaDelivery action")
     local root = getLocalHRP(3)
     if not root then return end
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
@@ -501,7 +456,6 @@ end,
     end
 end,
 ["Birthday"] = function()
-    print("Running Birthday action")
     local destructibles = workspace:WaitForChild("Birthday")
         :WaitForChild("Build")
         :WaitForChild("destructible")
@@ -512,7 +466,6 @@ end,
     end
 end,
 ["CardboardRoom"] = function()
-    print("Running CardboardRoom action")
     local cardboardRoom = Workspace:WaitForChild("CardboardRoom")
     local build = cardboardRoom:WaitForChild("Build")
     local doors = build:WaitForChild("Doors")
@@ -523,7 +476,6 @@ end,
     end
 end,
 ["InfectionApartment"] = function()
-    print("Running InfectionApartment action")
     local Players = game:GetService("Players")
     local hrp = getLocalHRP(1)
     if not hrp then return end
@@ -551,15 +503,15 @@ end,
     end
 end,
 ["MozellesCastle"] = function()
-    print("Running MozellesCastle action")
     r()
 end,
 ["HotelFloor6"] = function()
-    print("Running HotelFloor6 action")
     r()
 end,
 ["ColorTheTiles"] = function()
-    print("Running ColorTheTiles action")
+    r()
+end,
+["FourCorners"] = function()
     r()
 end,
 }
