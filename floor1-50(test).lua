@@ -1,6 +1,38 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-
+local lp = game:GetService("Players").LocalPlayer
+local noCollisionConnection = nil
+    local function touchPart(part)
+        if not part or not part:IsA("BasePart") then return end
+        if firetouchinterest then
+            firetouchinterest(part, root, 1)
+            task.wait()
+            firetouchinterest(part, root, 0)
+        end
+    end
+local function enableNoCollision()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.CanTouch = false
+        end
+    end
+    noCollisionConnection = workspace.DescendantAdded:Connect(function(obj)
+        if obj:IsA("BasePart") then
+            obj.CanTouch = false
+        end
+    end)
+end
+local function disableNoCollision()
+    if noCollisionConnection then
+        noCollisionConnection:Disconnect()
+        noCollisionConnection = nil
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.CanTouch = true
+        end
+    end
+end
 local function r()
     if not _G.ResetEnabled then return end
     if inLob() then return end
@@ -432,14 +464,6 @@ end,
     r()
 end,
 ["FunTimesAtSquishyFlood"] = function()
-    local function touchPart(part)
-        if not part or not part:IsA("BasePart") then return end
-        if firetouchinterest then
-            firetouchinterest(part, root, 1)
-            task.wait()
-            firetouchinterest(part, root, 0)
-        end
-    end
     local root = getLocalHRP(3)
     local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
         :WaitForChild("Build")
@@ -447,20 +471,12 @@ end,
     for _, obj in pairs(tar:GetDescendants()) do
         if obj:IsA("TouchTransmitter") then
             local part = obj.Parent
-            touchPart(part)
+            touchPart(part, root)
             task.wait(0.05)
         end
     end
 end,
 ["PizzaDelivery"] = function()
-    local function touchPart(part)
-        if not part or not part:IsA("BasePart") then return end
-        if firetouchinterest then
-            firetouchinterest(part, root, 1)
-            task.wait()
-            firetouchinterest(part, root, 0)
-        end
-    end
     local root = getLocalHRP(3)
     if not root then return end
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
@@ -468,13 +484,13 @@ end,
     local pizzaDoorsFolder = build:WaitForChild("PizzaDoors")
     for _, pizza in pairs(pizzaBoxesFolder:GetChildren()) do
         if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
-            touchPart(pizza)
+            touchPart(pizza, root)
             task.wait(0.02)
         end
     end
     for _, door in pairs(pizzaDoorsFolder:GetDescendants()) do
         if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
-            touchPart(door)
+            touchPart(door, root)
             task.wait(0.02)
         end
     end
