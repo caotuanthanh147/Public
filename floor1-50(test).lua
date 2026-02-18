@@ -1,13 +1,6 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-local function touchPart(part)
-    if not part or not part:IsA("BasePart") then return end
-    if firetouchinterest then
-        firetouchinterest(part, root, 1)
-        task.wait()
-        firetouchinterest(part, root, 0)
-    end
-end
+
 local function r()
     if not _G.ResetEnabled then return end
     if inLob() then return end
@@ -373,26 +366,29 @@ end,
     r()
 end,
 ["JermpopFactory"] = function()
-    local cleanupButtons =
-        Workspace:WaitForChild("JermpopFactory")
+    local Players = game:GetService("Players")
+    local lp = Players.LocalPlayer
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local cleanupButtons = workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
         :WaitForChild("CleanupButtons")
-    if cleanupButtons then
-        for _, child in pairs(cleanupButtons:GetDescendants()) do
-            local prim = child:FindFirstChild("Prim")
-            if prim then
-                local hrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.CFrame = prim.CFrame * CFrame.new(0, 3, 0)
-                    task.wait(0.3)
-                end
-                local prompt = prim:FindFirstChildOfClass("ProximityPrompt")
-                if prompt and fireproximityprompt then
+    local fired = {}
+    for _, obj in ipairs(cleanupButtons:GetDescendants()) do
+        local prim = obj:FindFirstChild("Prim")
+        if prim and prim:IsA("BasePart") then
+            local prompt = prim:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if prompt and prompt.Enabled == true and not fired[prompt] then
+                fired[prompt] = true
+                hrp.CFrame = prim.CFrame * CFrame.new(0, 3, 0)
+                task.wait(0.25)
+                if fireproximityprompt then
                     fireproximityprompt(prompt)
                 end
+                break
             end
-            task.wait(0.1)
         end
+        task.wait(0.05)
     end
 end,
 ["RedBallTemple"] = function()
@@ -431,12 +427,20 @@ end,
     fireTouchInterests("END")
 end,
 ["THEROCK"] = function()
-    fireTouchInterests("Buttons")
 end,
 ["ElevatorInsideAx5"] = function()
     r()
 end,
 ["FunTimesAtSquishyFlood"] = function()
+    local function touchPart(part)
+        if not part or not part:IsA("BasePart") then return end
+        if firetouchinterest then
+            firetouchinterest(part, root, 1)
+            task.wait()
+            firetouchinterest(part, root, 0)
+        end
+    end
+    local root = getLocalHRP(3)
     local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
         :WaitForChild("Build")
         :WaitForChild("Winparts")
@@ -449,6 +453,14 @@ end,
     end
 end,
 ["PizzaDelivery"] = function()
+    local function touchPart(part)
+        if not part or not part:IsA("BasePart") then return end
+        if firetouchinterest then
+            firetouchinterest(part, root, 1)
+            task.wait()
+            firetouchinterest(part, root, 0)
+        end
+    end
     local root = getLocalHRP(3)
     if not root then return end
     local build = workspace:WaitForChild("PizzaDelivery"):WaitForChild("Build")
@@ -605,5 +617,8 @@ end,
     if not answer then return end
     local checkAnswer = knowledgeOffice:WaitForChild("CheckAnswer")
     checkAnswer:InvokeServer(targetBoard, answer)
+end,
+["TNTRun"] = function()
+    r()
 end,
 }
