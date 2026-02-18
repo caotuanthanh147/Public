@@ -2,14 +2,15 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local lp = game:GetService("Players").LocalPlayer
 local noCollisionConnection = nil
-    local function touchPart(part)
-        if not part or not part:IsA("BasePart") then return end
-        if firetouchinterest then
-            firetouchinterest(part, root, 1)
-            task.wait()
-            firetouchinterest(part, root, 0)
-        end
+local function touchPart(part, root)
+    if not part or not part:IsA("BasePart") then return end
+    if not root or not root:IsA("BasePart") then return end
+    if firetouchinterest then
+        firetouchinterest(part, root, 1)
+        task.wait()
+        firetouchinterest(part, root, 0)
     end
+end
 local function enableNoCollision()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
