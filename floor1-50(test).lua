@@ -245,18 +245,16 @@ end,
     local firePrompt = firewoodFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
     if firePrompt and firePrompt.Parent and firePrompt.Parent:IsA("BasePart") then
         root.CFrame = firePrompt.Parent.CFrame * CFrame.new(0, 0, -3)
+        task.wait(.0175)
         fireproximityprompt(firePrompt)
-        task.wait(0.3)
     end
-    task.wait(0.3)
     local cauldronPart = build:WaitForChild("Cauldron"):WaitForChild("PromptPart")
     root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
     local cauldronPrompt = cauldronPart:FindFirstChildWhichIsA("ProximityPrompt", true)
     if cauldronPrompt then
+        task.wait(.0175)
         fireproximityprompt(cauldronPrompt)
-        task.wait(0.3)
     end
-    task.wait(0.5)
 end,
     ["FunnyMaze"] = function()
         local finalNotes = Workspace.FunnyMaze.Build.FinalNotes
