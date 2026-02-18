@@ -178,9 +178,6 @@ return {
     ["StanelyRoom"] = function()
         fireTouchInterests("EndTouch")
     end,
-    ["FloodFillMine"] = function()
-        fireTouchInterests("Bubble")
-    end,
     ["Splitsville_Wipeout"] = function()
         fireTouchInterests("EndCheckpoint")
     end,
@@ -535,16 +532,23 @@ end,
     local area = workspace:WaitForChild("FloodFillMine")
     local build = area:WaitForChild("Build")
     local blocksFolder = build:WaitForChild("Blocks")
-    local currentRoomValue = workspace:WaitForChild("Values"):WaitForChild("CurrentRoom").Value
-    local breakRemote = currentRoomValue:WaitForChild("BreakBlock")
+    local currentRoom = workspace:WaitForChild("Values"):WaitForChild("CurrentRoom").Value
+    local breakRemote = currentRoom:WaitForChild("BreakBlock")
     local blocks = blocksFolder:GetChildren()
+    local brokeAny = false
     for i = 1, #blocks do
         local block = blocks[i]
         if block and block:IsA("BasePart") and block.Name == "CoinBlock" then
+            brokeAny = true
             hrp.CFrame = block.CFrame * CFrame.new(0, 3, 0)
             task.wait(0.08)
             breakRemote:FireServer(block.Position)
             task.wait(0.12)
+        end
+    end
+    if not brokeAny then
+        if fireTouchInterests then
+            fireTouchInterests("Bubble")
         end
     end
 end,
