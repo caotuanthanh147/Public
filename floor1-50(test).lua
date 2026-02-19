@@ -4,6 +4,8 @@ local lp = game:GetService("Players").LocalPlayer
 local noCollisionConnection = nil
 _G.GASA4CanSteal = _G.GASA4CanSteal or false
 _G.GASA4ListenerSet = _G.GASA4ListenerSet or false
+_G.StatsDomainCDs = _G.StatsDomainCDs or {}       
+_G.StatsDomainLastRun = _G.StatsDomainLastRun or 0
 local function setupGASA4Listener()
     if _G.GASA4ListenerSet then return end
     _G.GASA4ListenerSet = true
@@ -678,6 +680,119 @@ end,
         if part and part:IsA("BasePart") and doPrompt(part) then
             touchPart(extractionBox, root)
             return
+        end
+    end
+end,
+["StatsDomain"] = function()
+    local PER_PROMPT_COOLDOWN = 3
+    local OVERALL_COOLDOWN = 0.6     
+    if os.clock() - _G.StatsDomainLastRun < OVERALL_COOLDOWN then
+        return
+    end
+    _G.StatsDomainLastRun = os.clock()
+    local root = getLocalHRP(3)
+    if not root then return end
+    local build = workspace:WaitForChild("StatsDomain"):WaitForChild("Build")
+    local ok, doorButton = pcall(function()
+        return build:WaitForChild("DoorButton"):WaitForChild("Button")
+    end)
+    if ok and doorButton then
+        local doorPrompt = doorButton:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if doorPrompt and doorPrompt.Enabled and fireproximityprompt then
+            local key = tostring(doorPrompt)
+            local last = _G.StatsDomainCDs[key] or 0
+            if os.clock() - last >= PER_PROMPT_COOLDOWN then
+                root.CFrame = doorButton.CFrame
+                task.wait(0.12)
+                fireproximityprompt(doorPrompt, doorPrompt.HoldDuration or 0.25)
+                _G.StatsDomainCDs[key] = os.clock()
+                task.wait(0.25)
+            end
+        end
+    end
+    local function findEnabledBigOrbs()
+        local results = {}
+        local activeUnits = build:FindFirstChild("ActiveUnits")
+        if not activeUnits then return results end
+        local cap = activeUnits:FindFirstChild("Capacitor")
+        if cap then
+            local bo = cap:FindFirstChild("BigOrb")
+            if bo then
+                local pp = bo:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if pp and pp.Enabled then
+                    table.insert(results, {prompt = pp, part = pp.Parent})
+                end
+            end
+        end
+        for _, v in ipairs(activeUnits:GetDescendants()) do
+            if v.Name and v.Name:lower():find("bigorb") then
+                local pp = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if pp and pp.Enabled then
+                    table.insert(results, {prompt = pp, part = pp.Parent})
+                end
+            end
+        end
+        for _, child in ipairs(activeUnits:GetChildren()) do
+            local maybe = child:FindFirstChild("BigOrb") or child:FindFirstChildWhichIsA("BasePart", true)
+            if maybe then
+                local pp = maybe:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if pp and pp.Enabled then
+                    table.insert(results, {prompt = pp, part = pp.Parent})
+                end
+            end
+        end
+        return results
+    end
+    local function isAntennaAvailable()
+        local activeUnits = build:FindFirstChild("ActiveUnits")
+        if not activeUnits then return false end
+    
+        for _, ch in ipairs(activeUnits:GetChildren()) do
+            local avail = ch:FindFirstChild("Antenna") and ch.Antenna:FindFirstChild("AvailableIcon")
+            if avail and avail.Enabled == true then
+                return true
+            end
+        end
+    
+        return false
+    end
+    local bigOrbs = findEnabledBigOrbs()
+    if #bigOrbs > 0 then
+        if isAntennaAvailable() then
+            for i = 1, #bigOrbs do
+                local entry = bigOrbs[i]
+                local prompt = entry.prompt
+                local part = entry.part
+                local key = tostring(prompt)
+                local last = _G.StatsDomainCDs[key] or 0
+                if os.clock() - last >= PER_PROMPT_COOLDOWN then
+                    root.CFrame = (part and part.CFrame or prompt.Parent.CFrame) * CFrame.new(0, 0, -3)
+                    task.wait(0.12)
+                    fireproximityprompt(prompt, 1)
+                    _G.StatsDomainCDs[key] = os.clock()
+                    task.wait(0.2)
+                    return
+                end
+            end
+            return
+        else
+            return
+        end
+    end
+    local machinePart = build:FindFirstChild("TheMachine") and build.TheMachine:FindFirstChild("MachinePrompt")
+    if machinePart then
+        local machinePrompt = machinePart:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if machinePrompt and machinePrompt.Enabled and fireproximityprompt then
+            local key = tostring(machinePrompt)
+            local last = _G.StatsDomainCDs[key] or 0
+            if os.clock() - last >= PER_PROMPT_COOLDOWN then
+                root.CFrame = machinePart.CFrame * CFrame.new(0, 0, -3)
+                task.wait(0.12)
+                fireproximityprompt(machinePrompt, 1)
+                _G.StatsDomainCDs[key] = os.clock()
+                task.wait(0.3)
+                return
+            end
         end
     end
 end,
