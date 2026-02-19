@@ -321,35 +321,27 @@ end,
     end
 end,
 ["ElevatorShaft"] = function()
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local root = char:WaitForChild("HumanoidRootPart")
+    local root = getLocalHRP()
+    if not root then return end
     local leversFolder = workspace:WaitForChild("ElevatorShaft")
         :WaitForChild("Build")
         :WaitForChild("Levers")
-    local levers = {}
     for _, obj in pairs(leversFolder:GetDescendants()) do
         if obj.Name == "ClickPart" and obj:IsA("BasePart") then
             local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
-            if prompt then
-                table.insert(levers, {clickPart = obj, prompt = prompt})
+            if prompt and prompt.Enabled == true then
+                root.CFrame = obj.CFrame
+                if fireproximityprompt then
+                    fireproximityprompt(prompt, 1)
+                end
+                task.wait(1)
+                return
             end
         end
     end
-    if #levers == 0 then return end
-    local pick = levers[math.random(1, #levers)]
-    root.CFrame = pick.clickPart.CFrame
-    if fireproximityprompt then
-        fireproximityprompt(pick.prompt)
-    end
-    task.wait(0.3)
 end,
 ["SurvivalTheArea51"] = function()
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local root = char:WaitForChild("HumanoidRootPart")
+    local root = getLocalHRP()
     local build = workspace:WaitForChild("SurvivalTheArea51"):WaitForChild("Build")
     local gens = {
         build:WaitForChild("JeremyRoom"):WaitForChild("Generator"),
@@ -412,10 +404,7 @@ end,
     r()
 end,
 ["JermpopFactory"] = function()
-    local Players = game:GetService("Players")
-    local lp = Players.LocalPlayer
-    local char = lp.Character or lp.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hrp = getLocalHRP()
     local cleanupButtons = workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
         :WaitForChild("CleanupButtons")
@@ -457,8 +446,7 @@ end,
         if descendant and fireproximityprompt then
             local part = descendant.Parent
             if part then
-                local char = Players.LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hrp = getLocalHRP()
                 if hrp then
                     hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
                     task.wait(0.3)
