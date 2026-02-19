@@ -409,26 +409,24 @@ end,
     r()
 end,
 ["JermpopFactory"] = function()
-    local hrp = getLocalHRP()
+    local hrp = getLocalHRP(3)
+    if not hrp then return end
     local cleanupButtons = workspace:WaitForChild("JermpopFactory")
         :WaitForChild("Build")
         :WaitForChild("CleanupButtons")
-    local fired = {}
     for _, obj in ipairs(cleanupButtons:GetDescendants()) do
         local prim = obj:FindFirstChild("Prim")
         if prim and prim:IsA("BasePart") then
             local prompt = prim:FindFirstChildWhichIsA("ProximityPrompt", true)
-            if prompt and prompt.Enabled == true and not fired[prompt] then
-                fired[prompt] = true
-                hrp.CFrame = prim.CFrame * CFrame.new(0, 3, 0)
-                task.wait(0.25)
+            if prompt and prompt.Enabled == true then
+                hrp.CFrame = prim.CFrame
+                task.wait(0.175)
                 if fireproximityprompt then
                     fireproximityprompt(prompt)
                 end
-                break
+                return
             end
         end
-        task.wait(0.05)
     end
 end,
 ["RedBallTemple"] = function()
@@ -451,14 +449,13 @@ end,
         if descendant and fireproximityprompt then
             local part = descendant.Parent
             if part then
-                local hrp = getLocalHRP()
+                local hrp = getLocalHRP(3)
                 if hrp then
-                    hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                    task.wait(0.3)
+                    hrp.CFrame = part.CFrame
+                    task.wait(0.175)
                 end
             end
             fireproximityprompt(descendant)
-            task.wait(0.1)
         end
     end
 end,
@@ -493,13 +490,11 @@ end,
     for _, pizza in pairs(pizzaBoxesFolder:GetChildren()) do
         if pizza:IsA("BasePart") and pizza:FindFirstChild("TouchInterest") then
             touchPart(pizza, root)
-            task.wait(0.02)
         end
     end
     for _, door in pairs(pizzaDoorsFolder:GetDescendants()) do
         if door:IsA("BasePart") and door:FindFirstChild("TouchInterest") then
             touchPart(door, root)
-            task.wait(0.02)
         end
     end
 end,
@@ -656,28 +651,50 @@ end,
     local collectables = build:WaitForChild("Collectables")
     local stealables = build:WaitForChild("Stealables")
     local extractionBox = build:WaitForChild("ExtractionBox")
-    local function doPrompt(part)
-        if not part or not part:IsA("BasePart") then return false end
-        local prompt = part:FindFirstChildWhichIsA("ProximityPrompt")
-        if not prompt or not prompt.Enabled then return false end
-        if not fireproximityprompt then return false end
-        root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
+    local function handleCandidate(obj)
+        if not obj then return false end
+        local prompt = nil
+        local basepart = nil
+        if obj:IsA("ProximityPrompt") then
+            prompt = obj
+            basepart = prompt.Parent
+        elseif obj:IsA("BasePart") then
+            basepart = obj
+            prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+        else
+            prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if prompt then
+                basepart = prompt.Parent
+            end
+        end
+        if not prompt or not basepart or not basepart:IsA("BasePart") then
+            return false
+        end
+        if not prompt.Enabled then
+            return false
+        end
+        if not fireproximityprompt then
+            return false
+        end
+        root.CFrame = basepart.CFrame * CFrame.new(0, 0, -3)
         task.wait(0.175)
         fireproximityprompt(prompt)
-        print("doPrompt called on:", part:GetFullName())
-        task.wait()
+        task.wait(0.12)
         return true
     end
     for _, item in ipairs(collectables:GetChildren()) do
-        local part = item:FindFirstChildWhichIsA("BasePart")
-        if part and doPrompt(part) then
+        if handleCandidate(item) then
             touchPart(extractionBox, root)
             return
         end
     end
     for _, item in ipairs(stealables:GetChildren()) do
-        local part = item:FindFirstChild("ThingButton")
-        if part and part:IsA("BasePart") and doPrompt(part) then
+        local thingBtn = item:FindFirstChild("ThingButton")
+        if thingBtn and handleCandidate(thingBtn) then
+            touchPart(extractionBox, root)
+            return
+        end
+        if handleCandidate(item) then
             touchPart(extractionBox, root)
             return
         end
