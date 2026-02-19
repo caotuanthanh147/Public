@@ -2,6 +2,19 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local lp = game:GetService("Players").LocalPlayer
 local noCollisionConnection = nil
+_G.GASA4CanSteal = _G.GASA4CanSteal or false
+_G.GASA4ListenerSet = _G.GASA4ListenerSet or false
+local function setupGASA4Listener()
+    if _G.GASA4ListenerSet then return end
+    _G.GASA4ListenerSet = true
+    local stateEvent = workspace:WaitForChild("GASA4")
+        :WaitForChild("RoomScript")
+        :WaitForChild("StateChange")
+    stateEvent.OnClientEvent:Connect(function(state)
+        _G.GASA4CanSteal = (state == true)
+        print("[GASA4] CanSteal =", _G.GASA4CanSteal)
+    end)
+end
 local function touchPart(part, root)
     if not part or not part:IsA("BasePart") then return end
     if not root or not root:IsA("BasePart") then return end
@@ -637,5 +650,42 @@ end,
 end,
 ["TNTRun"] = function()
     r()
+end,
+["GASA4"] = function()
+    setupGASA4Listener()
+    if not _G.GASA4CanSteal then
+        return
+    end
+    local root = getLocalHRP(3)
+    if not root then return end
+    local build = workspace:WaitForChild("GASA4"):WaitForChild("Build")
+    local collectables = build:WaitForChild("Collectables")
+    local stealables = build:WaitForChild("Stealables")
+    local extractionBox = build:WaitForChild("ExtractionBox")
+    local function doPrompt(part)
+        if not part or not part:IsA("BasePart") then return false end
+        local prompt = part:FindFirstChildWhichIsA("ProximityPrompt")
+        if not prompt or not prompt.Enabled then return false end
+        if not fireproximityprompt then return false end
+        root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
+        task.wait(0.175)
+        fireproximityprompt(prompt)
+        task.wait()
+        return true
+    end
+    for _, item in ipairs(collectables:GetChildren()) do
+        local part = item:FindFirstChildWhichIsA("BasePart")
+        if part and doPrompt(part) then
+            touchPart(extractionBox, root)
+            return
+        end
+    end
+    for _, item in ipairs(stealables:GetChildren()) do
+        local part = item:FindFirstChild("ThingButton")
+        if part and part:IsA("BasePart") and doPrompt(part) then
+            touchPart(extractionBox, root)
+            return
+        end
+    end
 end,
 }
