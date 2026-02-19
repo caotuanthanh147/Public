@@ -658,6 +658,7 @@ end,
         root.CFrame = part.CFrame * CFrame.new(0, 0, -3)
         task.wait(0.175)
         fireproximityprompt(prompt)
+        print("doPrompt called on:", part:GetFullName())
         task.wait()
         return true
     end
