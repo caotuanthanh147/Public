@@ -275,23 +275,26 @@ end,
 ["Forest_TwoStudCamp"] = function()
     local root = getLocalHRP()
     if not root then return end
-    local forest = workspace:WaitForChild("Forest_TwoStudCamp")
-    local build = forest:WaitForChild("Build")
+    local build = workspace:WaitForChild("Forest_TwoStudCamp"):WaitForChild("Build")
     local firewoodFolder = build:WaitForChild("Firewood")
     local firePrompt = firewoodFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if firePrompt and firePrompt.Parent and firePrompt.Parent:IsA("BasePart") then
+    if firePrompt and firePrompt.Enabled and firePrompt.Parent and firePrompt.Parent:IsA("BasePart") then
         root.CFrame = firePrompt.Parent.CFrame * CFrame.new(0, 0, -3)
-        task.wait(.0175)
-        fireproximityprompt(firePrompt)
-        wait(1)
+        task.wait(0.175)
+        if fireproximityprompt then
+            fireproximityprompt(firePrompt)
+        end
+        task.wait(0.25)
     end
     local cauldronPart = build:WaitForChild("Cauldron"):WaitForChild("PromptPart")
-    root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
     local cauldronPrompt = cauldronPart:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if cauldronPrompt then
-        task.wait(.0175)
-        fireproximityprompt(cauldronPrompt)
-        wait(1)
+    if cauldronPrompt and cauldronPrompt.Enabled then
+        root.CFrame = cauldronPart.CFrame * CFrame.new(0, 0, -3)
+        task.wait(0.175)
+        if fireproximityprompt then
+            fireproximityprompt(cauldronPrompt)
+        end
+        task.wait(0.25)
     end
 end,
     ["FunnyMaze"] = function()
@@ -466,6 +469,7 @@ end,
     r()
 end,
 ["FunTimesAtSquishyFlood"] = function()
+    task.wait(20)
     local root = getLocalHRP(3)
     local tar = workspace:WaitForChild("FunTimesAtSquishyFlood")
         :WaitForChild("Build")
