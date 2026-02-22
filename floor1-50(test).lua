@@ -337,7 +337,7 @@ end,
             if prompt and prompt.Enabled == true then
                 root.CFrame = obj.CFrame
                 if fireproximityprompt then
-                    fireproximityprompt(prompt, 1)
+                    fireproximityprompt(prompt)
                 end
                 task.wait(1)
                 return
@@ -571,7 +571,7 @@ end,
         local block = blocks[i]
         if block and block:IsA("BasePart") and block.Name == "CoinBlock" then
             brokeAny = true
-            hrp.CFrame = block.CFrame * CFrame.new(0, 3, 0)
+            hrp.CFrame = block.CFrame
             task.wait(0.08)
             breakRemote:FireServer(block.Position)
             task.wait(0.12)
@@ -676,10 +676,9 @@ end,
         if not fireproximityprompt then
             return false
         end
-        root.CFrame = basepart.CFrame * CFrame.new(0, 0, -3)
+        root.CFrame = basepart.CFrame
         task.wait(0.175)
         fireproximityprompt(prompt)
-        task.wait(0.12)
         return true
     end
     for _, item in ipairs(collectables:GetChildren()) do
@@ -701,9 +700,8 @@ end,
     end
 end,
 ["StatsDomain"] = function()
-    local PER_PROMPT_COOLDOWN = 3
-    local OVERALL_COOLDOWN = 0.6     
-    if os.clock() - _G.StatsDomainLastRun < OVERALL_COOLDOWN then
+    local PER_PROMPT_COOLDOWN = 0.5
+    if os.clock() - _G.StatsDomainLastRun < 0.2 then
         return
     end
     _G.StatsDomainLastRun = os.clock()
@@ -717,13 +715,10 @@ end,
         local doorPrompt = doorButton:FindFirstChildWhichIsA("ProximityPrompt", true)
         if doorPrompt and doorPrompt.Enabled and fireproximityprompt then
             local key = tostring(doorPrompt)
-            local last = _G.StatsDomainCDs[key] or 0
             if os.clock() - last >= PER_PROMPT_COOLDOWN then
                 root.CFrame = doorButton.CFrame
-                task.wait(0.12)
-                fireproximityprompt(doorPrompt, doorPrompt.HoldDuration or 0.25)
-                _G.StatsDomainCDs[key] = os.clock()
-                task.wait(0.25)
+                task.wait(0.175)
+                fireproximityprompt(doorPrompt)
             end
         end
     end
@@ -783,11 +778,10 @@ end,
                 local key = tostring(prompt)
                 local last = _G.StatsDomainCDs[key] or 0
                 if os.clock() - last >= PER_PROMPT_COOLDOWN then
-                    root.CFrame = (part and part.CFrame or prompt.Parent.CFrame) * CFrame.new(0, 0, -3)
-                    task.wait(0.12)
-                    fireproximityprompt(prompt, 1)
+                    root.CFrame = part.CFrame
+                    task.wait(0.175)
+                    fireproximityprompt(prompt)
                     _G.StatsDomainCDs[key] = os.clock()
-                    task.wait(0.2)
                     return
                 end
             end
@@ -803,11 +797,10 @@ end,
             local key = tostring(machinePrompt)
             local last = _G.StatsDomainCDs[key] or 0
             if os.clock() - last >= PER_PROMPT_COOLDOWN then
-                root.CFrame = machinePart.CFrame * CFrame.new(0, 0, -3)
-                task.wait(0.12)
-                fireproximityprompt(machinePrompt, 1)
+                root.CFrame = machinePart.CFrame
+                task.wait(0.175)
+                fireproximityprompt(machinePrompt)
                 _G.StatsDomainCDs[key] = os.clock()
-                task.wait(0.3)
                 return
             end
         end
