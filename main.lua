@@ -67,17 +67,20 @@ local function collectCoins()
 end
 local localPlayer = game:GetService("Players").LocalPlayer
 function inLob()
-    local success, result = pcall(function()
-        local lobby = workspace:WaitForChild("Lobby", 0.5)
-        if not lobby then return nil end
-        local centerLobby = lobby:WaitForChild("CenterLobby", 0.5)
-        if not centerLobby then return nil end
-        local props = centerLobby:WaitForChild("Props", 0.5)
-        if not props then return nil end
-        local painting = props:WaitForChild("MagicPainting", 0.5)
-        return painting
-    end)
-    return success and result ~= nil
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        local root = character:FindFirstChild("HumanoidRootPart")
+        if root and (root.Position - Vector3.new(1054, 1394, -25)).Magnitude <= 50 then
+            return true
+        end
+    end
+    local lobby = workspace:FindFirstChild("Lobby")
+    if not lobby then return false end
+    local centerLobby = lobby:FindFirstChild("CenterLobby")
+    if not centerLobby then return false end
+    local props = centerLobby:FindFirstChild("Props")
+    if not props then return false end
+    return props:FindFirstChild("MagicPainting") ~= nil
 end
 local function isDead()
     local success, result = pcall(function()
