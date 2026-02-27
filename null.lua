@@ -1,11 +1,12 @@
 local LocalPlayer, LP = game:GetService("Players").LocalPlayer, game:GetService("Players").LocalPlayer
 local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
+local solo = true
 task.spawn(function()
-    while task.wait(1) do 
+    while solo do 
+        task.wait(1)
         local playerCount = #Players:GetPlayers()
         if playerCount > 1 then
-            TeleportService:Teleport(129279692364812, LocalPlayer)
+game:GetService("TeleportService"):Teleport(129279692364812, LocalPlayer)
             break 
         end
     end
