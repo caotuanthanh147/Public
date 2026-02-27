@@ -630,7 +630,9 @@ workspace.AntiVoid.CanCollide = Value
 end; })
 local curLv = game:GetService("Players").LocalPlayer.PlayerGui.GUI.Main.List.TheHidden.Level.Text
 local lvLim = 59
-local leave = workspace.Lobby.LobbyReturn.ProximityPrompt
+local leave = workspace:WaitForChild("Lobby", 1)
+    :WaitForChild("LobbyReturn", 1)
+    :WaitForChild("ProximityPrompt", 1)
 local AutoBuffEnabled = false
 local autoThread = nil
 local function continue()
