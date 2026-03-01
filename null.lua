@@ -679,13 +679,23 @@ local function setAutoBuff(state)
                                 end)
                             end
                             local selectFolder = workspace:FindFirstChild("Select")
-                            if selectFolder and selectFolder:FindFirstChild("3") then
-                                local buffPrompt = selectFolder["3"]:FindFirstChild("ProximityPrompt")
-                                if buffPrompt then
-                                    HRP.CFrame = selectFolder["3"].CFrame  
-                                    task.wait(.175) 
+                            if selectFolder then
+                                local chosen = nil
+                                for _, optName in ipairs({"3", "2", "1"}) do
+                                    local opt = selectFolder:FindFirstChild(optName)
+                                    if opt and opt.Enabled == true then
+                                        local buffPrompt = opt:FindFirstChild("ProximityPrompt")
+                                        if buffPrompt then
+                                            chosen = { part = opt, prompt = buffPrompt }
+                                            break
+                                        end
+                                    end
+                                end
+                                if chosen then
+                                    HRP.CFrame = chosen.part.CFrame
+                                    task.wait(.175)
                                     pcall(function()
-                                        fireproximityprompt(buffPrompt)
+                                        fireproximityprompt(chosen.prompt)
                                     end)
                                 end
                             end
