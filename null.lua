@@ -683,9 +683,9 @@ local function setAutoBuff(state)
                                 local chosen = nil
                                 for _, optName in ipairs({"3", "2", "1"}) do
                                     local opt = selectFolder:FindFirstChild(optName)
-                                    if opt and opt.Enabled == true then
+                                    if opt then
                                         local buffPrompt = opt:FindFirstChild("ProximityPrompt")
-                                        if buffPrompt then
+                                        if buffPrompt and buffPrompt.Enabled == true then
                                             chosen = { part = opt, prompt = buffPrompt }
                                             break
                                         end
