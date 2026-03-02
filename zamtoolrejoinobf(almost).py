@@ -802,35 +802,44 @@ class RobloxManager:
 
     @staticmethod
     def kill_roblox_process(package_name):
-        print(f"\033[1;96m[ zam2109roblox.shop ] - Killing Roblox process for {package_name}...\033[0m")
+        print(f"\033[1;96m[ zam2109roblox.shop ] - Preparing to kill {package_name}...\033[0m")
         try:
             packages = RobloxManager.get_roblox_packages()
+            result = subprocess.run(
+                ["/system/bin/cmd", "activity", "tasks"],
+                capture_output=True,
+                text=True
+            )
+            running_output = result.stdout
+            other_packages = [pkg for pkg in packages if pkg != package_name]
+            switched = False
+            for pkg in other_packages:
+                if pkg in running_output:
+                    for line in running_output.splitlines():
+                        if pkg in line and "taskId=" in line:
+                            task_id = line.split("taskId=")[1].split()[0]
+                            subprocess.run(
+                                ["/system/bin/am", "move-task-to-front", task_id],
+                                capture_output=True,
+                                text=True
+                            )
+                            time.sleep(1)  
+                            switched = True
+                            break
+                if switched:
+                    break
+            if not switched:
+                print("\033[1;33m[ zam2109roblox.shop ] - No running background Roblox tasks found.\033[0m")
+            print(f"\033[1;96m[ zam2109roblox.shop ] - Killing {package_name}...\033[0m")
             subprocess.run(
                 ["/system/bin/am", "force-stop", package_name],
                 capture_output=True,
                 text=True,
                 check=True
             )
-            print(f"\033[1;32m[ zam2109roblox.shop ] - Killed process for {package_name}\033[0m")
-            time.sleep(2)
-            other_packages = [pkg for pkg in packages if pkg != package_name]
-            if other_packages:
-                next_package = other_packages[0]
-                print(f"\033[1;96m[ zam2109roblox.shop ] - Switching focus to {next_package}...\033[0m")
-                subprocess.run(
-                    [
-                        "/system/bin/am",
-                        "start",
-                        "-n",
-                        f"{next_package}/com.roblox.client.StartActivity"
-                    ],
-                    capture_output=True,
-                    text=True
-                )
-            else:
-                print("\033[1;33m[ zam2109roblox.shop ] - No other Roblox tabs found.\033[0m")
+            print(f"\033[1;32m[ zam2109roblox.shop ] - Successfully killed {package_name}\033[0m")
         except subprocess.CalledProcessError as e:
-            print(f"\033[1;31m[ zam2109roblox.shop ] - Error killing process for {package_name}: {e}\033[0m")
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
             Utilities.log_error(f"Error killing process for {package_name}: {e}")
             
     @staticmethod
