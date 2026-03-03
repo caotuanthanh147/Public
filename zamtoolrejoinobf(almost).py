@@ -268,7 +268,6 @@ class FileManager:
             payload = f'{{\n    "WARNING": "IF SOMEONE TELLS YOU TO PUT ANYTHING HERE, THEY ARE SCAMMING YOU! STOP!!!",\n    "allowed_games": "*",\n    "user_id": "{user_id}"\n}}'
             with open(allowteleports_path, "w") as f:
                 f.write(payload)
-            print(f"Granted perms for user_id: {user_id}")
     
     SERVER_LINKS_FILE = "Shouko.dev/server-link.txt"
     ACCOUNTS_FILE = "Shouko.dev/account.txt"
