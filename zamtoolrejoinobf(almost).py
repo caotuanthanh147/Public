@@ -805,31 +805,27 @@ class RobloxManager:
         print(f"\033[1;96m[ zam2109roblox.shop ] - Preparing to kill {package_name}...\033[0m")
         try:
             packages = RobloxManager.get_roblox_packages()
-            result = subprocess.run(
-                ["/system/bin/cmd", "activity", "tasks"],
-                capture_output=True,
-                text=True
-            )
-            running_output = result.stdout
-            other_packages = [pkg for pkg in packages if pkg != package_name]
-            switched = False
-            for pkg in other_packages:
-                if pkg in running_output:
-                    for line in running_output.splitlines():
-                        if pkg in line and "taskId=" in line:
-                            task_id = line.split("taskId=")[1].split()[0]
-                            subprocess.run(
-                                ["/system/bin/am", "move-task-to-front", task_id],
-                                capture_output=True,
-                                text=True
-                            )
-                            time.sleep(1)  
-                            switched = True
-                            break
-                if switched:
-                    break
-            if not switched:
-                print("\033[1;33m[ zam2109roblox.shop ] - No running background Roblox tasks found.\033[0m")
+            running = SystemMonitor.roblox_processes()  
+            other_running = [
+                pkg for pkg in packages
+                if pkg != package_name and any(pkg in proc for proc in running)
+            ]
+            if other_running:
+                next_package = other_running[0]
+                print(f"\033[1;96m[ zam2109roblox.shop ] - Switching focus to running {next_package}...\033[0m")
+                subprocess.run(
+                    [
+                        "/system/bin/monkey",
+                        "-p", next_package,
+                        "-c", "android.intent.category.LAUNCHER",
+                        "1"
+                    ],
+                    capture_output=True,
+                    text=True
+                )
+                time.sleep(1)
+            else:
+                print("\033[1;33m[ zam2109roblox.shop ] - No other running Roblox process found.\033[0m")
             print(f"\033[1;96m[ zam2109roblox.shop ] - Killing {package_name}...\033[0m")
             subprocess.run(
                 ["/system/bin/am", "force-stop", package_name],
