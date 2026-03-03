@@ -589,20 +589,52 @@ class SystemMonitor:
     def roblox_processes():
         package_names = []
         package_namez = RobloxManager.get_roblox_packages()
-        for proc in process_iter(['name', 'pid', 'memory_info', 'cpu_percent']):
-            try:
-                proc_name = proc.info['name']
+        try:
+            import psutil
+            from psutil import process_iter, NoSuchProcess, AccessDenied, ZombieProcess
+            found_any = False
+            for proc in process_iter(['name', 'pid', 'memory_info', 'cpu_percent']):
+                try:
+                    proc_name = (proc.info['name'] or "").lower()
+                    for package_name in package_namez:
+                        if package_name.lower() in proc_name:
+                            found_any = True
+                            mem_mb = round(proc.info['memory_info'].rss / (1024 ** 2), 2)
+                            cpu = round(proc.cpu_percent(interval=0.5) / psutil.cpu_count(), 2)
+                            package_names.append(
+                                f"{package_name} (PID: {proc.pid}, CPU: {cpu}%, MEM: {mem_mb}MB)"
+                            )
+                            break
+                except (NoSuchProcess, AccessDenied, ZombieProcess):
+                    continue
+            if found_any:
+                return package_names
+        except Exception:
+            pass
+        try:
+            output = subprocess.run(
+                ["/system/bin/ps", "-A", "-o", "PID,NAME,%CPU,RSS"],
+                capture_output=True,
+                text=True
+            ).stdout
+            lines = output.splitlines()
+            for line in lines[1:]:
+                parts = line.split()
+                if len(parts) < 4:
+                    continue
+                pid = parts[0]
+                name = parts[1]
+                cpu = parts[2]
+                rss_kb = parts[3]
                 for package_name in package_namez:
-                    if proc_name.lower() == package_name[-15:].lower():
-                        mem_usage = proc.info['memory_info'].rss / (1024 ** 2)
-                        mem_usage_rounded = round(mem_usage, 2)
-                        cpu_usage = proc.cpu_percent(interval=1) / psutil.cpu_count(logical=True)
-                        cpu_usage_rounded = round(cpu_usage, 2)
-                        full_name = package_name
-                        package_names.append(f"{full_name} (PID: {proc.pid}, CPU: {cpu_usage_rounded}%, MEM: {mem_usage_rounded}MB)")
+                    if package_name in name:
+                        mem_mb = round(int(rss_kb) / 1024, 2)
+                        package_names.append(
+                            f"{package_name} (PID: {pid}, CPU: {cpu}%, MEM: {mem_mb}MB)"
+                        )
                         break
-            except (NoSuchProcess, AccessDenied, ZombieProcess):
-                continue
+        except Exception:
+            pass
         return package_names
 
     @staticmethod
