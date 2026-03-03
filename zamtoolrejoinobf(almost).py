@@ -886,7 +886,15 @@ class RobloxManager:
             print(f"\033[1;32m[ zam2109roblox.shop ] - Cache cleared for {package_name}\033[0m")
         else:
             print(f"\033[1;93m[ zam2109roblox.shop ] - No cache found for {package_name}\033[0m")
-
+            
+    @staticmethod
+    def cache_clear():
+        packages = RobloxManager.get_roblox_packages()
+        for package_name in packages:
+            cache_path = f'/data/data/{package_name}/cache/'
+            if os.path.exists(cache_path):
+                os.system(f"rm -rf {cache_path}")
+                
     @staticmethod
     def launch_roblox(package_name, server_link, next_package_event=None):
         try:
@@ -1717,6 +1725,8 @@ class Runner:
     def update_status_table_periodically():
         while True:
             UIManager.update_status_table()
+            if clear_cache_enabled:
+                RobloxManager.cache_clear()
             time.sleep(30)
 
 def check_activation_status():
