@@ -5,6 +5,7 @@ import requests
 import subprocess
 import sqlite3
 import os
+import stat
 import sys
 from pathlib import Path
 import shutil
@@ -602,8 +603,6 @@ class SystemMonitor:
         package_names = []
         package_namez = RobloxManager.get_roblox_packages()
         try:
-            import psutil
-            from psutil import process_iter, NoSuchProcess, AccessDenied, ZombieProcess
             found_any = False
             for proc in process_iter(['name', 'pid', 'memory_info', 'cpu_percent']):
                 try:
@@ -2148,10 +2147,9 @@ su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xte
                     with open(script_path, "w") as f:
                         f.write(script_content)
                     os.chmod(script_path, 0o755)
-                    import stat
+                    
                     st = os.stat(script_path)
                     if not (st.st_mode & stat.S_IEXEC):
-                        import subprocess
                         subprocess.run(["chmod", "+x", script_path])
                     print("\033[1;32m✓ Autorun script created at:\033[0m")
                     print(f"\033[1;36m{script_path}\033[0m")
