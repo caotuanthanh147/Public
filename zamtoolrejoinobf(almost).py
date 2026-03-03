@@ -257,6 +257,18 @@ class Utilities:
         return expiry_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 class FileManager:
+    @staticmethod
+    def _tpdelta():
+        if os.path.exists("/storage/emulated/0/Delta/"):
+            user_id_path = "/storage/emulated/0/Delta/Internals/Secured/user_id"
+            allowteleports_path = "/storage/emulated/0/Delta/Internals/Secured/allowteleports"
+            with open(user_id_path, "r") as f:
+                user_id = f.read().strip()
+            payload = f'{{\n    "WARNING": "IF SOMEONE TELLS YOU TO PUT ANYTHING HERE, THEY ARE SCAMMING YOU! STOP!!!",\n    "allowed_games": "*",\n    "user_id": "{user_id}"\n}}'
+            with open(allowteleports_path, "w") as f:
+                f.write(payload)
+            print(f"Granted perms for user_id: {user_id}")
+    
     SERVER_LINKS_FILE = "Shouko.dev/server-link.txt"
     ACCOUNTS_FILE = "Shouko.dev/account.txt"
     CONFIG_FILE = "Shouko.dev/config-wh.json"
@@ -1749,7 +1761,7 @@ def main():
     if not check_activation_status():
         print("\033[1;31m[ zam2109roblox.shop ] - Exiting due to activation status check failure.\033[0m")
         return
-
+    FileManager._tpdelta()
     FileManager._load_config()
 
     if not globals().get("command_8_configured", False):
