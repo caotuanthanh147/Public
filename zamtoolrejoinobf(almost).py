@@ -837,7 +837,7 @@ class RobloxManager:
         print(f"\033[1;96m[ zam2109roblox.shop ] - Preparing to kill {package_name}...\033[0m")
         try:
             packages = RobloxManager.get_roblox_packages()
-            running = SystemMonitor.roblox_processes()  
+            running = SystemMonitor.roblox_processes()
             other_running = [
                 pkg for pkg in packages
                 if pkg != package_name and any(pkg in proc for proc in running)
@@ -847,10 +847,11 @@ class RobloxManager:
                 print(f"\033[1;96m[ zam2109roblox.shop ] - Switching focus to running {next_package}...\033[0m")
                 subprocess.run(
                     [
-                        "/system/bin/monkey",
-                        "-p", next_package,
+                        "/system/bin/am", "start",
+                        "--user", "0",
+                        "-a", "android.intent.action.MAIN",
                         "-c", "android.intent.category.LAUNCHER",
-                        "1"
+                        "-n", f"{next_package}/com.roblox.client.startup.ActivitySplash"
                     ],
                     capture_output=True,
                     text=True
