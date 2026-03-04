@@ -15,8 +15,7 @@ local ManTab = Window:CreateTab("Main", 4483345998)
 local MiscTab = Window:CreateTab("Misc", 4483345998)
 local ExTab = Window:CreateTab("Extra", 4483345998)
 local SkillTab = Window:CreateTab("Skill", 4483345998)
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local lc = game:GetService("Players").LocalPlayer
 local autoRetryActive = false
 ExTab:CreateToggle({
     Name = "Auto Retry Raid",
@@ -27,10 +26,10 @@ ExTab:CreateToggle({
         if value then
             task.spawn(function()
                 while autoRetryActive do
-                    local ok, enabled = pcall(function()
-                        return player.PlayerGui.raidcomplete.Enabled
+                    local ok, gui = pcall(function()
+                        return lc.PlayerGui:FindFirstChild("raidcomplete")
                     end)
-                    if ok and enabled then
+                    if ok and gui and gui.Enabled then
                         pcall(function()
                             game:GetService("ReplicatedStorage").requests.character.retryraid:FireServer()
                         end)
