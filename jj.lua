@@ -17,19 +17,20 @@ local ExTab = Window:CreateTab("Extra", 4483345998)
 local SkillTab = Window:CreateTab("Skill", 4483345998)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local autoRetryThread = nil
+local autoRetryActive = false
 ExTab:CreateToggle({
     Name = "Auto Retry Raid",
     Flag = "lesbian100",
     CurrentValue = false,
     Callback = function(value)
+        autoRetryActive = value
         if value then
-            autoRetryThread = task.spawn(function()
-                while value do
-                local ok, gui = pcall(function()
-                    return player.PlayerGui:FindFirstChild("raidcomplete")
-                end)
-                if ok and gui and gui.Enabled then
+            task.spawn(function()
+                while autoRetryActive do
+                    local ok, gui = pcall(function()
+                        return player.PlayerGui:FindFirstChild("raidcomplete")
+                    end)
+                    if ok and gui and gui.Enabled then
                         pcall(function()
                             game:GetService("ReplicatedStorage").requests.character.retryraid:FireServer()
                         end)
@@ -37,8 +38,6 @@ ExTab:CreateToggle({
                     task.wait(1)
                 end
             end)
-        else
-            autoRetryThread = nil
         end
     end
 })
