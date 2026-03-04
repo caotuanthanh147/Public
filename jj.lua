@@ -27,10 +27,10 @@ ExTab:CreateToggle({
         if value then
             task.spawn(function()
                 while autoRetryActive do
-                    local ok, gui = pcall(function()
-                        return player.PlayerGui:FindFirstChild("raidcomplete")
+                    local ok, enabled = pcall(function()
+                        return player.PlayerGui.raidcomplete.Enabled
                     end)
-                    if ok and gui and gui.Enabled then
+                    if ok and enabled then
                         pcall(function()
                             game:GetService("ReplicatedStorage").requests.character.retryraid:FireServer()
                         end)
@@ -41,7 +41,6 @@ ExTab:CreateToggle({
         end
     end
 })
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
