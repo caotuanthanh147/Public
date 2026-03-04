@@ -1,606 +1,2191 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="https://www.cloudflare.com/favicon.ico" />
-    <title>Not Found</title>
-    <style>
-      body {
-        font-family: system-ui;
-        font-weight: 300;
-        font-size: 1.25rem;
-        color: #36393a;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      main {
-        max-width: 1200px;
-        margin-top: 120px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-      }
-      #text {
-        max-width: 60%;
-        margin-left: 1rem;
-        margin-right: 1rem;
-      }
-      main > section > div {
-        margin-bottom: 3.25rem;
-      }
-      svg {
-        margin-left: 2rem;
-      }
-      @keyframes eye-1 {
-        0% {
-          transform: translateX(0);
-        }
-        10%,
-        50% {
-          transform: translateX(-5px);
-        }
-        60% {
-          transform: translateX(0);
-        }
-        100% {
-          transform: translateX(0px);
-        }
-      }
-      @keyframes eye-2 {
-        0% {
-          transform: translateX(0);
-        }
-        10%,
-        50% {
-          transform: translateX(5px);
-        }
-        60% {
-          transform: translateX(0);
-        }
-        100% {
-          transform: translateX(0px);
-        }
-      }
-      svg > .eye-1 {
-        animation: eye-1 3s infinite;
-      }
-      svg > .eye-2 {
-        animation: eye-2 3s 0.6s infinite;
-      }
-      h1 {
-        font-size: 3.75rem;
-        font-weight: 400;
-        margin-bottom: 0.5rem;
-      }
-      h3 {
-        font-size: 2rem;
-        font-weight: 400;
-        color: #92979b;
-        margin: 0;
-      }
-      a {
-        color: #0055dc;
-      }
-      p {
-        margin: 0;
-      }
-      #error-title {
-        font-size: 2rem;
-        margin-bottom: 1rem;
-      }
-      #footer-title {
-        font-weight: 700;
-        margin-bottom: 0.75rem;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <section id="text">
-        <div>
-          <h1>Error 404</h1>
-          <h3>Object not found</h3>
-        </div>
+import threading
+import time
+import json
+import requests
+import subprocess
+import sqlite3
+import os
+import stat
+import sys
+from pathlib import Path
+import shutil
+import pytz
+import traceback
+import random
+import sys
+import gc
+import os
+from datetime import datetime, timezone
+from rich.table import Table 
+from rich.panel import Panel 
+from rich.text import Text 
+from rich.align import Align 
+from rich.box import ROUNDED 
+from rich.console import Console 
+from threading import Lock, Event
 
-        <div>
-          <p>
-            This object does not exist or is not publicly accessible at this
-            URL. Check the URL of the object that you're looking for or contact
-            the owner to enable Public access.
-          </p>
-        </div>
+try:
+    from prettytable import PrettyTable 
+except ImportError:
+    os.system("pip install prettytable")
+    from prettytable import PrettyTable 
 
-        <div>
-          <p id="footer-title">Is this your bucket?</p>
-          <p>
-            Learn how to enable
-            <a
-              href="https://developers.cloudflare.com/r2/data-access/public-buckets/"
-              >Public Access</a
-            >
-          </p>
-        </div>
-      </section>
+def boot_time():
+    try:
+        return int(subprocess.check_output(["settings", "get", "global", "boot_count"]).strip())
+    except Exception:
+        return None
+        
+        
+autorun_enabled = False
+force_rejoin_interval = None
 
-      <section>
-        <svg
-          width="414"
-          height="212"
-          viewBox="0 0 414 212"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <ellipse cx="208.5" cy="166.5" rx="174.5" ry="45.5" fill="#E2F5FA" />
-          <path
-            d="M205.516 80.2674H139.419L148.186 141.237H197.788L205.516 80.2674Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M205.516 80.2674H139.419L148.186 141.237H197.788L205.516 80.2674Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M205.516 80.2674H139.419L148.186 141.237H197.788L205.516 80.2674Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="137"
-            y="75"
-            width="70.9351"
-            height="9.39611"
-            rx="2.40792"
-            fill="#C5EBF5"
-            stroke="#6ECCE5"
-            stroke-width="2"
-          />
-          <path
-            d="M124.566 13.277C121.053 13.277 118.204 10.4288 118.204 6.91534C118.204 3.40191 121.053 0.553711 124.566 0.553711C128.08 0.553711 130.928 3.40191 130.928 6.91534C130.928 10.4288 128.08 13.277 124.566 13.277Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M122.692 10.2347H126.402V24.0345H122.692V10.2347Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M85.6775 57.6815H163.733V127.819H85.6775V57.6815Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M183.719 96.4263H179.429C179.429 96.4263 178.132 78.2631 163.565 71.5752V65.4338C169.87 67.9703 182.283 75.5798 183.719 96.4263Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M193.146 105.43L188.253 106.931C188.253 106.931 186.752 98.3591 181.394 99.6477C176.035 100.936 177.96 108.22 177.96 108.22H173.678C173.678 108.22 170.889 95.9857 180.537 94.0691C190.186 92.1524 193.146 105.43 193.146 105.43Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M65.5132 96.4345H69.795C69.795 96.4345 71.0999 78.2712 85.6583 71.5752V65.4338C79.3537 67.9377 66.916 75.5472 65.5132 96.4345Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M56.0777 105.406L60.9712 106.906C60.9712 106.906 62.472 98.3345 67.8304 99.6149C73.1888 100.895 71.2559 108.195 71.2559 108.195H75.5459C75.5459 108.195 78.3353 95.9611 68.6868 94.0445C59.0384 92.1278 56.0777 105.406 56.0777 105.406Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M136.176 111.953C136.176 113.281 136.704 114.555 137.643 115.494C138.582 116.433 139.856 116.961 141.184 116.961C141.842 116.962 142.494 116.833 143.103 116.582C143.711 116.331 144.264 115.962 144.73 115.497C145.196 115.032 145.565 114.48 145.818 113.872C146.07 113.264 146.2 112.612 146.2 111.953C146.2 111.295 146.07 110.642 145.818 110.034C145.566 109.425 145.196 108.872 144.73 108.407C144.265 107.941 143.712 107.571 143.103 107.319C142.495 107.067 141.842 106.937 141.184 106.937C139.855 106.94 138.581 107.469 137.642 108.409C136.703 109.35 136.176 110.624 136.176 111.953V111.953Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M119.701 111.953C119.701 112.612 119.831 113.264 120.083 113.872C120.335 114.48 120.705 115.032 121.171 115.497C121.637 115.962 122.19 116.331 122.798 116.582C123.407 116.833 124.059 116.962 124.717 116.961C126.045 116.961 127.319 116.433 128.258 115.494C129.197 114.555 129.725 113.281 129.725 111.953C129.725 110.624 129.198 109.35 128.259 108.409C127.32 107.469 126.046 106.94 124.717 106.937C124.058 106.937 123.406 107.067 122.798 107.319C122.189 107.571 121.636 107.941 121.17 108.407C120.704 108.872 120.335 109.425 120.083 110.034C119.831 110.642 119.701 111.295 119.701 111.953V111.953Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M103.384 111.953C103.384 112.612 103.513 113.264 103.766 113.872C104.018 114.48 104.387 115.032 104.853 115.497C105.319 115.962 105.872 116.331 106.481 116.582C107.089 116.833 107.741 116.962 108.399 116.961C109.728 116.961 111.001 116.433 111.94 115.494C112.88 114.555 113.407 113.281 113.407 111.953C113.407 110.624 112.88 109.35 111.941 108.409C111.002 107.469 109.728 106.94 108.399 106.937C107.069 106.937 105.793 107.466 104.853 108.407C103.912 109.347 103.384 110.623 103.384 111.953V111.953Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M163.419 57.6273H85.5901C85.5901 57.6273 86.8707 20.01 124.5 20.01C162.13 20.01 163.419 57.6273 163.419 57.6273Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M153.931 60.0436H159.587V126.787H153.931V60.0436Z"
-            fill="white"
-          />
-          <path
-            d="M159.528 55.6816H153.703L149.151 32.3329C149.151 32.3329 158.005 44.3703 159.528 55.6816Z"
-            fill="white"
-          />
-          <path
-            d="M139.792 48.9516C134.995 48.9516 131.106 45.0627 131.106 40.2656C131.106 35.4684 134.995 31.5795 139.792 31.5795C144.589 31.5795 148.478 35.4684 148.478 40.2656C148.478 45.0627 144.589 48.9516 139.792 48.9516Z"
-            fill="white"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-miterlimit="10"
-          />
-          <path
-            d="M108.821 48.9516C104.024 48.9516 100.135 45.0627 100.135 40.2655C100.135 35.4684 104.024 31.5795 108.821 31.5795C113.618 31.5795 117.507 35.4684 117.507 40.2655C117.507 45.0627 113.618 48.9516 108.821 48.9516Z"
-            fill="white"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-miterlimit="10"
-          />
-          <path
-            class="eye-1"
-            d="M138.373 40.3055C138.373 41.4216 138.817 42.4921 139.606 43.2813C140.395 44.0706 141.466 44.5139 142.582 44.5139C143.697 44.5118 144.765 44.0674 145.552 43.2784C146.34 42.4894 146.782 41.4202 146.782 40.3055C146.78 39.1921 146.337 38.125 145.549 37.3378C144.762 36.5506 143.695 36.1073 142.582 36.1052C141.467 36.1052 140.398 36.5474 139.609 37.3349C138.82 38.1224 138.375 39.1907 138.373 40.3055V40.3055Z"
-            fill="#6ECCE5"
-          />
-          <path
-            class="eye-1"
-            d="M107.271 40.3055C107.271 41.4202 107.714 42.4894 108.501 43.2784C109.289 44.0674 110.357 44.5118 111.472 44.5139C112.588 44.5139 113.658 44.0706 114.447 43.2813C115.237 42.4921 115.68 41.4216 115.68 40.3055C115.678 39.1907 115.234 38.1224 114.445 37.3349C113.656 36.5474 112.586 36.1052 111.472 36.1052C110.358 36.1073 109.291 36.5506 108.504 37.3378C107.717 38.125 107.274 39.1921 107.271 40.3055V40.3055Z"
-            fill="#6ECCE5"
-          />
-          <path
-            d="M84.8918 127.581H164.967C173.345 127.581 180.137 134.371 180.137 142.747C180.137 151.123 173.345 157.913 164.967 157.913H84.8918C76.5136 157.913 69.7218 151.123 69.7218 142.747C69.7218 134.371 76.5136 127.581 84.8918 127.581Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M152.026 142.831C151.99 145.395 152.973 147.869 154.76 149.709C156.547 151.549 158.992 152.603 161.556 152.641C164.12 152.603 166.565 151.549 168.352 149.709C170.139 147.869 171.122 145.395 171.086 142.831C171.122 140.266 170.139 137.792 168.352 135.953C166.565 134.113 164.12 133.058 161.556 133.02C158.992 133.058 156.547 134.113 154.76 135.953C152.973 137.792 151.99 140.266 152.026 142.831Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M137.081 152.641C131.818 152.641 127.552 148.249 127.552 142.831C127.552 137.412 131.818 133.02 137.081 133.02C142.344 133.02 146.611 137.412 146.611 142.831C146.611 148.249 142.344 152.641 137.081 152.641Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M103.074 142.831C103.038 145.395 104.021 147.869 105.808 149.709C107.595 151.549 110.039 152.603 112.604 152.641C115.168 152.603 117.613 151.549 119.4 149.709C121.187 147.869 122.17 145.395 122.134 142.831C122.17 140.266 121.187 137.792 119.4 135.953C117.613 134.113 115.168 133.058 112.604 133.02C110.039 133.058 107.595 134.113 105.808 135.953C104.021 137.792 103.038 140.266 103.074 142.831Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M78.598 142.831C78.5614 145.395 79.5447 147.869 81.3317 149.709C83.1186 151.549 85.5631 152.603 88.1276 152.641C90.692 152.603 93.1364 151.549 94.9234 149.709C96.7103 147.869 97.6936 145.395 97.6571 142.831C97.6936 140.266 96.7103 137.792 94.9234 135.953C93.1364 134.113 90.692 133.058 88.1276 133.02C85.5631 133.058 83.1186 134.113 81.3317 135.953C79.5447 137.792 78.5614 140.266 78.598 142.831Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <path
-            d="M103.252 71.1929H146.765V95.2437H103.252V71.1929Z"
-            fill="#6ECCE5"
-          />
-          <path
-            d="M137.087 75.635H142.177V79.7379H137.087V75.635Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M129.852 75.635H134.934V79.7379H129.852V75.635Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M137.087 87.0141H142.177V91.1089H137.087V87.0141Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M129.852 87.0141H134.934V91.1089H129.852V87.0141Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M137.087 81.1718H142.177V85.2666H137.087V81.1718Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M129.852 81.1718H134.934V85.2666H129.852V81.1718Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M108.366 75.635H127.238V91.1078H108.366V75.635Z"
-            fill="white"
-          />
-          <path
-            d="M119.345 49.2718C120.041 48.5443 120.865 47.9697 121.768 47.5786C122.671 47.1875 123.637 46.9869 124.612 46.9869C125.587 46.9869 126.553 47.1875 127.456 47.5786C128.359 47.9697 129.183 48.5443 129.879 49.2718"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M274.751 12.7232C271.238 12.7232 268.39 9.87505 268.39 6.36162C268.39 2.8482 271.238 0 274.751 0C278.265 0 281.113 2.8482 281.113 6.36162C281.113 9.87505 278.265 12.7232 274.751 12.7232Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M272.877 9.68185H276.588V23.4817H272.877V9.68185Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M235.863 57.1286H313.919V127.266H235.863V57.1286Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M333.248 57.7026H328.958C328.958 57.7026 327.662 75.8658 313.095 82.5537V88.6951C319.4 86.1586 331.813 78.5491 333.248 57.7026Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M342.676 48.6986L337.782 47.1979C337.782 47.1979 336.282 55.7698 330.923 54.4812C325.565 53.1925 327.49 45.9093 327.49 45.9093H323.208C323.208 45.9093 320.419 58.1432 330.067 60.0598C339.715 61.9765 342.676 48.6986 342.676 48.6986Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M215.043 57.6946H219.325C219.325 57.6946 220.63 75.8578 235.188 82.5538V88.6953C228.884 86.1914 216.446 78.5819 215.043 57.6946Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M205.608 48.7232L210.501 47.2226C210.501 47.2226 212.002 55.7944 217.36 54.514C222.719 53.2335 220.786 45.9339 220.786 45.9339H225.076C225.076 45.9339 227.865 58.1678 218.217 60.0844C208.568 62.0011 205.608 48.7232 205.608 48.7232Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M286.361 111.401C286.361 112.729 286.889 114.003 287.828 114.942C288.767 115.881 290.041 116.409 291.369 116.409C292.028 116.41 292.68 116.281 293.288 116.03C293.897 115.779 294.45 115.41 294.915 114.945C295.381 114.48 295.751 113.927 296.003 113.319C296.255 112.711 296.385 112.059 296.385 111.401C296.385 110.742 296.255 110.09 296.003 109.482C295.751 108.873 295.382 108.32 294.916 107.854C294.45 107.389 293.897 107.019 293.289 106.767C292.68 106.515 292.028 106.385 291.369 106.385C290.04 106.387 288.767 106.917 287.828 107.857C286.889 108.798 286.361 110.072 286.361 111.401V111.401Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M269.887 111.401C269.887 112.059 270.017 112.711 270.269 113.319C270.521 113.927 270.891 114.48 271.357 114.945C271.823 115.41 272.376 115.779 272.984 116.03C273.593 116.281 274.245 116.41 274.903 116.409C276.231 116.409 277.505 115.881 278.444 114.942C279.383 114.003 279.911 112.729 279.911 111.401C279.911 110.072 279.383 108.798 278.445 107.857C277.506 106.917 276.232 106.387 274.903 106.385C274.244 106.385 273.592 106.515 272.984 106.767C272.375 107.019 271.822 107.389 271.356 107.854C270.89 108.32 270.521 108.873 270.269 109.482C270.017 110.09 269.887 110.742 269.887 111.401V111.401Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M253.569 111.401C253.569 112.059 253.699 112.711 253.951 113.319C254.204 113.927 254.573 114.48 255.039 114.945C255.505 115.41 256.058 115.779 256.666 116.03C257.275 116.281 257.927 116.41 258.585 116.409C259.914 116.409 261.187 115.881 262.126 114.942C263.066 114.003 263.593 112.729 263.593 111.401C263.593 110.072 263.066 108.798 262.127 107.857C261.188 106.917 259.914 106.387 258.585 106.385C257.255 106.385 255.979 106.914 255.039 107.854C254.098 108.795 253.569 110.071 253.569 111.401V111.401Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M313.604 57.0745H235.775C235.775 57.0745 237.056 19.4572 274.686 19.4572C312.315 19.4572 313.604 57.0745 313.604 57.0745Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M304.116 59.4908H309.773V126.234H304.116V59.4908Z"
-            fill="white"
-          />
-          <path
-            d="M309.713 55.1288H303.889L299.336 31.7801C299.336 31.7801 308.19 43.8175 309.713 55.1288Z"
-            fill="white"
-          />
-          <path
-            d="M259.006 48.4013C263.804 48.4013 267.692 44.5124 267.692 39.7152C267.692 34.918 263.804 31.0292 259.006 31.0292C254.209 31.0292 250.32 34.918 250.32 39.7152C250.32 44.5124 254.209 48.4013 259.006 48.4013Z"
-            fill="white"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-miterlimit="10"
-          />
-          <path
-            d="M289.977 48.4013C294.774 48.4013 298.663 44.5124 298.663 39.7152C298.663 34.918 294.774 31.0292 289.977 31.0292C285.18 31.0292 281.291 34.918 281.291 39.7152C281.291 44.5124 285.18 48.4013 289.977 48.4013Z"
-            fill="white"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-miterlimit="10"
-          />
-          <path
-            class="eye-2"
-            d="M260.425 39.7552C260.425 40.8713 259.981 41.9418 259.192 42.731C258.403 43.5202 257.333 43.9636 256.216 43.9636C255.102 43.9615 254.033 43.5171 253.246 42.7281C252.458 41.9391 252.016 40.8699 252.016 39.7552C252.018 38.6418 252.461 37.5747 253.249 36.7875C254.036 36.0002 255.103 35.557 256.216 35.5549C257.331 35.5549 258.4 35.9971 259.189 36.7846C259.978 37.5721 260.423 38.6404 260.425 39.7552V39.7552Z"
-            fill="#6ECCE5"
-          />
-          <path
-            class="eye-2"
-            d="M291.527 39.7552C291.527 40.8699 291.085 41.9391 290.297 42.7281C289.51 43.5171 288.441 43.9615 287.327 43.9636C286.21 43.9636 285.14 43.5202 284.351 42.731C283.562 41.9418 283.118 40.8713 283.118 39.7552C283.12 38.6404 283.565 37.5721 284.354 36.7846C285.143 35.9971 286.212 35.5549 287.327 35.5549C288.44 35.557 289.507 36.0002 290.294 36.7875C291.082 37.5747 291.525 38.6418 291.527 39.7552V39.7552Z"
-            fill="#6ECCE5"
-          />
-          <path
-            d="M235.077 127.028H315.152C323.53 127.028 330.322 133.818 330.322 142.194C330.322 150.57 323.53 157.36 315.152 157.36H235.077C226.699 157.36 219.907 150.57 219.907 142.194C219.907 133.818 226.699 127.028 235.077 127.028Z"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M302.212 142.278C302.175 144.843 303.159 147.317 304.946 149.157C306.733 150.996 309.177 152.051 311.741 152.089C314.306 152.051 316.75 150.996 318.537 149.157C320.324 147.317 321.308 144.843 321.271 142.278C321.308 139.714 320.324 137.24 318.537 135.4C316.75 133.561 314.306 132.506 311.741 132.468C309.177 132.506 306.733 133.561 304.946 135.4C303.159 137.24 302.175 139.714 302.212 142.278Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M287.267 152.089C282.004 152.089 277.737 147.697 277.737 142.278C277.737 136.86 282.004 132.468 287.267 132.468C292.53 132.468 296.796 136.86 296.796 142.278C296.796 147.697 292.53 152.089 287.267 152.089Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M253.26 142.278C253.223 144.843 254.207 147.317 255.994 149.157C257.781 150.996 260.225 152.051 262.789 152.089C265.354 152.051 267.798 150.996 269.585 149.157C271.372 147.317 272.356 144.843 272.319 142.278C272.356 139.714 271.372 137.24 269.585 135.4C267.798 133.561 265.354 132.506 262.789 132.468C260.225 132.506 257.781 133.561 255.994 135.4C254.207 137.24 253.223 139.714 253.26 142.278Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <g style="mix-blend-mode: multiply">
-            <path
-              d="M228.783 142.278C228.747 144.843 229.73 147.317 231.517 149.157C233.304 150.996 235.749 152.051 238.313 152.089C240.877 152.051 243.322 150.996 245.109 149.157C246.896 147.317 247.879 144.843 247.843 142.278C247.879 139.714 246.896 137.24 245.109 135.4C243.322 133.561 240.877 132.506 238.313 132.468C235.749 132.506 233.304 133.561 231.517 135.4C229.73 137.24 228.747 139.714 228.783 142.278Z"
-              fill="#C5EBF5"
-            />
-          </g>
-          <path
-            d="M253.437 70.6394H296.951V94.6902H253.437V70.6394Z"
-            fill="#6ECCE5"
-          />
-          <path
-            d="M287.272 75.0814H292.363V79.1842H287.272V75.0814Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M280.037 75.0814H285.119V79.1842H280.037V75.0814Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M287.272 86.4604H292.363V90.5552H287.272V86.4604Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M280.037 86.4604H285.119V90.5552H280.037V86.4604Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M287.272 80.6182H292.363V84.713H287.272V80.6182Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M280.037 80.6182H285.119V84.713H280.037V80.6182Z"
-            fill="#0055DC"
-          />
-          <path
-            d="M258.552 75.0814H277.424V90.5542H258.552V75.0814Z"
-            fill="white"
-          />
-          <path
-            d="M269.53 48.7169C270.226 47.9894 271.05 47.4149 271.953 47.0237C272.856 46.6326 273.822 46.432 274.797 46.432C275.772 46.432 276.738 46.6326 277.641 47.0237C278.545 47.4149 279.368 47.9894 280.064 48.7169"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M409.67 76.5789H343.573L352.34 137.548H401.942L409.67 76.5789Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M409.67 76.5789H343.573L352.34 137.548H401.942L409.67 76.5789Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M409.67 76.5789H343.573L352.34 137.548H401.942L409.67 76.5789Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="341.154"
-            y="71.3115"
-            width="70.9351"
-            height="9.39611"
-            rx="2.40792"
-            fill="#C5EBF5"
-            stroke="#6ECCE5"
-            stroke-width="2"
-          />
-          <path
-            d="M409.671 93.3885H343.573L352.34 154.358H401.942L409.671 93.3885Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M409.671 93.3885H343.573L352.34 154.358H401.942L409.671 93.3885Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M409.671 93.3885H343.573L352.34 154.358H401.942L409.671 93.3885Z"
-            stroke="#6ECCE5"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="341.154"
-            y="88.1211"
-            width="70.9351"
-            height="9.39611"
-            rx="2.40792"
-            fill="#C5EBF5"
-            stroke="#6ECCE5"
-            stroke-width="2"
-          />
-          <path
-            d="M295.581 108.36H360.026L351.478 167.805H303.116L295.581 108.36Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M295.581 108.36H360.026L351.478 167.805H303.116L295.581 108.36Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M295.581 108.36H360.026L351.478 167.805H303.116L295.581 108.36Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="-1"
-            y="1"
-            width="69.1117"
-            height="9.1112"
-            rx="2.40792"
-            transform="matrix(-1 0 0 1 361.359 102.25)"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M342.555 136.334H382.924L377.569 173.57H347.275L342.555 136.334Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M342.555 136.334H382.924L377.569 173.57H347.275L342.555 136.334Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M342.555 136.334H382.924L377.569 173.57H347.275L342.555 136.334Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="-1"
-            y="1"
-            width="42.5446"
-            height="4.96009"
-            rx="2.40792"
-            transform="matrix(-1 0 0 1 383.012 132.506)"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-          <path
-            d="M17.328 102.337L6.64737 166.613L67.3531 167.939L75.3682 119.704L17.328 102.337Z"
-            fill="#C5EBF5"
-          />
-          <path
-            d="M17.328 102.337L6.64737 166.613L67.3531 167.939L75.3682 119.704L17.328 102.337Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M17.328 102.337L6.64737 166.613L67.3531 167.939L75.3682 119.704L17.328 102.337Z"
-            stroke="#0055DC"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <rect
-            x="1.15039"
-            y="168.103"
-            width="69.8978"
-            height="9.23404"
-            rx="2.40792"
-            transform="rotate(-80.5655 1.15039 168.103)"
-            fill="#C5EBF5"
-            stroke="#0055DC"
-            stroke-width="2"
-          />
-        </svg>
-      </section>
-    </main>
-  </body>
-</html>
+package_lock = Lock()
+status_lock = Lock()
+rejoin_lock = Lock()
+bot_instance = None
+bot_thread = None
+socket_server = None
+stop_webhook_thread = False
+webhook_thread = None
+webhook_url = None
+device_name = None
+webhook_interval = None
+reset_tab_interval = None
+close_and_rejoin_delay = None
+codex_bypass_enabled = False
+codex_bypass_thread = None
+boot_time = boot_time()
+
+auto_android_id_enabled = False
+auto_android_id_thread = None
+auto_android_id_value = None
+clear_cache_enabled = False
+
+globals()["_disable_ui"] = "0"
+globals()["package_statuses"] = {}
+globals()["_uid_"] = {}
+globals()["_user_"] = {}
+globals()["_change_acc"] = "0"
+globals()["is_runner_ez"] = False
+globals()["check_exec_enable"] = "1"
+globals()["codex_bypass_active"] = False
+
+executors = {
+    "Codex Clone 001": "/storage/emulated/0/RobloxClone001/Codex/",
+    "Codex Clone 002": "/storage/emulated/0/RobloxClone002/Codex/",
+    "Codex Clone 003": "/storage/emulated/0/RobloxClone003/Codex/",
+    "Codex Clone 004": "/storage/emulated/0/RobloxClone004/Codex/",
+    "Codex Clone 005": "/storage/emulated/0/RobloxClone005/Codex/",
+    "Codex Clone 006": "/storage/emulated/0/RobloxClone006/Codex/",
+    "Codex Clone 007": "/storage/emulated/0/RobloxClone007/Codex/",
+    "Codex Clone 008": "/storage/emulated/0/RobloxClone008/Codex/",
+    "Codex Clone 009": "/storage/emulated/0/RobloxClone009/Codex/",
+    "Codex Clone 010": "/storage/emulated/0/RobloxClone010/Codex/",
+    "Codex Clone 011": "/storage/emulated/0/RobloxClone011/Codex/",
+    "Codex Clone 012": "/storage/emulated/0/RobloxClone012/Codex/",
+    "Codex Clone 013": "/storage/emulated/0/RobloxClone013/Codex/",
+    "Codex Clone 014": "/storage/emulated/0/RobloxClone014/Codex/",
+    "Codex Clone 015": "/storage/emulated/0/RobloxClone015/Codex/",
+    "Codex Clone 016": "/storage/emulated/0/RobloxClone016/Codex/",
+    "Codex Clone 017": "/storage/emulated/0/RobloxClone017/Codex/",
+    "Codex Clone 018": "/storage/emulated/0/RobloxClone018/Codex/",
+    "Codex Clone 019": "/storage/emulated/0/RobloxClone019/Codex/",
+    "Codex Clone 020": "/storage/emulated/0/RobloxClone020/Codex/",
+    "Codex VNG Clone 001": "/storage/emulated/0/RobloxVNGClone001/Codex/",
+    "Codex VNG Clone 002": "/storage/emulated/0/RobloxVNGClone002/Codex/",
+    "Codex VNG Clone 003": "/storage/emulated/0/RobloxVNGClone003/Codex/",
+    "Codex VNG Clone 004": "/storage/emulated/0/RobloxVNGClone004/Codex/",
+    "Codex VNG Clone 005": "/storage/emulated/0/RobloxVNGClone005/Codex/",
+    "Codex VNG Clone 006": "/storage/emulated/0/RobloxVNGClone006/Codex/",
+    "Codex VNG Clone 007": "/storage/emulated/0/RobloxVNGClone007/Codex/",
+    "Codex VNG Clone 008": "/storage/emulated/0/RobloxVNGClone008/Codex/",
+    "Codex VNG Clone 009": "/storage/emulated/0/RobloxVNGClone009/Codex/",
+    "Codex VNG Clone 010": "/storage/emulated/0/RobloxVNGClone010/Codex/",
+    "Codex VNG Clone 011": "/storage/emulated/0/RobloxVNGClone011/Codex/",
+    "Codex VNG Clone 012": "/storage/emulated/0/RobloxVNGClone012/Codex/",
+    "Codex VNG Clone 013": "/storage/emulated/0/RobloxVNGClone013/Codex/",
+    "Codex VNG Clone 014": "/storage/emulated/0/RobloxVNGClone014/Codex/",
+    "Codex VNG Clone 015": "/storage/emulated/0/RobloxVNGClone015/Codex/",
+    "Codex VNG Clone 016": "/storage/emulated/0/RobloxVNGClone016/Codex/",
+    "Codex VNG Clone 017": "/storage/emulated/0/RobloxVNGClone017/Codex/",
+    "Codex VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Codex/",
+    "Codex VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Codex/",
+    "Codex VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Codex/",
+    "Arceus X Clone 001": "/storage/emulated/0/RobloxClone001/Arceus X/",
+    "Arceus X Clone 002": "/storage/emulated/0/RobloxClone002/Arceus X/",
+    "Arceus X Clone 003": "/storage/emulated/0/RobloxClone003/Arceus X/",
+    "Arceus X Clone 004": "/storage/emulated/0/RobloxClone004/Arceus X/",
+    "Arceus X Clone 005": "/storage/emulated/0/RobloxClone005/Arceus X/",
+    "Arceus X Clone 006": "/storage/emulated/0/RobloxClone006/Arceus X/",
+    "Arceus X Clone 007": "/storage/emulated/0/RobloxClone007/Arceus X/",
+    "Arceus X Clone 008": "/storage/emulated/0/RobloxClone008/Arceus X/",
+    "Arceus X Clone 009": "/storage/emulated/0/RobloxClone009/Arceus X/",
+    "Arceus X Clone 010": "/storage/emulated/0/RobloxClone010/Arceus X/",
+    "Arceus X Clone 011": "/storage/emulated/0/RobloxClone011/Arceus X/",
+    "Arceus X Clone 012": "/storage/emulated/0/RobloxClone012/Arceus X/",
+    "Arceus X Clone 013": "/storage/emulated/0/RobloxClone013/Arceus X/",
+    "Arceus X Clone 014": "/storage/emulated/0/RobloxClone014/Arceus X/",
+    "Arceus X Clone 015": "/storage/emulated/0/RobloxClone015/Arceus X/",
+    "Arceus X Clone 016": "/storage/emulated/0/RobloxClone016/Arceus X/",
+    "Arceus X Clone 017": "/storage/emulated/0/RobloxClone017/Arceus X/",
+    "Arceus X Clone 018": "/storage/emulated/0/RobloxClone018/Arceus X/",
+    "Arceus X Clone 019": "/storage/emulated/0/RobloxClone019/Arceus X/",
+    "Arceus X Clone 020": "/storage/emulated/0/RobloxClone020/Arceus X/",
+    "Arceus X VNG Clone 001": "/storage/emulated/0/RobloxVNGClone001/Arceus X/",
+    "Arceus X VNG Clone 002": "/storage/emulated/0/RobloxVNGClone002/Arceus X/",
+    "Arceus X VNG Clone 003": "/storage/emulated/0/RobloxVNGClone003/Arceus X/",
+    "Arceus X VNG Clone 004": "/storage/emulated/0/RobloxVNGClone004/Arceus X/",
+    "Arceus X VNG Clone 005": "/storage/emulated/0/RobloxVNGClone005/Arceus X/",
+    "Arceus X VNG Clone 006": "/storage/emulated/0/RobloxVNGClone006/Arceus X/",
+    "Arceus X VNG Clone 007": "/storage/emulated/0/RobloxVNGClone007/Arceus X/",
+    "Arceus X VNG Clone 008": "/storage/emulated/0/RobloxVNGClone008/Arceus X/",
+    "Arceus X VNG Clone 009": "/storage/emulated/0/RobloxVNGClone009/Arceus X/",
+    "Arceus X VNG Clone 010": "/storage/emulated/0/RobloxVNGClone010/Arceus X/",
+    "Arceus X VNG Clone 011": "/storage/emulated/0/RobloxVNGClone011/Arceus X/",
+    "Arceus X VNG Clone 012": "/storage/emulated/0/RobloxVNGClone012/Arceus X/",
+    "Arceus X VNG Clone 013": "/storage/emulated/0/RobloxVNGClone013/Arceus X/",
+    "Arceus X VNG Clone 014": "/storage/emulated/0/RobloxVNGClone014/Arceus X/",
+    "Arceus X VNG Clone 015": "/storage/emulated/0/RobloxVNGClone015/Arceus X/",
+    "Arceus X VNG Clone 016": "/storage/emulated/0/RobloxVNGClone016/Arceus X/",
+    "Arceus X VNG Clone 017": "/storage/emulated/0/RobloxVNGClone017/Arceus X/",
+    "Arceus X VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/Arceus X/",
+    "Arceus X VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/Arceus X/",
+    "Arceus X VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/Arceus X/",
+    "RonixExploit Clone 001": "/storage/emulated/0/RobloxClone001/RonixExploit/",
+    "RonixExploit Clone 002": "/storage/emulated/0/RobloxClone002/RonixExploit/",
+    "RonixExploit Clone 003": "/storage/emulated/0/RobloxClone003/RonixExploit/",
+    "RonixExploit Clone 004": "/storage/emulated/0/RobloxClone004/RonixExploit/",
+    "RonixExploit Clone 005": "/storage/emulated/0/RobloxClone005/RonixExploit/",
+    "RonixExploit Clone 006": "/storage/emulated/0/RobloxClone006/RonixExploit/",
+    "RonixExploit Clone 007": "/storage/emulated/0/RobloxClone007/RonixExploit/",
+    "RonixExploit Clone 008": "/storage/emulated/0/RobloxClone008/RonixExploit/",
+    "RonixExploit Clone 009": "/storage/emulated/0/RobloxClone009/RonixExploit/",
+    "RonixExploit Clone 010": "/storage/emulated/0/RobloxClone010/RonixExploit/",
+    "RonixExploit Clone 011": "/storage/emulated/0/RobloxClone011/RonixExploit/",
+    "RonixExploit Clone 012": "/storage/emulated/0/RobloxClone012/RonixExploit/",
+    "RonixExploit Clone 013": "/storage/emulated/0/RobloxClone013/RonixExploit/",
+    "RonixExploit Clone 014": "/storage/emulated/0/RobloxClone014/RonixExploit/",
+    "RonixExploit Clone 015": "/storage/emulated/0/RobloxClone015/RonixExploit/",
+    "RonixExploit Clone 016": "/storage/emulated/0/RobloxClone016/RonixExploit/",
+    "RonixExploit Clone 017": "/storage/emulated/0/RobloxClone017/RonixExploit/",
+    "RonixExploit Clone 018": "/storage/emulated/0/RobloxClone018/RonixExploit/",
+    "RonixExploit Clone 019": "/storage/emulated/0/RobloxClone019/RonixExploit/",
+    "RonixExploit Clone 020": "/storage/emulated/0/RobloxClone020/RonixExploit/",
+    "RonixExploit VNG Clone 001": "/storage/emulated/0/RobloxVNGClone001/RonixExploit/",
+    "RonixExploit VNG Clone 002": "/storage/emulated/0/RobloxVNGClone002/RonixExploit/",
+    "RonixExploit VNG Clone 003": "/storage/emulated/0/RobloxVNGClone003/RonixExploit/",
+    "RonixExploit VNG Clone 004": "/storage/emulated/0/RobloxVNGClone004/RonixExploit/",
+    "RonixExploit VNG Clone 005": "/storage/emulated/0/RobloxVNGClone005/RonixExploit/",
+    "RonixExploit VNG Clone 006": "/storage/emulated/0/RobloxVNGClone006/RonixExploit/",
+    "RonixExploit VNG Clone 007": "/storage/emulated/0/RobloxVNGClone007/RonixExploit/",
+    "RonixExploit VNG Clone 008": "/storage/emulated/0/RobloxVNGClone008/RonixExploit/",
+    "RonixExploit VNG Clone 009": "/storage/emulated/0/RobloxVNGClone009/RonixExploit/",
+    "RonixExploit VNG Clone 010": "/storage/emulated/0/RobloxVNGClone010/RonixExploit/",
+    "RonixExploit VNG Clone 011": "/storage/emulated/0/RobloxVNGClone011/RonixExploit/",
+    "RonixExploit VNG Clone 012": "/storage/emulated/0/RobloxVNGClone012/RonixExploit/",
+    "RonixExploit VNG Clone 013": "/storage/emulated/0/RobloxVNGClone013/RonixExploit/",
+    "RonixExploit VNG Clone 014": "/storage/emulated/0/RobloxVNGClone014/RonixExploit/",
+    "RonixExploit VNG Clone 015": "/storage/emulated/0/RobloxVNGClone015/RonixExploit/",
+    "RonixExploit VNG Clone 016": "/storage/emulated/0/RobloxVNGClone016/RonixExploit/",
+    "RonixExploit VNG Clone 017": "/storage/emulated/0/RobloxVNGClone017/RonixExploit/",
+    "RonixExploit VNG Clone 018": "/storage/emulated/0/RobloxVNGClone018/RonixExploit/",
+    "RonixExploit VNG Clone 019": "/storage/emulated/0/RobloxVNGClone019/RonixExploit/",
+    "RonixExploit VNG Clone 020": "/storage/emulated/0/RobloxVNGClone020/RonixExploit/",
+    "Arceus X": "/storage/emulated/0/Arceus X/",
+    "Delta": "/storage/emulated/0/Delta/",
+    "RonixExploit": "/storage/emulated/0/RonixExploit/",
+    "Cryptic": "/storage/emulated/0/Cryptic/",
+    "KRNL": "/storage/emulated/0/krnl/",
+    "Trigon": "/storage/emulated/0/Trigon/",
+    "Fluxus": "/storage/emulated/0/Fluxus/",
+    "Codex": "/storage/emulated/0/Codex/",
+    "Cubix": "/storage/emulated/0/Cubix/",
+    "FrostWare": "/storage/emulated/0/FrostWare/",
+    "Evon": "/storage/emulated/0/Evon/",
+    "h202": "/storage/emulated/0/h202/",
+}
+workspace_paths = [f"{base_path}Workspace" for base_path in executors.values()] + \
+                [f"{base_path}workspace" for base_path in executors.values()]
+globals()["workspace_paths"] = workspace_paths
+globals()["executors"] = executors
+
+if not os.path.exists("Shouko.dev"):
+    os.makedirs("Shouko.dev", exist_ok=True)
+SERVER_LINKS_FILE = "Shouko.dev/server-links.txt"
+ACCOUNTS_FILE = "Shouko.dev/accounts.txt"
+CONFIG_FILE = "Shouko.dev/config.json"
+
+version = "1.0.0 | Được phát triển bởi Nguyễn Hữu Y Khoa ( zam2109roblox.shop )"
+
+class Utilities:
+    @staticmethod
+    def collect_garbage():
+        gc.collect()
+
+    @staticmethod
+    def log_error(error_message):
+        with open("error_log.txt", "a") as error_log:
+            error_log.write(f"{error_message}\n\n")
+
+    @staticmethod
+    def clear_screen():
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    @staticmethod
+    def get_hwid_codex():
+        return subprocess.run(["settings", "get", "secure", "android_id"], capture_output=True, text=True, check=True).stdout.strip()
+
+    @staticmethod
+    def calculate_time_left(expiry_timestamp):
+        current_time = int(time.time())
+        time_left = expiry_timestamp / 1000 - current_time
+        return time_left
+
+    @staticmethod
+    def format_time_left(time_left):
+        hours, remainder = divmod(time_left, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02} hour(s) {int(minutes):02} minute(s) {int(seconds):02} second(s)"
+
+    @staticmethod
+    def convert_to_ho_chi_minh_time(expiry_timestamp):
+        ho_chi_minh_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+        expiry_datetime = datetime.fromtimestamp(expiry_timestamp / 1000, pytz.utc)
+        expiry_datetime = expiry_datetime.astimezone(ho_chi_minh_tz)
+        return expiry_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+class FileManager:
+    @staticmethod
+    def _tpdelta():
+        if os.path.exists("/storage/emulated/0/Delta/"):
+            user_id_path = "/storage/emulated/0/Delta/Internals/Secured/user_id"
+            allowteleports_path = "/storage/emulated/0/Delta/Internals/Secured/allowteleports"
+            with open(user_id_path, "r") as f:
+                user_id = f.read().strip()
+            payload = f'{{\n    "WARNING": "IF SOMEONE TELLS YOU TO PUT ANYTHING HERE, THEY ARE SCAMMING YOU! STOP!!!",\n    "allowed_games": "*",\n    "user_id": "{user_id}"\n}}'
+            with open(allowteleports_path, "w") as f:
+                f.write(payload)
+    
+    SERVER_LINKS_FILE = "Shouko.dev/server-link.txt"
+    ACCOUNTS_FILE = "Shouko.dev/account.txt"
+    CONFIG_FILE = "Shouko.dev/config-wh.json"
+
+    @staticmethod
+    def xuat(cookie_path):
+        if not os.path.exists(cookie_path):
+            print(f"[ERROR] Cookie file not found: {cookie_path}")
+            return None
+        try:
+            conn = sqlite3.connect(cookie_path)
+            cursor = conn.cursor()
+            query = """
+            SELECT value, encrypted_value 
+            FROM cookies 
+            WHERE name = '.ROBLOSECURITY' AND host_key LIKE '%roblox.com'
+            """
+            cursor.execute(query)
+            row = cursor.fetchone()
+            if not row:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = cursor.fetchall()
+                print(f"[DEBUG] Available tables: {tables}")
+                for table_name, in tables:
+                    if 'cookie' in table_name.lower():
+                        try:
+                            cursor.execute(f"SELECT * FROM {table_name} LIMIT 1")
+                            columns = [description[0] for description in cursor.description]
+                            print(f"[DEBUG] Table '{table_name}' columns: {columns}")
+                            if 'name' in columns:
+                                cursor.execute(f"""
+                                    SELECT value, encrypted_value 
+                                    FROM {table_name} 
+                                    WHERE name = '.ROBLOSECURITY'
+                                """)
+                                row = cursor.fetchone()
+                                if row:
+                                    break
+                        except:
+                            continue
+            conn.close()
+            if row:
+                value, encrypted_value = row
+                if not value and encrypted_value:
+                    try:
+                        if isinstance(encrypted_value, bytes):
+                            return encrypted_value.decode('utf-8', errors='ignore')
+                        return str(encrypted_value)
+                    except:
+                        return str(encrypted_value)
+                elif value:
+                    return value
+                else:
+                    print(f"[ERROR] Found .ROBLOSECURITY row but both value and encrypted_value are empty")
+                    return None
+            else:
+                print(f"[ERROR] .ROBLOSECURITY cookie not found in database")
+                return None
+        except sqlite3.Error as e:
+            print(f"[ERROR] SQLite error: {e}")
+            return None
+        except Exception as e:
+            print(f"[ERROR] Unexpected error: {e}")
+            return None
+            
+            
+    @staticmethod
+    def save_server_links(server_links):
+        try:
+            os.makedirs(os.path.dirname(FileManager.SERVER_LINKS_FILE), exist_ok=True)
+            with open(FileManager.SERVER_LINKS_FILE, "w") as file:
+                for package, link in server_links:
+                    file.write(f"{package},{link}\n")
+            print("\033[1;32m[ zam2109roblox.shop ] - Server links saved successfully.\033[0m")
+        except IOError as e:
+            print(f"\033[1;31m[ Shouko.dev ] - Error saving server links: {e}\033[0m")
+            Utilities.log_error(f"Error saving server links: {e}")
+
+    @staticmethod
+    def load_server_links():
+        server_links = []
+        if os.path.exists(FileManager.SERVER_LINKS_FILE):
+            with open(FileManager.SERVER_LINKS_FILE, "r") as file:
+                for line in file:
+                    package, link = line.strip().split(",", 1)
+                    server_links.append((package, link))
+        return server_links
+
+    @staticmethod
+    def save_accounts(accounts):
+        with open(FileManager.ACCOUNTS_FILE, "w") as file:
+            for package, user_id in accounts:
+                file.write(f"{package},{user_id}\n")
+
+    @staticmethod
+    def load_accounts():
+        accounts = []
+        if os.path.exists(FileManager.ACCOUNTS_FILE):
+            with open(FileManager.ACCOUNTS_FILE, "r") as file:
+                for line in file:
+                    line = line.strip()
+                    if line:
+                        try:
+                            package, user_id = line.split(",", 1)
+                            globals()["_user_"][package] = user_id
+                            accounts.append((package, user_id))
+                        except ValueError:
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - Invalid line format: {line}. Expected format 'package,user_id'.\033[0m")
+        return accounts
+
+    @staticmethod
+    def find_userid_from_file(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                content = file.read()
+                userid_start = content.find('"UserId":"')
+                if userid_start == -1:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Userid not found\033[0m")
+                    return None
+
+                userid_start += len('"UserId":"')
+                userid_end = content.find('"', userid_start)
+                if userid_end == -1:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Userid end quote not found\033[0m")
+                    return None
+
+                userid = content[userid_start:userid_end]
+                return userid
+
+        except IOError as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error reading file: {e}\033[0m")
+            return None
+
+    @staticmethod
+    def get_username(user_id):
+        user = FileManager.load_saved_username(user_id)
+        if user is not None:
+            return user
+        retry_attempts = 2
+        for attempt in range(retry_attempts):
+            try:
+                url = f"https://users.roblox.com/v1/users/{user_id}"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                username = data.get("name", "Unknown")
+                if username != "Unknown":
+                    FileManager.save_username(user_id, username)
+                    return username
+            except requests.exceptions.RequestException as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Attempt {attempt + 1} failed for Roblox Users API: {e}\033[0m")
+                time.sleep(2 ** attempt)
+
+        for attempt in range(retry_attempts):
+            try:
+                url = f"https://users.roproxy.com/v1/users/{user_id}"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                username = data.get("name", "Unknown")
+                if username != "Unknown":
+                    FileManager.save_username(user_id, username)
+                    return username
+            except requests.exceptions.RequestException as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Attempt {attempt + 1} failed for RoProxy API: {e}\033[0m")
+                time.sleep(2 ** attempt)
+
+        return "Unknown"
+
+    @staticmethod
+    def save_username(user_id, username):
+        try:
+            if not os.path.exists("usernames.json"):
+                with open("usernames.json", "w") as file:
+                    json.dump({user_id: username}, file)
+            else:
+                with open("usernames.json", "r+") as file:
+                    try:
+                        data = json.load(file)
+                    except json.JSONDecodeError:
+                        data = {}
+                    data[user_id] = username
+                    file.seek(0)
+                    json.dump(data, file)
+                    file.truncate()
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error saving username: {e}\033[0m")
+
+    @staticmethod
+    def load_saved_username(user_id):
+        try:
+            with open("usernames.json", "r") as file:
+                data = json.load(file)
+                return data.get(user_id, None)
+        except (FileNotFoundError, json.JSONDecodeError, IOError) as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error loading username: {e}\033[0m")
+            return None
+
+    @staticmethod
+    def download_file(url, destination, binary=False):
+        try:
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                mode = 'wb' if binary else 'w'
+                with open(destination, mode) as file:
+                    if binary:
+                        shutil.copyfileobj(response.raw, file)
+                    else:
+                        file.write(response.text)
+                print(f"\033[1;32m[ zam2109roblox.shop ] - {os.path.basename(destination)} downloaded successfully.\033[0m")
+                return destination
+            else:
+                error_message = f"Failed to download {os.path.basename(destination)}. Status code: {response.status_code}"
+                print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+                Utilities.log_error(error_message)
+                return None
+        except requests.RequestException as e:
+            error_message = f"Request exception while downloading {os.path.basename(destination)}: {e}"
+            print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+            Utilities.log_error(error_message)
+            return None
+        except Exception as e:
+            error_message = f"Unexpected error while downloading {os.path.basename(destination)}: {e}"
+            print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+            Utilities.log_error(error_message)
+            return None
+
+    @staticmethod
+    def _load_config():
+        global webhook_url, device_name, webhook_interval, close_and_rejoin_delay, reset_tab_interval, codex_bypass_enabled, clear_cache_enabled
+        global autorun_enabled, force_rejoin_interval
+        try:
+            if os.path.exists(FileManager.CONFIG_FILE):
+                with open(FileManager.CONFIG_FILE, "r") as file:
+                    config = json.load(file)
+                    webhook_url = config.get("webhook_url", None)
+                    device_name = config.get("device_name", None)
+                    webhook_interval = config.get("interval", float('inf'))
+                    globals()["_change_acc"] = config.get("change_acc", "0")
+                    globals()["_disable_ui"] = config.get("disable_ui", "0")
+                    globals()["check_exec_enable"] = config.get("check_executor", "1")
+                    globals()["command_8_configured"] = config.get("command_8_configured", False)
+                    globals()["lua_script_template"] = config.get("lua_script_template", None)
+                    globals()["package_prefix"] = config.get("package_prefix", "com.yuri")
+                    close_and_rejoin_delay = config.get("close_and_rejoin_delay", None)
+                    reset_tab_interval = config.get("reset_tab_interval", None)
+                    codex_bypass_enabled = config.get("codex_bypass_enabled", False)
+                    clear_cache_enabled = config.get("clear_cache_enabled", False)
+                    autorun_enabled = config.get("autorun_enabled", False)
+                    force_rejoin_interval = config.get("force_rejoin_interval", None)
+            else:
+                webhook_url = None
+                device_name = None
+                webhook_interval = float('inf')
+                globals()["_change_acc"] = "0"
+                globals()["_disable_ui"] = "0"
+                globals()["check_exec_enable"] = "1"
+                globals()["command_8_configured"] = False
+                globals()["lua_script_template"] = None
+                globals()["package_prefix"] = "com.yuri"
+                close_and_rejoin_delay = None
+                reset_tab_interval = None
+                codex_bypass_enabled = False
+                clear_cache_enabled = False
+                autorun_enabled = False
+                force_rejoin_interval = None
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error loading configuration: {e}\033[0m")
+            Utilities.log_error(f"Error loading configuration: {e}")
+
+    @staticmethod
+    def save_config():
+        global codex_bypass_enabled, clear_cache_enabled, autorun_enabled, force_rejoin_interval
+        try:
+            config = {
+                "webhook_url": webhook_url,
+                "device_name": device_name,
+                "interval": webhook_interval,
+                "change_acc": globals().get("_change_acc", "0"),
+                "disable_ui": globals().get("_disable_ui", "0"),
+                "check_executor": globals()["check_exec_enable"],
+                "command_8_configured": globals().get("command_8_configured", False),
+                "lua_script_template": globals().get("lua_script_template", None),
+                "package_prefix": globals().get("package_prefix", "com.yuri"),
+                "codex_bypass_enabled": codex_bypass_enabled,
+                "clear_cache_enabled": clear_cache_enabled,
+                "autorun_enabled": autorun_enabled,
+                "force_rejoin_interval": force_rejoin_interval
+            }
+            with open(FileManager.CONFIG_FILE, "w") as file:
+                json.dump(config, file, indent=4, sort_keys=True)
+            print("\033[1;32m[ zam2109roblox.shop ] - Configuration saved successfully.\033[0m")
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error saving configuration: {e}\033[0m")
+            Utilities.log_error(f"Error saving configuration: {e}")
+
+    @staticmethod
+    def check_and_create_cookie_file():
+        folder_path = os.path.dirname(os.path.abspath(__file__))
+        cookie_file_path = os.path.join(folder_path, 'cookie.txt')
+        if not os.path.exists(cookie_file_path):
+            with open(cookie_file_path, 'w') as f:
+                f.write("")
+
+class SystemMonitor:
+    @staticmethod
+    def capture_screenshot():
+        screenshot_path = "/storage/emulated/0/Download/screenshot.png"
+        try:
+            os.system(f"/system/bin/screencap -p {screenshot_path}")
+            if not os.path.exists(screenshot_path):
+                raise FileNotFoundError("Screenshot file was not created.")
+            return screenshot_path
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error capturing screenshot: {e}\033[0m")
+            Utilities.log_error(f"Error capturing screenshot: {e}")
+            return None
+
+    @staticmethod
+    def get_uptime():
+        current_time = time.time()
+        days = int(uptime_seconds // (24 * 3600))
+        hours = int((uptime_seconds % (24 * 3600)) // 3600)
+        minutes = int((uptime_seconds % 3600) // 60)
+        seconds = int(uptime_seconds % 60)
+        return f"{days}d {hours}h {minutes}m {seconds}s"
+
+    @staticmethod
+    def roblox_processes():
+        package_names = []
+        package_namez = RobloxManager.get_roblox_packages()
+        try:
+            found_any = False
+            for proc in process_iter(['name', 'pid', 'memory_info', 'cpu_percent']):
+                try:
+                    proc_name = (proc.info['name'] or "").lower()
+                    for package_name in package_namez:
+                        if package_name.lower() in proc_name:
+                            found_any = True
+                            package_names.append(
+                                f"{package_name} (PID: {proc.pid}, CPU: {cpu}%, MEM: {mem_mb}MB)"
+                            )
+                            break
+                except (NoSuchProcess, AccessDenied, ZombieProcess):
+                    continue
+            if found_any:
+                return package_names
+        except Exception:
+            pass
+        try:
+            output = subprocess.run(
+                ["/system/bin/ps", "-A", "-o", "PID,NAME,%CPU,RSS"],
+                capture_output=True,
+                text=True
+            ).stdout
+            lines = output.splitlines()
+            for line in lines[1:]:
+                parts = line.split()
+                if len(parts) < 4:
+                    continue
+                pid = parts[0]
+                name = parts[1]
+                cpu = parts[2]
+                rss_kb = parts[3]
+                for package_name in package_namez:
+                    if package_name in name:
+                        mem_mb = round(int(rss_kb) / 1024, 2)
+                        package_names.append(
+                            f"{package_name} (PID: {pid}, CPU: {cpu}%, MEM: {mem_mb}MB)"
+                        )
+                        break
+        except Exception:
+            pass
+        return package_names
+
+    @staticmethod
+    def get_memory_usage():
+        try:
+            process = Process(os.getpid())
+            mem_info = process.memory_info()
+            mem_usage_mb = mem_info.rss / (1024 ** 2)
+            return round(mem_usage_mb, 2)
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error getting memory usage: {e}\033[0m")
+            Utilities.log_error(f"Error getting memory usage: {e}")
+            return None
+
+    @staticmethod
+    def get_system_info():
+        try:
+            cpu_usage = cpu_percent(interval=1)
+            memory_info = virtual_memory()
+            system_info = {
+                "cpu_usage": cpu_usage,
+                "memory_total": round(memory_info.total / (1024 ** 3), 2),
+                "memory_used": round(memory_info.used / (1024 ** 3), 2),
+                "memory_percent": memory_info.percent,
+                "uptime": SystemMonitor.get_uptime(),
+                "roblox_packages": SystemMonitor.roblox_processes()
+            }
+            return system_info
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error retrieving system information: {e}\033[0m")
+            Utilities.log_error(f"Error retrieving system information: {e}")
+            return False
+
+class RobloxManager:
+    @staticmethod
+    def get_cookie():
+        try:
+            current_dir = os.getcwd()
+            cookie_txt_path = os.path.join(current_dir, "cookie.txt")
+            new_dir_path = os.path.join(current_dir, "Shouko.dev/Shoụko.dev - Data")
+            new_cookie_path = os.path.join(new_dir_path, "cookie.txt")
+
+            if not os.path.exists(new_dir_path):
+                os.makedirs(new_dir_path)
+
+            if not os.path.exists(cookie_txt_path):
+                print("\033[1;31m[ zam2109roblox.shop ] - cookie.txt not found in the current directory!\033[0m")
+                Utilities.log_error("cookie.txt not found in the current directory.")
+                return False
+
+            cookies = []
+            org = []
+
+            with open(cookie_txt_path, "r") as file:
+                for line in file.readlines():
+                    parts = str(line).strip().split(":")
+                    if len(parts) == 4:
+                        ck = ":".join(parts[2:])
+                    else:
+                        ck = str(line).strip()
+                    if ck.startswith("_|WARNING:"):
+                        org.append(str(line).strip())
+                        cookies.append(ck)
+
+            if len(cookies) == 0:
+                print("\033[1;31m[ zam2109roblox.shop ] - No valid cookies found in cookie.txt. Please add cookies.\033[0m")
+                Utilities.log_error("No valid cookies found in cookie.txt.")
+                return False
+
+            cookie = cookies.pop(0)
+            original_line = org.pop(0)
+
+            with open(new_cookie_path, "a") as new_file:
+                new_file.write(original_line + "\n")
+
+            with open(cookie_txt_path, "w") as file:
+                file.write("\n".join(org))
+
+            return cookie
+
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+            Utilities.log_error(f"Error in get_cookie: {e}")
+            return False
+
+    @staticmethod
+    def verify_cookie(cookie_value):
+        try:
+            headers = {
+                'Cookie': f'.ROBLOSECURITY={cookie_value}',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36',
+                'Referer': 'https://www.roblox.com/',
+                'Origin': 'https://www.roblox.com',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive'
+            }
+
+            time.sleep(1)
+
+            response = requests.get('https://users.roblox.com/v1/users/authenticated', headers=headers)
+
+            if response.status_code == 200:
+                print("\033[1;32m[ zam2109roblox.shop ] - Cookie is valid! User is authenticated.\033[0m")
+                return response.json().get("id", False)
+            elif response.status_code == 401:
+                print("\033[1;31m[ zam2109roblox.shop ] - Invalid cookie. The user is not authenticated.\033[0m")
+                return False
+            else:
+                error_message = f"Error verifying cookie: {response.status_code} - {response.text}"
+                print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+                Utilities.log_error(error_message)
+                return False
+
+        except requests.RequestException as e:
+            error_message = f"Request exception occurred while verifying cookie: {e}"
+            print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+            Utilities.log_error(error_message)
+            return False
+
+        except Exception as e:
+            error_message = f"Unexpected exception occurred while verifying cookie: {e}"
+            print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+            Utilities.log_error(error_message)
+            return False
+
+    @staticmethod
+    def check_user_online(user_id, cookie=None):
+        max_retries = 2
+        delay = 2
+        body = {"userIds": [user_id]}
+        headers = {"Content-Type": "application/json"}
+        if cookie is not None:
+            headers["Cookie"] = f".ROBLOSECURITY={cookie}"
+        for attempt in range(max_retries):
+            try:
+                with requests.Session() as session:
+                    primary_response = session.post("https://presence.roblox.com/v1/presence/users", headers=headers, json=body, timeout=7)
+                primary_response.raise_for_status()
+                primary_data = primary_response.json()
+                primary_presence_type = primary_data["userPresences"][0]["userPresenceType"]
+                return primary_presence_type
+
+            except requests.exceptions.RequestException as e:
+                print(f"\033[1;31mError checking online status for user {user_id} (Attempt {attempt + 1}) for Roblox API: {e}\033[0m")
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                    delay *= 2
+
+        headers = {"Content-Type": "application/json"}
+        for attempt in range(max_retries):
+            try:
+                with requests.Session() as session:
+                    primary_response = session.post("https://presence.roproxy.com/v1/presence/users", headers=headers, json=body, timeout=7)
+                primary_response.raise_for_status()
+                primary_data = primary_response.json()
+                primary_presence_type = primary_data["userPresences"][0]["userPresenceType"]
+                return primary_presence_type
+
+            except requests.exceptions.RequestException as e:
+                print(f"\033[1;31mError checking online status for user {user_id} (Attempt {attempt + 1}) for RoProxy API: {e}\033[0m")
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    return None
+
+    @staticmethod
+    def get_roblox_packages():
+        packages = []
+        try:
+            package_prefix = globals().get("package_prefix", "com.yuri")
+            result = subprocess.run(f"pm list packages {package_prefix} | sed 's/package://'", shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                for line in result.stdout.strip().splitlines():
+                    name = line.strip()
+                    packages.append(name)
+            else:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Failed to retrieve packages with prefix {package_prefix}.\033[0m")
+                Utilities.log_error(f"Failed to retrieve packages with prefix {package_prefix}. Return code: {result.returncode}")
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error retrieving packages: {e}\033[0m")
+            Utilities.log_error(f"Error retrieving packages: {e}")
+        return packages
+
+    @staticmethod
+    def kill_roblox_processes():
+        packages = RobloxManager.get_roblox_packages()
+        running = SystemMonitor.roblox_processes()
+        if not running:
+            print("\033[1;32m[ zam2109roblox.shop ] - No Roblox processes to kill.\033[0m")
+            return
+        for package_name in packages:
+            if any(package_name in proc for proc in running):
+                os.system(f"nohup /system/bin/am force-stop {package_name} > /dev/null 2>&1 &")
+        time.sleep(2)
+
+    @staticmethod
+    def kill_roblox_process(package_name):
+        print(f"\033[1;96m[ zam2109roblox.shop ] - Preparing to kill {package_name}...\033[0m")
+        try:
+            packages = RobloxManager.get_roblox_packages()
+            running = SystemMonitor.roblox_processes()
+            other_running = [
+                pkg for pkg in packages
+                if pkg != package_name and any(pkg in proc for proc in running)
+            ]
+            if other_running:
+                next_package = other_running[0]
+                subprocess.run(
+                    [
+                        "/system/bin/am", "start",
+                        "--user", "0",
+                        "-a", "android.intent.action.MAIN",
+                        "-c", "android.intent.category.LAUNCHER",
+                        "-n", f"{next_package}/com.roblox.client.startup.ActivitySplash"
+                    ],
+                    capture_output=True,
+                    text=True
+                )
+                time.sleep(1)
+            print(f"\033[1;96m[ zam2109roblox.shop ] - Killing {package_name}...\033[0m")
+            subprocess.run(
+                ["/system/bin/am", "force-stop", package_name],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            print(f"\033[1;32m[ zam2109roblox.shop ] - Successfully killed {package_name}\033[0m")
+        except subprocess.CalledProcessError as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+            Utilities.log_error(f"Error killing process for {package_name}: {e}")
+            
+    @staticmethod
+    def delete_cache_for_package(package_name):
+        cache_path = f'/data/data/{package_name}/cache/'
+        if os.path.exists(cache_path):
+            os.system(f"rm -rf {cache_path}")
+            print(f"\033[1;32m[ zam2109roblox.shop ] - Cache cleared for {package_name}\033[0m")
+        else:
+            print(f"\033[1;93m[ zam2109roblox.shop ] - No cache found for {package_name}\033[0m")
+            
+    SU_PATH = "/data/data/com.termux/files/usr/bin/su"
+    
+    @staticmethod
+    def cache_clear():
+        packages = RobloxManager.get_roblox_packages()
+        for package_name in packages:
+            cache_path = f'/data/data/{package_name}/cache/'
+            result = os.system(f"{SU_PATH} -c 'rm -rf {cache_path}'")
+            if result != 0:
+                print(f"Failed to clear cache for {package_name}")
+                
+    @staticmethod
+    def launch_roblox(package_name, server_link, next_package_event=None):
+        try:
+            RobloxManager.kill_roblox_process(package_name)
+            ExecutorManager.reset_executor_file(package_name)
+            with status_lock:
+                globals()["_uid_"][globals()["_user_"][package_name]] = time.time()
+                globals()["package_statuses"][package_name]["Status"] = f"\033[1;36mOpening Roblox for {package_name}...\033[0m"
+                UIManager.update_status_table()
+            subprocess.run([
+                'am', 'start', '--user', '0',
+                '-a', 'android.intent.action.MAIN',
+                '-c', 'android.intent.category.LAUNCHER',
+                '-n', f'{package_name}/com.roblox.client.startup.ActivitySplash'
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(10)
+            with status_lock:
+                globals()["package_statuses"][package_name]["Status"] = f"\033[1;36mJoining Roblox for {package_name}...\033[0m"
+                UIManager.update_status_table()
+            subprocess.run([
+                'am', 'start', '--user', '0',
+                '-a', 'android.intent.action.VIEW',
+                '-n', f'{package_name}/com.roblox.client.ActivityProtocolLaunch',
+                '-d', server_link
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(20)
+            with status_lock:
+                globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+                time.sleep(60)
+                UIManager.update_status_table()
+            try:
+                if globals().get("check_exec_enable") == "1":
+                    detected_executors = ExecutorManager.detect_executors()
+                    if len(detected_executors) > 0:
+                        ExecutorManager.write_lua_script(detected_executors)
+                    else:
+                        print(f"\033[1;33m[ zam2109roblox.shop ] - No executors detected for {package_name}\033[0m")
+                    evt = next_package_event if next_package_event is not None else threading.Event()
+                    threading.Thread(
+                        target=ExecutorManager.status_rejoin,
+                        args=(package_name, server_link, evt),
+                        daemon=True
+                    ).start()
+                else:
+                    if next_package_event is not None:
+                        next_package_event.set()
+            except Exception as e:
+                print(f"[launch_roblox] executor-handling error for {package_name}: {e}")
+                if next_package_event is not None:
+                    try:
+                        next_package_event.set()
+                    except Exception:
+                        pass
+        except Exception as e:
+            error_message = f"Error launching Roblox for {package_name}: {e}"
+            with status_lock:
+                globals()["package_statuses"][package_name]["Status"] = f"\033[1;31m{error_message}\033[0m"
+                UIManager.update_status_table()
+            print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+            Utilities.log_error(error_message)
+            if next_package_event is not None:
+                try:
+                    next_package_event.set()
+                except Exception:
+                    pass
+
+    @staticmethod
+    def inject_cookies_and_appstorage():
+        RobloxManager.kill_roblox_processes()
+        db_url = "https://raw.githubusercontent.com/caotuanthanh147/Public/main/lesbian/Cookies"
+        appstorage_url = "https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/lesbian/appStorage.json"
+
+        downloaded_db_path = FileManager.download_file(db_url, "Cookies.db", binary=True)
+        downloaded_appstorage_path = FileManager.download_file(appstorage_url, "appStorage.json", binary=False)
+
+        if not downloaded_db_path or not downloaded_appstorage_path:
+            print("\033[1;31m[ zam2109roblox.shop ] - Failed to download necessary files. Exiting.\033[0m")
+            Utilities.log_error("Failed to download necessary files for cookie and appStorage injection.")
+            return
+
+        packages = RobloxManager.get_roblox_packages()
+        if not packages:
+            print("\033[1;31m[ zam2109roblox.shop ] - No Roblox packages detected.\033[0m")
+            return
+
+        for package_name in packages:
+            try:
+                cookie = RobloxManager.get_cookie()
+                if not cookie:
+                    print(f"\033[1;31m[ zam2109roblox.shop ] - Failed to retrieve a cookie for {package_name}. Skipping...\033[0m")
+                    break
+
+                user_id = RobloxManager.verify_cookie(cookie)
+                if user_id:
+                    print(f"\033[1;32m[ zam2109roblox.shop ] - Cookie for {package_name} is valid! User ID: {user_id}\033[0m")
+                else:
+                    print(f"\033[1;31m[ zam2109roblox.shop ] - Cookie for {package_name} is invalid. Skipping injection...\033[0m")
+                    continue
+
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Injecting cookie for {package_name}: {cookie}\033[0m")
+
+                destination_db_dir = f"/data/data/{package_name}/app_webview/Default/"
+                destination_appstorage_dir = f"/data/data/{package_name}/files/appData/LocalStorage/"
+                os.makedirs(destination_db_dir, exist_ok=True)
+                os.makedirs(destination_appstorage_dir, exist_ok=True)
+
+                destination_db_path = os.path.join(destination_db_dir, "Cookies")
+                shutil.copyfile(downloaded_db_path, destination_db_path)
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Copied Cookies.db to {destination_db_path}\033[0m")
+
+                destination_appstorage_path = os.path.join(destination_appstorage_dir, "appStorage.json")
+                shutil.copyfile(downloaded_appstorage_path, destination_appstorage_path)
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Copied appStorage.json to {destination_appstorage_path}\033[0m")
+
+                RobloxManager.replace_cookie_value_in_db(destination_db_path, cookie)
+
+            except Exception as e:
+                error_message = f"Error injecting cookie for {package_name}: {e}"
+                print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+                Utilities.log_error(error_message)
+
+        print("\033[1;32m[ zam2109roblox.shop ] - Opening all Roblox tabs...\033[0m")
+        failed_packages = []
+        for package_name in packages:
+            try:
+                print(f"\033[1;36m[ zam2109roblox.shop ] - Launching {package_name}...\033[0m")
+                cmd_splash = [
+                    'am', 'start',
+                    '-a', 'android.intent.action.MAIN',
+                    '-n', f'{package_name}/com.roblox.client.startup.ActivitySplash'
+                ]
+                result_splash = subprocess.run(cmd_splash, capture_output=True, text=True)
+                if result_splash.returncode != 0:
+                    error_message = f"Failed to open Roblox for {package_name}: {result_splash.stderr}"
+                    print(f"\033[1;31m[ zam2109roblox.shop ] - {error_message}\033[0m")
+                    Utilities.log_error(error_message)
+                    failed_packages.append(package_name)
+                else:
+                    print(f"\033[1;32m[ zam2109roblox.shop ] - Successfully launched {package_name}\033[0m")
+            except Exception as e:
+                error_message = f"Error launching {package_name}: {e}"
+                print(f"\033[1;31m[ Shouko.dev ] - {error_message}\033[0m")
+                Utilities.log_error(error_message)
+                failed_packages.append(package_name)
+
+        if failed_packages:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Failed to launch packages: {', '.join(failed_packages)}\033[0m")
+        else:
+            print("\033[1;32m[ zam2109roblox.shop ] - Successfully launched all packages.\033[0m")
+
+        print("\033[1;33m[ zam2109roblox.shop ] - Waiting for all tabs to load (1 minute)...\033[0m")
+        time.sleep(60)
+
+        debug_mode = input("\033[1;93m[ zam2109roblox.shop ] - Keep Roblox tabs open for debugging? (y/n): \033[0m").strip().lower()
+        if debug_mode != 'y':
+            print("\033[1;33m[ zam2109roblox.shop ] - Closing all Roblox tabs after loading...\033[0m")
+            RobloxManager.kill_roblox_processes()
+            time.sleep(5)
+        else:
+            print("\033[1;33m[ zam2109roblox.shop ] - Keeping Roblox tabs open for debugging.\033[0m")
+
+        print("\033[1;32m[ zam2109roblox.shop ] - Cookie and appStorage injection, followed by app launch, completed for all packages.\033[0m")
+
+    @staticmethod
+    def replace_cookie_value_in_db(db_path, new_cookie_value):
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE cookies SET value = ?, last_access_utc = ?, expires_utc = ? WHERE host_key = '.roblox.com' AND name = '.ROBLOSECURITY'", (new_cookie_value, int(time.time() + 11644473600) * 1000000, int(time.time() + 11644473600 + 31536000) * 1000000))
+            conn.commit()
+            conn.close()
+            print("\033[1;32mCookie value replaced successfully in the database!\033[0m")
+        except sqlite3.OperationalError as e:
+            print(f"\033[1;31mDatabase error during cookie replacement: {e}\033[0m")
+        except Exception as e:
+            print(f"\033[1;31mError replacing cookie value in database: {e}\033[0m")
+
+    @staticmethod
+    def format_server_link(input_link):
+        if 'roblox.com' in input_link:
+            return input_link
+        elif input_link.isdigit():
+            return f'roblox://placeID={input_link}'
+        else:
+            print("\033[1;31m[ zam2109roblox.shop ] - Invalid input! Please enter a valid game ID or private server link.\033[0m")
+            return None
+
+class WebhookManager:
+    @staticmethod
+    def start_webhook_thread():
+        global webhook_thread, stop_webhook_thread
+        if (webhook_thread is None or not webhook_thread.is_alive()) and not stop_webhook_thread:
+            stop_webhook_thread = False
+            webhook_thread = threading.Thread(target=WebhookManager.send_webhook)
+            webhook_thread.start()
+
+    @staticmethod
+    def send_webhook():
+        global stop_webhook_thread
+        while not stop_webhook_thread:
+            try:
+                screenshot_path = SystemMonitor.capture_screenshot()
+                if not screenshot_path:
+                    continue
+
+                info = SystemMonitor.get_system_info()
+                if not info:
+                    continue
+
+                cpu = f"{info['cpu_usage']:.1f}%"
+                mem_used = f"{info['memory_used']:.2f} GB"
+                mem_total = f"{info['memory_total']:.2f} GB"
+                mem_percent = f"{info['memory_percent']:.1f}%"
+                uptime = info['uptime']
+                roblox_count = len(info['roblox_packages'])
+                roblox_status = f"Running: {roblox_count} instance{'s' if roblox_count != 1 else ''}"
+                roblox_details = "\n".join(info['roblox_packages']) if info['roblox_packages'] else "None"
+
+                tool_mem_usage = SystemMonitor.get_memory_usage()
+                tool_mem_display = f"{tool_mem_usage} MB" if tool_mem_usage is not None else "Unavailable"
+
+                if roblox_count > 0:
+                    status_text = f"🟢 Online"
+                else:
+                    status_text = "🔴 Offline"
+
+                random_color = random.randint(0, 16777215)
+
+                embed = {
+                    "color": random_color,
+                    "title": "📈 System Status Monitor",
+                    "description": f"Real-time report for **{device_name}**",
+                    "fields": [
+                        {"name": "🏷️ Device", "value": f"```{device_name}```", "inline": True},
+                        {"name": "💾 Total Memory", "value": f"```{mem_total}```", "inline": True},
+                        {"name": "⏰ Uptime", "value": f"```{uptime}```", "inline": True},
+                        {"name": "⚡ CPU Usage", "value": f"```{cpu}```", "inline": True},
+                        {"name": "📊 Memory Usage", "value": f"```{mem_used} ({mem_percent})```", "inline": True},
+                        {"name": "🛠️ Tool Memory Usage", "value": f"```{tool_mem_display}```", "inline": True},
+                        {"name": "🎮 Total Roblox Processes", "value": f"```{roblox_status}```", "inline": True},
+                        {"name": "🔍 Roblox Details", "value": f"```{roblox_details}```", "inline": False},
+                        {"name": "✅ Status", "value": f"```{status_text}```", "inline": True}
+                    ],
+                    "thumbnail": {"url": "https://zam2109roblox.shop/assets/storage/images/logo_dark_Q0U.png"},
+                    "image": {"url": "attachment://screenshot.png"},
+                    "footer": {"text": f"Made with 💖 by zam2109roblox.shop | Join us at https://discord.gg/3f6SUbGneC",
+                            "icon_url": "https://yt3.ggpht.com/CWhoaNraV4G-K0ClgBolqb0PvIY_9-jg4Gma4VrMqtHqcmWqFfZFJIKaNSewZI1lcBxtyAnXyw=s108-c-k-c0x00ffffff-no-rj"},
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "author": {"name": "zam2109roblox.shop",
+                            "url": "https://discord.gg/3f6SUbGneC",
+                            "icon_url": "https://yt3.ggpht.com/CWhoaNraV4G-K0ClgBolqb0PvIY_9-jg4Gma4VrMqtHqcmWqFfZFJIKaNSewZI1lcBxtyAnXyw=s108-c-k-c0x00ffffff-no-rj"}
+                }
+
+                with open(screenshot_path, "rb") as file:
+                    response = requests.post(
+                        webhook_url,
+                        data={"payload_json": json.dumps({"embeds": [embed], "username": "zam2109roblox.shop", "avatar_url": "https://yt3.ggpht.com/CWhoaNraV4G-K0ClgBolqb0PvIY_9-jg4Gma4VrMqtHqcmWqFfZFJIKaNSewZI1lcBxtyAnXyw=s108-c-k-c0x00ffffff-no-rj"})},
+                        files={"file": ("screenshot.png", file)}
+                    )
+
+                if response.status_code not in (200, 204):
+                    print(f"\033[1;31m[ zam2109roblox.shop ] - Error sending device info: {response.status_code}\033[0m")
+                    Utilities.log_error(f"Error sending webhook: Status code {response.status_code}")
+
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Webhook error: {e}\033[0m")
+                Utilities.log_error(f"Error in webhook thread: {e}")
+
+            time.sleep(webhook_interval * 60)
+
+    @staticmethod
+    def stop_webhook():
+        global stop_webhook_thread
+        stop_webhook_thread = True
+
+    @staticmethod
+    def setup_webhook():
+        global webhook_url, device_name, webhook_interval, stop_webhook_thread
+        try:
+            stop_webhook_thread = True
+            webhook_url = input("\033[1;35m[ zam2109roblox.shop ] - Enter your Webhook URL: \033[0m")
+            device_name = input("\033[1;35m[ zam2109roblox.shop ] - Enter your device name: \033[0m")
+            webhook_interval = int(input("\033[1;35m[ zam2109roblox.shop ] - Enter the interval to send Webhook (minutes): \033[0m"))
+            FileManager.save_config()
+            stop_webhook_thread = False
+            threading.Thread(target=WebhookManager.send_webhook).start()
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error during webhook setup: {e}\033[0m")
+            Utilities.log_error(f"Error during webhook setup: {e}")
+
+class UIManager:
+    @staticmethod
+    def print_header(version):
+        console = Console()
+        header = Text(r"""
+
+███████╗░█████╗░███╗░░░███╗██████╗░░░███╗░░░█████╗░░█████╗░
+╚════██║██╔══██╗████╗░████║╚════██╗░████║░░██╔══██╗██╔══██╗
+░░███╔═╝███████║██╔████╔██║░░███╔═╝██╔██║░░██║░░██║╚██████║
+██╔══╝░░██╔══██║██║╚██╔╝██║██╔══╝░░╚═╝██║░░██║░░██║░╚═══██║
+███████╗██║░░██║██║░╚═╝░██║███████╗███████╗╚█████╔╝░█████╔╝
+╚══════╝╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚══════╝░╚════╝░░╚════╝░
+
+Setub Clone + Tool Rejoin tốc độ cao? Ib zam2109roblox.shop với giá 10k
+Discord: https://discord.com/invite/3f6SUbGneC
+Youtube: https://www.youtube.com/@zam2109-Roblox
+Thông tin liên hệ chi tiết: https://zam2109roblox.shop/client/contact
+        """, style="red")
+
+        config_file = os.path.join("Shouko.dev", "config.json")
+        check_executor = "1"
+        global codex_bypass_enabled
+
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, "r") as f:
+                    config = json.load(f)
+                    check_executor = config.get("check_executor", "0")
+            except Exception as e:
+                console.print(f"[bold red][ zam2109roblox.shop ] - Error reading {config_file}: {e}[/bold red]")
+
+        console.print(header)
+        console.print(f"[bold yellow]- Version: [/bold yellow][bold white]{version}[/bold white]")
+        console.print(f"[bold yellow]- Credit: [/bold yellow][bold white]zam2109roblox.shop[/bold white]")
+
+        if check_executor == "1":
+            console.print("[bold yellow]- Method: [/bold yellow][bold white]Check Executor[/bold white]")
+        else:
+            console.print("[bold yellow]- Method: [/bold yellow][bold white]Check Online[/bold white]")
+
+        codex_status = "Enabled" if codex_bypass_enabled else "Disabled"
+        console.print(f"[bold yellow]- Codex Bypass: [/bold yellow][bold white]{codex_status}[/bold white]\n")
+
+    @staticmethod
+    def create_dynamic_menu(options):
+        console = Console()
+
+        table = Table(
+            header_style="bold white",
+            border_style="bright_white",
+            box=ROUNDED
+        )
+        table.add_column("No", justify="center", style="bold cyan", width=6)
+        table.add_column("Service Name", style="bold magenta", justify="left")
+
+        for i, service in enumerate(options, start=1):
+            table.add_row(f"[bold yellow][ {i} ][/bold yellow]", f"[bold blue]{service}[/bold blue]")
+
+        panel = Panel(
+            table,
+            title="[bold yellow]discord.gg/3f6SUbGneC - Phiên Bản thử nghiệm[/bold yellow]",
+            border_style="yellow",
+            box=ROUNDED
+        )
+
+        console.print(Align.left(panel))
+
+    @staticmethod
+    def create_dynamic_table(headers, rows):
+        table = PrettyTable(field_names=headers, border=True, align="l")
+        for huy in rows:
+            table.add_row(list(huy))
+        print(table)
+
+    last_update_time = 0
+    update_interval = 5
+
+    @staticmethod
+    def update_status_table():
+        current_time = time.time()
+        if current_time - UIManager.last_update_time < UIManager.update_interval:
+            return
+        
+
+        table_packages = PrettyTable(
+            field_names=["Package", "Username", "Package Status"],
+            border=True,
+            align="l"
+        )
+
+        for package, info in globals().get("package_statuses", {}).items():
+            username = str(info.get("Username", "Unknown"))
+
+            if username != "Unknown":
+                obfuscated_username = "******" + username[6:] if len(username) > 6 else "******"
+                username = obfuscated_username
+
+            table_packages.add_row([
+                str(package),
+                username,
+                str(info.get("Status", "Unknown"))
+            ])
+
+        Utilities.clear_screen()
+        UIManager.print_header(version)
+        print(table_packages)
+
+class ExecutorManager:
+    @staticmethod
+    def detect_executors():
+        console = Console()
+        detected_executors = []
+
+        for executor_name, base_path in executors.items():
+            possible_autoexec_paths = [
+                os.path.join(base_path, "Autoexec"),
+                os.path.join(base_path, "Autoexecute"),
+                os.path.join(base_path, "autoexec")
+            ]
+
+            for path in possible_autoexec_paths:
+                if os.path.exists(path):
+                    detected_executors.append(executor_name)
+                    console.print(f"[bold green][ zam2109roblox.shop ] - Detected executor: {executor_name}[/bold green]")
+                    break
+
+        return detected_executors
+    
+    @staticmethod
+    def write_lua_script(detected_executors):
+        console = Console()
+        config_file = os.path.join("Shouko.dev", "checkui.lua")
+
+        try:
+            with open(config_file, "r") as f:
+                lua_script_content = f.read()
+        except Exception as e:
+            console.print(f"[bold red][ zam2109roblox.shop ] - Error reading config from {config_file}: {e}[/bold red]")
+            return
+
+        for executor_name in detected_executors:
+            base_path = executors[executor_name]
+            possible_autoexec_paths = [
+                os.path.join(base_path, "Autoexec"),
+                os.path.join(base_path, "Autoexecute"),
+                os.path.join(base_path, "autoexec")
+            ]
+
+            lua_written = False
+
+            if executor_name.upper() == "KRNL":
+                autoruns_path = os.path.join("/storage/emulated/0/krnl/workspace/.storage", "autoruns.json")
+                tabs_path = os.path.join("/storage/emulated/0/krnl/workspace/.storage/tabs", "check_executor.luau")
+
+                if os.path.exists(autoruns_path):
+                    with open(autoruns_path, "r") as f:
+                        try:
+                            autoruns_data = json.load(f)
+                            if not isinstance(autoruns_data, list):
+                                autoruns_data = []
+                        except json.JSONDecodeError:
+                            autoruns_data = []
+                else:
+                    autoruns_data = []
+
+                if "check_executor" not in autoruns_data:
+                    autoruns_data.append("check_executor")
+                    try:
+                        with open(autoruns_path, "w") as f:
+                            json.dump(autoruns_data, f)
+                        console.print(f"[bold green][ zam2109roblox.shop ] - Added script into KRNL autoexec![/bold green]")
+                    except Exception as e:
+                        console.print(f"[bold red][ zam2109roblox.shop ] - Error updating KRNL autoexec: {e}[/bold red]")
+                        Utilities.log_error(f"Error updating KRNL autoexec: {e}")
+                else:
+                    console.print(f"[bold green][ zam2109roblox.shop ] - Script already exists in KRNL autoexec![/bold green]")
+
+                try:
+                    os.makedirs(os.path.dirname(tabs_path), exist_ok=True)
+                    with open(tabs_path, "w") as f:
+                        f.write(lua_script_content)
+                    lua_written = True
+                    console.print(f"[bold green][ zam2109roblox.shop ] - Lua script written successfully![/bold green]")
+                except Exception as e:
+                    console.print(f"[bold red][ zam2109roblox.shop ] - Error writing Lua script to KRNL autoexec: {e}[/bold red]")
+                    Utilities.log_error(f"Error writing Lua script to KRNL autoexec: {e}")
+
+            if not lua_written:
+                if executor_name.upper() == "DELTA":
+                    target_path = os.path.join(base_path, "Autoexecute")
+                    os.makedirs(target_path, exist_ok=True)
+                    lua_script_path = os.path.join(target_path, "executor_check.lua")
+                    try:
+                        with open(lua_script_path, 'w') as file:
+                            file.write(lua_script_content)
+                        lua_written = True
+                        console.print(f"[bold green][ zam2109roblox.shop ] - Lua script written to: {lua_script_path}[/bold green]")
+                    except Exception as e:
+                        console.print(f"[bold red][ zam2109roblox.shop ] - Error writing Lua script to {lua_script_path}: {e}[/bold red]")
+                        Utilities.log_error(f"Error writing Lua script to {lua_script_path}: {e}")
+
+                if not lua_written:
+                    for path in possible_autoexec_paths:
+                        if os.path.exists(path):
+                            lua_script_path = os.path.join(path, "executor_check.lua")
+
+                            try:
+                                with open(lua_script_path, 'w') as file:
+                                    file.write(lua_script_content)
+                                lua_written = True
+                                console.print(f"[bold green][ zam2109roblox.shop ] - Lua script written to: {lua_script_path}[/bold green]")
+                                break
+
+                            except Exception as e:
+                                console.print(f"[bold red][ zam2109roblox.shop ] - Error writing Lua script to {lua_script_path}: {e}[/bold red]")
+                                Utilities.log_error(f"Error writing Lua script to {lua_script_path}: {e}")
+
+                    if not lua_written:
+                        console.print(f"[bold yellow][ zam2109roblox.shop ] - No valid path found to write Lua script for {executor_name}[/bold yellow]")
+
+    @staticmethod
+    def check_executor_status(package_name, continuous=True, max_wait_time=480):
+        retry_timeout = time.time() + max_wait_time
+        while True:
+            for workspace in globals()["workspace_paths"]:
+                id = globals()["_user_"][package_name]
+                file_path = os.path.join(workspace, f"{id}.main")
+                if os.path.exists(file_path):
+                    return True
+            if continuous and time.time() > retry_timeout:
+                return False
+            time.sleep(20)
+
+    @staticmethod
+    def find_status(package_name):
+        try:
+            user_id = str(globals()["_user_"].get(package_name))
+            if not user_id:
+                return None, None
+            for workspace in globals().get("workspace_paths", []):
+                file_path = os.path.join(workspace, f"{user_id}.status")
+                if os.path.exists(file_path):
+                    return file_path, None
+            return None, None
+        except Exception:
+            return None, None
+    
+    @staticmethod
+    def status_rejoin(package_name, server_link, next_package_event):
+        user_id = globals()["_user_"][package_name]
+        globals()["package_statuses"][package_name]["Status"] = "\033[1;33mChecking status...\033[0m"
+        UIManager.update_status_table()
+        status_file, _ = ExecutorManager.find_status(package_name)
+        if status_file and os.path.exists(status_file):
+            globals()["package_statuses"][package_name]["Status"] = "\033[1;32mExecutor is online\033[0m"
+            UIManager.update_status_table()
+            next_package_event.set()
+            return
+        globals()["package_statuses"][package_name]["Status"] = "\033[1;31mExecutor offline. Rejoining...\033[0m"
+        UIManager.update_status_table()
+        ExecutorManager.reset_executor_file(package_name)
+        if clear_cache_enabled:
+            RobloxManager.delete_cache_for_package(package_name)
+        time.sleep(2)
+        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
+        globals()["package_statuses"][package_name]["Status"] = "\033[1;32mJoined Roblox\033[0m"
+        UIManager.update_status_table()
+        next_package_event.set()
+
+    @staticmethod
+    def reset_executor_file(package_name):
+        try:
+            for workspace in globals()["workspace_paths"]:
+                id = globals()["_user_"][package_name]
+                file_path = os.path.join(workspace, f"{id}.status")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+        except:
+            pass
+
+class CodexBypass:
+    @staticmethod
+    def get_headers(android_session, ref):
+        headers = {
+            "Host": "api.codex.lol",
+            "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "android-session": android_session,
+            "accept": "application/json, text/plain, */*",
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "sec-ch-ua-platform": '"Android"',
+            "origin": "https://mobile.codex.lol",
+            "referer": ref,
+            "task-referrer": ref,
+            "accept-language": "vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5"
+        }
+        return headers
+
+    @staticmethod
+    def codex(hwid):
+        headers = {
+            "Accept": "*/*",
+            "Codex-Fingerprint": hwid,
+            "Host": "api.codex.lol",
+            "User-Agent": "Roblox/WinInet"
+        }
+
+        antibp = {
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "access-control-allow-headers,access-control-allow-methods,access-control-allow-origin,android-session,content-type",
+            "Origin": "https://mobile.codex.lol",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
+            "Referer": "https://mobile.codex.lol/"
+        }
+
+        try:
+            response = requests.post("https://api.codex.lol/v1/auth/authenticate", headers=headers).json()
+        except Exception as e:
+            return False
+
+        if response.get("success", False):
+            return response
+
+        try:
+            response = requests.post("https://api.codex.lol/v1/auth/session", headers=headers).json()
+        except Exception as e:
+            return False
+
+        android_session = response.get("token", False)
+        if not android_session:
+            return False
+
+        req = requests.Session()
+        req.headers.update(CodexBypass.get_headers(android_session, "https://mobile.codex.lol/"))
+
+        try:
+            response = req.get("https://api.codex.lol/v1/stage/stages").json()
+        except Exception as e:
+            return False
+
+        list_uuid = response.get("stages", False)
+        authenticated = response.get("authenticated", False)
+        userFacingMessage = response.get("userFacingMessage", "Unknown Error")
+
+        if authenticated:
+            return response
+
+        if not list_uuid:
+            return False
+
+        list_token = []
+        stage_mapping = {
+            "cd8f3d75-7917-4e6a-bf9b-abc2c0b82e0d": "https://loot-links.com/",
+            "ef3a98be-0d84-4c79-9e7a-86283a56e92c": "https://linkvertise.com/",
+            "ab60c892-68d6-4b9c-a2a5-d2e94e869982": "https://loot-link.com/"
+        }
+
+        for stage in list_uuid:
+            data = {"stageId": stage["uuid"]}
+            try:
+                response = req.options("https://api.codex.lol/v1/stage/initiate", headers=antibp)
+                response = req.post("https://api.codex.lol/v1/stage/initiate", json=data).json()
+            except Exception:
+                    continue
+
+            token = response.get("token", False)
+            if not token:
+                continue
+
+            ref = stage_mapping.get(stage["uuid"], "https://mobile.codex.lol/")
+            data = {"token": token}
+            time.sleep(5)
+
+            try:
+                req.get("https://api.codex.lol/v1/stage/stages")
+                response = requests.post("https://api.codex.lol/v1/stage/validate", json=data, headers=CodexBypass.get_headers(android_session, ref)).json()
+            except Exception:
+                continue
+
+            token = response.get("token", False)
+            if token:
+                list_token.append({"uuid": stage["uuid"], "token": token})
+
+        if not list_token:
+            return False
+
+        data = {"tokens": list_token}
+        try:
+            response = req.post("https://api.codex.lol/v1/stage/authenticate", json=data).json()
+            if not response.get("success", False):
+                invalid_tokens = response.get("invalidTokens", [])
+                for invalid_token in invalid_tokens:
+                    pass
+                return False
+
+            return response
+        except Exception:
+            return False
+
+    @staticmethod
+    def bypass_thread():
+        global codex_bypass_enabled, codex_bypass_active
+        hwid = Utilities.get_hwid_codex()
+        
+        while True:
+            if not codex_bypass_enabled:
+                time.sleep(5)
+                continue
+                
+            try:
+                result = CodexBypass.codex(hwid)
+                if not result:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Get Codex key failed. Retrying...\033[0m")
+                    time.sleep(5)
+                    continue
+                    
+                expiry_timestamp = result.get("expiry", 0)
+                if not expiry_timestamp:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Invalid expiry timestamp. Retrying...\033[0m")
+                    time.sleep(5)
+                    continue
+
+                while codex_bypass_enabled:
+                    time_left = Utilities.calculate_time_left(expiry_timestamp)
+                    if time_left <= 0:
+                        print("\033[1;33m[ zam2109roblox.shop ] - Codex key expired. Restarting...\033[0m")
+                        break
+                        
+                    formatted_time = Utilities.format_time_left(time_left)
+                    sys.stdout.write(f"\r\033[1;32m[ zam2109roblox.shop ] - Codex key expiry in: {formatted_time} ")
+                    sys.stdout.flush()
+                    time.sleep(1)
+
+                sys.stdout.write("\r" + " " * 60 + "\r")
+                sys.stdout.flush()
+
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error in bypass thread: {e}\033[0m")
+                time.sleep(5)
+
+class Runner:
+    @staticmethod
+    def launch_package_sequentially(server_links):
+        next_package_event = Event()
+        next_package_event.set()
+        packages_to_launch = []
+        for package_name, server_link in server_links:
+            user_id = globals()["_user_"].get(package_name, "Unknown")
+            if user_id == "Unknown":
+                print(f"\033[1;31m[ zam2109roblox.shop ] - No UserID found for {package_name}, skipping...\033[0m")
+                continue
+            username = FileManager.get_username(user_id)
+            with status_lock:
+                globals()["package_statuses"][package_name] = {
+                    "Username": username,
+                    "Status": "\033[1;33mWaiting to Join\033[0m"
+                }
+            packages_to_launch.append((package_name, server_link))
+        total_packages = len(packages_to_launch)
+        for index, (package_name, server_link) in enumerate(packages_to_launch):
+            next_package_event.clear()
+            print(f"\033[1;32m[ zam2109roblox.shop ] - Launching package {index + 1}/{total_packages}: {package_name}\033[0m")
+            try:
+                RobloxManager.launch_roblox(package_name, server_link, next_package_event)
+            except Exception as e:
+                Utilities.log_error(f"Error launching Roblox for {package_name}: {e}\n{traceback.format_exc()}")
+                print(f"\033[1;31mError launching Roblox for {package_name}: {e}\033[0m")
+                globals()["package_statuses"][package_name]["Status"] = "\033[1;31mLaunch failed\033[0m"
+                UIManager.update_status_table()
+                try:
+                    next_package_event.set()
+                except Exception:
+                    pass
+            next_package_event.wait()
+
+    @staticmethod
+    def monitor_presence(server_links, stop_event):
+        in_game_status = {package_name: False for package_name, _ in server_links}
+        
+        while not stop_event.is_set():
+            try:
+                for package_name, server_link in server_links:
+                    ckhuy = FileManager.xuat(f"/data/data/{package_name}/app_webview/Default/Cookies")
+                    user_id = globals()["_user_"][package_name]
+                    
+                    presence_type = RobloxManager.check_user_online(user_id, ckhuy)
+                    
+                    if not in_game_status[package_name]:
+                        if presence_type == 2:
+                            with status_lock:
+                                globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
+                                UIManager.update_status_table()
+                            in_game_status[package_name] = True
+                            print(f"\033[1;32m[ zam2109roblox.shop ] - {user_id} is now In-Game, monitoring started.\033[0m")
+                        continue 
+                    
+                    if presence_type != 2:
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;31mNot In-Game, Rejoining!\033[0m"
+                            UIManager.update_status_table()
+                        print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
+                        RobloxManager.kill_roblox_process(package_name)
+                        if clear_cache_enabled:
+                            RobloxManager.delete_cache_for_package(package_name)
+                        time.sleep(2)
+                        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
+                    else:
+                        with status_lock:
+                            globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
+                            UIManager.update_status_table()
+                time.sleep(60)
+            except Exception as e:
+                Utilities.log_error(f"Error in presence monitor: {e}")
+                time.sleep(60)
+                
+    @staticmethod
+    def force_rejoin(server_links, interval, stop_event):
+        start_time = time.time()
+        force_rejoin_interval = float(interval) if interval and isinstance(interval, (int, float)) else float('inf')
+        while not stop_event.is_set():
+            if force_rejoin_interval != float('inf') and (time.time() - start_time >= force_rejoin_interval):
+                print("\033[1;31m[ zam2109roblox.shop ] - Force killing Roblox processes due to time limit.\033[0m")
+                RobloxManager.kill_roblox_processes()
+                start_time = time.time()
+                print("\033[1;33m[ zam2109roblox.shop ] - Waiting for 5 seconds before starting the rejoin process...\033[0m")
+                time.sleep(5)
+                Runner.launch_package_sequentially(server_links)
+            time.sleep(120)
+
+    @staticmethod
+    def update_status_table_periodically():
+        while True:
+            UIManager.update_status_table()
+            if clear_cache_enabled:
+                RobloxManager.cache_clear()
+            time.sleep(30)
+
+def check_activation_status():
+    try:
+        response = requests.get("https://raw.githubusercontent.com/nghvit/module/refs/heads/main/status/customize", timeout=5) # true
+        response.raise_for_status()
+        content = response.text.strip()
+        if content == "true":
+            print("\033[1;32m[ zam2109roblox.shop ] - Activation status: Enabled. Proceeding with tool execution.\033[0m")
+            return True
+        elif content == "false":
+            print("\033[1;31m[ zam2109roblox.shop ] - Activation status: Disabled. Tool execution halted.\033[0m")
+            return False
+        else:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Invalid activation status received: {content}. Halting execution.\033[0m")
+            Utilities.log_error(f"Invalid activation status: {content}")
+            return False
+    except requests.RequestException as e:
+        print(f"\033[1;31m[ zam2109roblox.shop ] - Error checking activation status: {e}\033[0m")
+        Utilities.log_error(f"Error checking activation status: {e}")
+        return False
+
+def set_android_id(android_id):
+    try:
+        subprocess.run(["settings", "put", "secure", "android_id", android_id], check=True)
+    except Exception as e:
+        Utilities.log_error(f"Failed to set Android ID: {e}")
+
+def auto_change_android_id():
+    global auto_android_id_enabled, auto_android_id_value
+    while auto_android_id_enabled:
+        if auto_android_id_value:
+            set_android_id(auto_android_id_value)
+        time.sleep(2)  
+
+def main():
+    global stop_webhook_thread, webhook_interval, codex_bypass_enabled, codex_bypass_thread, codex_bypass_active
+    global auto_android_id_enabled, auto_android_id_thread, auto_android_id_value
+
+    if not check_activation_status():
+        print("\033[1;31m[ zam2109roblox.shop ] - Exiting due to activation status check failure.\033[0m")
+        return
+    FileManager._tpdelta()
+    FileManager._load_config()
+
+    if not globals().get("command_8_configured", False):
+        globals()["check_exec_enable"] = "1"
+        globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://repo.rokidmanager.com/RokidManager/neyoshiiuem/main/checkonline.lua"))()'
+        config_file = os.path.join("zam2109roblox.shop", "checkui.lua")
+        try:
+            os.makedirs("zam2109roblox.shop", exist_ok=True)
+            with open(config_file, "w") as f:
+                f.write(globals()["lua_script_template"])
+            print("\033[1;32m[ zam2109roblox.shop ] - Default script saved to checkui.lua\033[0m")
+        except Exception as e:
+            print(f"\033[1;31m[ zam2109roblox.shop ] - Error saving default script to {config_file}: {e}\033[0m")
+            Utilities.log_error(f"Error saving default script to {config_file}: {e}")
+        FileManager.save_config()
+
+    if webhook_interval is None:
+        print("\033[1;31m[ zam2109roblox.shop ] - Webhook interval not set, disabled.\033[0m")
+        webhook_interval = float('inf')
+    if webhook_url and device_name and webhook_interval != float('inf'):
+        WebhookManager.start_webhook_thread()
+    else:
+        print("\033[1;33m[ zam2109roblox.shop ] - Webhook not configured or disabled.\033[0m")
+
+    stop_main_event = threading.Event()
+
+    
+    if globals().get("autorun_enabled", False):
+        global autorun_enabled, force_rejoin_interval
+        server_links = FileManager.load_server_links()
+        accounts = FileManager.load_accounts()
+        if not accounts or not server_links:
+            print("\033[1;31m[ zam2109roblox.shop ] - Cannot enable autorun: accounts or server links not configured.\033[0m")
+            autorun_enabled = False
+            FileManager.save_config()
+        else:
+            
+            interval = force_rejoin_interval
+            if interval is None:
+                interval = float('inf')
+            codex_bypass_active = True
+            if codex_bypass_active and codex_bypass_enabled:
+                print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
+            RobloxManager.kill_roblox_processes()
+            time.sleep(5)
+            Runner.launch_package_sequentially(server_links)
+            globals()["is_runner_ez"] = True
+            for task in [
+                (Runner.monitor_presence, (server_links, stop_main_event)),
+                (Runner.force_rejoin, (server_links, interval, stop_main_event)),
+                (Runner.update_status_table_periodically, ())
+            ]:
+                threading.Thread(target=task[0], args=task[1], daemon=True).start()
+            while not stop_main_event.is_set():
+                time.sleep(500)
+                with status_lock:
+                    UIManager.update_status_table()
+                Utilities.collect_garbage()
+            return
+
+    while True:
+        Utilities.clear_screen()
+        UIManager.print_header(version)
+        FileManager.check_and_create_cookie_file()
+
+        menu_options = [
+            "Start Auto Rejoin",
+            "Auto Setup User IDs",
+            "Auto Login with Cookie",
+            "Enable Discord Webhook",
+            "Auto Check User Setup",
+            "Toggle Codex Bypass",
+            "Configure Package Prefix",
+            "Auto Change Android ID",
+            "Cache Clear",
+            "Run on boot"
+        ]
+
+        UIManager.create_dynamic_menu(menu_options)
+        setup_type = input("\033[1;93m[ zam2109roblox.shop ] - Enter command: \033[0m").strip()
+        codex_bypass_active = False
+
+        if setup_type == "1":
+            try:
+                server_links = FileManager.load_server_links()
+                globals()["accounts"] = FileManager.load_accounts()
+                globals()["_uid_"] = {}
+
+                if not globals()["accounts"]:
+                    print("\033[1;31m[ zam2109roblox.shop ] - No user IDs set up.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+                if not server_links:
+                    print("\033[1;31m[ zam2109roblox.shop ] - No game ID or server link set up.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+                
+                force_rejoin_input = input("\033[1;93m[ Shouko.dev ] - Force rejoin interval (minutes, 'q' to skip): \033[0m").strip()
+                force_rejoin_interval = float('inf') if force_rejoin_input.lower() == 'q' else int(force_rejoin_input) * 60
+                FileManager.save_config()
+                if force_rejoin_interval != float('inf') and force_rejoin_interval <= 0:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Interval must be positive.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                
+                    continue
+
+                codex_bypass_active = True
+
+                if codex_bypass_active and codex_bypass_enabled:
+                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled.\033[0m")
+
+                RobloxManager.kill_roblox_processes()
+                time.sleep(5)
+                Runner.launch_package_sequentially(server_links)
+                globals()["is_runner_ez"] = True
+
+                for task in [
+                    (Runner.monitor_presence, (server_links, stop_main_event)),
+                    (Runner.force_rejoin, (server_links, interval, stop_main_event)),
+                    (Runner.update_status_table_periodically, ())
+                ]:
+                    threading.Thread(target=task[0], args=task[1], daemon=True).start()
+
+                while not stop_main_event.is_set():
+                    time.sleep(500)
+                    with status_lock:
+                        UIManager.update_status_table()
+                    Utilities.collect_garbage()
+
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+                Utilities.log_error(f"Setup error: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+                continue
+
+        elif setup_type == "2":
+            try:
+                print("\033[1;32m[ zam2109roblox.shop ] - Auto Setup User IDs from appStorage.json...\033[0m")
+                packages = RobloxManager.get_roblox_packages()
+                accounts = []
+
+                for package_name in packages:
+                    file_path = f'/data/data/{package_name}/files/appData/LocalStorage/appStorage.json'
+                    try:
+                        user_id = FileManager.find_userid_from_file(file_path)
+                        if user_id and user_id != "-1":
+                            accounts.append((package_name, user_id))
+                            print(f"\033[96m[ zam2109roblox.shop ] - Found UserId for {package_name}: {user_id}\033[0m")
+                        else:
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - UserId not found for {package_name}.\033[0m")
+                    except Exception as e:
+                        print(f"\033[1;31m[ zam2109roblox.shop ] - Error reading file for {package_name}: {e}\033[0m")
+                        Utilities.log_error(f"Error reading appStorage.json for {package_name}: {e}")
+
+                if accounts:
+                    FileManager.save_accounts(accounts)
+                    print("\033[1;32m[ zam2109roblox.shop ] - User IDs saved!\033[0m")
+                else:
+                    print("\033[1;31m[ zam2109roblox.shop ] - No User IDs found.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+
+                print("\033[93m[ zam2109roblox.shop ] - Select game:\033[0m")
+                games = [
+                    "1. Blox Fruits", "2. Anime Defenders", "3. King Legacy", "4. Fisch",
+                    "5. Bee Swarm Simulator", "6. Anime Vanguards", "7. Pet GO",
+                    "8. Pet Simulator 99", "9. Meme Sea", "10. Anime Adventures",
+                    "11. Anime Last Stand", "12. Da Hood", "13. Da Hood VC", "14. Arise Crossover",
+                    "15. Bubble Gum Simulator", "16. Anime Ranger X", "17. Other Games/Private Server Links"
+                ]
+                for game in games:
+                    print(f"\033[96m{game}\033[0m")
+
+                choice = input("\033[93m[ zam2109roblox.shop ] - Enter choice: \033[0m").strip()
+                game_ids = {
+                    "1": "2753915549", "2": "17017769292", "3": "4520749081", "4": "16732694052",
+                    "5": "1537690962", "6": "16146832113", "7": "18901165922", "8": "8737899170",
+                    "9": "10260193230", "10": "8304191830", "11": "12886143095", "12": "2788229376",
+                    "13": "7213786345", "14": "87039211657390", "15": "85896571713843", "16": "72829404259339"
+                }
+
+                server_links = []
+                if choice in game_ids:
+                    server_link = game_ids[choice]
+                    formatted_link = RobloxManager.format_server_link(server_link)
+                    if formatted_link:
+                        server_links = [(pkg, formatted_link) for pkg, _ in accounts]
+                        FileManager.save_server_links(server_links)
+                        print("\033[1;32m[ zam2109roblox.shop ] - Game ID or server link saved for all accounts!\033[0m")
+                    else:
+                        print("\033[1;31m[ zam2109roblox.shop ] - Invalid server link.\033[0m")
+                        input("\033[1;32mPress Enter to return...\033[0m")
+                        continue
+
+                elif choice == "17":
+                    for package_name, _ in accounts:
+                        prompt = f"\033[93m[ zam2109roblox.shop ] - Enter game ID or private server link for {package_name} (leave blank to skip): \033[0m"
+                        user_input = input(prompt).strip()
+                        if not user_input:
+                            print(f"\033[93m[ zam2109roblox.shop ] - Skipped {package_name}.\033[0m")
+                            continue
+                        formatted_link = RobloxManager.format_server_link(user_input)
+                        if formatted_link:
+                            server_links.append((package_name, formatted_link))
+                            print(f"\033[1;32m[ zam2109roblox.shop ] - Saved link for {package_name}.\033[0m")
+                        else:
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - Invalid server link for {package_name}, skipped.\033[0m")
+
+                    if server_links:
+                        FileManager.save_server_links(server_links)
+                        print("\033[1;32m[ zam2109roblox.shop ] - Per-account server links saved!\033[0m")
+                    else:
+                        print("\033[1;31m[ zam2109roblox.shop ] - No valid per-account links provided.\033[0m")
+                        input("\033[1;32mPress Enter to return...\033[0m")
+                        continue
+                else:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error: {e}\033[0m")
+                Utilities.log_error(f"Setup error: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+                continue
+
+        elif setup_type == "3":
+            try:
+                RobloxManager.inject_cookies_and_appstorage()
+                input("\033[1;32m\nPress Enter to exit...\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error during cookie injection: {e}\033[0m")
+                Utilities.log_error(f"Cookie injection error: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+            
+        elif setup_type == "4":
+            WebhookManager.setup_webhook()
+            input("\033[1;32m\nPress Enter to exit...\033[0m")
+            continue
+
+        elif setup_type == "5":
+            try:
+                print("\033[1;35m[1]\033[1;32m Executor Check\033[0m \033[1;35m[2]\033[1;36m Online Check\033[0m")
+                config_choice = input("\033[1;93m[ zam2109roblox.shop ] - Select check method (1-2, 'q' to keep default): \033[0m").strip()
+
+                if config_choice.lower() == "q":
+                    globals()["check_exec_enable"] = "1"
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
+                    print("\033[1;32m[ zam2109roblox.shop ] - Default set: Executor + Shouko Check\033[0m")
+                elif config_choice == "1":
+                    globals()["check_exec_enable"] = "1"
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
+                    print("\033[1;32m[ zam2109roblox.shop ] - Set to Executor + Shouko Check\033[0m")
+                elif config_choice == "2":
+                    globals()["check_exec_enable"] = "0"
+                    globals()["lua_script_template"] = None
+                    print("\033[1;36m[ zam2109roblox.shop ] - Set to Online Check.\033[0m")
+                else:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Invalid choice. Keeping default.\033[0m")
+                    globals()["check_exec_enable"] = "1"
+                    globals()["lua_script_template"] = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/caotuanthanh147/Public/refs/heads/main/writestatus.lua"))()'
+
+                config_file = os.path.join("Shouko.dev", "checkui.lua")
+                if globals()["lua_script_template"]:
+                    try:
+                        os.makedirs("Shouko.dev", exist_ok=True)
+                        with open(config_file, "w") as f:
+                            f.write(globals()["lua_script_template"])
+                        print(f"\033[1;36m[ zam2109roblox.shop ] - Script saved to {config_file}\033[0m")
+                    except Exception as e:
+                        print(f"\033[1;31m[ zam2109roblox.shop ] - Error saving script: {e}\033[0m")
+                        Utilities.log_error(f"Error saving script to {config_file}: {e}")
+                else:
+                    if os.path.exists(config_file):
+                        try:
+                            os.remove(config_file)
+                            print(f"\033[1;36m[ zam2109roblox.shop ] - Removed {config_file} for Online Check.\033[0m")
+                        except Exception as e:
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - Error removing {config_file}: {e}\033[0m")
+                            Utilities.log_error(f"Error removing {config_file}: {e}")
+
+                globals()["command_8_configured"] = True
+
+                FileManager.save_config()
+                print("\033[1;32m[ zam2109roblox.shop ] - Check method configuration saved.\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting up check method: {e}\033[0m")
+                Utilities.log_error(f"Check method setup error: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+                continue
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+
+        elif setup_type == "6":
+            if codex_bypass_enabled:
+                codex_bypass_enabled = False
+                print("\033[1;31m[ zam2109roblox.shop ] - Codex bypass disabled.\033[0m")
+            else:
+                codex_bypass_enabled = True
+                if codex_bypass_thread is None or not codex_bypass_thread.is_alive():
+                    codex_bypass_thread = threading.Thread(target=CodexBypass.bypass_thread, daemon=True)
+                    codex_bypass_thread.start()
+                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass enabled and thread started.\033[0m")
+                else:
+                    print("\033[1;32m[ zam2109roblox.shop ] - Codex bypass already running.\033[0m")
+            FileManager.save_config()
+            input("\033[1;32m\nPress Enter to return to menu...\033[0m")
+            continue
+
+        elif setup_type == "7":
+            try:
+                current_prefix = globals().get("package_prefix", "com.yuri")
+                print(f"\033[1;32m[ zam2109roblox.shop ] - Current package prefix: {current_prefix}\033[0m")
+                new_prefix = input("\033[1;93m[ zam2109roblox.shop ] - Enter new package prefix (or press Enter to keep current): \033[0m").strip()
+                
+                if new_prefix:
+                    globals()["package_prefix"] = new_prefix
+                    FileManager.save_config()
+                    print(f"\033[1;32m[ zam2109roblox.shop ] - Package prefix updated to: {new_prefix}\033[0m")
+                else:
+                    print(f"\033[1;33m[ zam2109roblox.shop ] - Package prefix unchanged: {current_prefix}\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m[ zam2109roblox.shop ] - Error setting package prefix: {e}\033[0m")
+                Utilities.log_error(f"Error setting package prefix: {e}")
+                input("\033[1;32mPress Enter to return...\033[0m")
+                continue
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+
+        elif setup_type == "8":
+            global auto_android_id_enabled, auto_android_id_thread, auto_android_id_value
+            if not auto_android_id_enabled:
+                android_id = input("\033[1;93m[ zam2109roblox.shop ] - Enter Android ID to spam set: \033[0m").strip()
+                if not android_id:
+                    print("\033[1;31m[ zam2109roblox.shop ] - Android ID cannot be empty.\033[0m")
+                    input("\033[1;32mPress Enter to return...\033[0m")
+                    continue
+                auto_android_id_value = android_id
+                auto_android_id_enabled = True
+                if auto_android_id_thread is None or not auto_android_id_thread.is_alive():
+                    auto_android_id_thread = threading.Thread(target=auto_change_android_id, daemon=True)
+                    auto_android_id_thread.start()
+                print("\033[1;32m[ zam2109roblox.shop ] - Auto change Android ID enabled.\033[0m")
+            else:
+                auto_android_id_enabled = False
+                print("\033[1;31m[ zam2109roblox.shop ] - Auto change Android ID disabled.\033[0m")
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+        
+        elif setup_type == "9":
+            
+            choice = input("\033[1;93m[ zam2109roblox.shop ] - Would you like to clear Roblox cache before each rejoin? (y/n): \033[0m").strip().lower()
+            if choice == 'y':
+                clear_cache_enabled = True
+                print("\033[1;32m[ zam2109roblox.shop ] - Clear cache before rejoin enabled.\033[0m")
+            else:
+                clear_cache_enabled = False
+                print("\033[1;31m[ zam2109roblox.shop ] - Clear cache before rejoin disabled.\033[0m")
+            FileManager.save_config()
+            input("\033[1;32mPress Enter to return...\033[0m")
+            continue
+
+        elif setup_type == "10":
+            try:
+                choice = input("\033[1;93m[ zam2109roblox.shop ] - Enable autorun on boot? (y/n): \033[0m").strip().lower()
+        
+                if choice == 'y':
+                    boot_dir = "/data/data/com.termux/files/home/.termux/boot"
+                    script_path = os.path.join(boot_dir, "zam_autorun.sh")
+                    try:
+                        os.makedirs(boot_dir, exist_ok=True, mode=0o700)
+                    except:
+                        pass
+            
+                    script_content = """
+sleep 20
+termux-wake-lock
+export PATH=/data/data/com.termux/files/usr/bin:$PATH
+export HOME=/data/data/com.termux/files/home
+export PREFIX=/data/data/com.termux/files/usr
+su -c "export PATH=\$PATH:/data/data/com.termux/files/usr/bin && export TERM=xterm-256color && cd /sdcard/Download && python zamtoolrejoinobf.py"
+"""
+                    with open(script_path, "w") as f:
+                        f.write(script_content)
+                    os.chmod(script_path, 0o755)
+                    
+                    st = os.stat(script_path)
+                    if not (st.st_mode & stat.S_IEXEC):
+                        subprocess.run(["chmod", "+x", script_path])
+                    print("\033[1;32m✓ Autorun script created at:\033[0m")
+                    print(f"\033[1;36m{script_path}\033[0m")
+                    print("\n\033[1;33mChecking permissions...\033[0m")
+                    if os.access(script_path, os.X_OK):
+                        print("\033[1;32m✓ Script is executable\033[0m")
+                    else:
+                        print("\033[1;31m✗ Script is NOT executable - fixing...\033[0m")
+                        os.chmod(script_path, 0o755)
+                    autorun_enabled = True
+                elif choice == 'n':
+                    script_path = "/data/data/com.termux/files/home/.termux/boot/zam_autorun.sh"
+                    if os.path.exists(script_path):
+                        os.remove(script_path)
+                        print("\033[1;32m✓ Autorun script removed\033[0m")
+                        error_log = "/sdcard/termux_boot_error.log"
+                        if os.path.exists(error_log):
+                            os.remove(error_log)
+                    else:
+                        print("\033[1;33m⚠ No autorun script found\033[0m")
+                    autorun_enabled = False
+                else:
+                    print("\033[1;31m✗ Invalid choice\033[0m")
+                FileManager.save_config()
+                input("\033[1;32mPress Enter to return...\033[0m")
+            except Exception as e:
+                print(f"\033[1;31mError: {e}\033[0m")
+                Utilities.log_error(f"Autorun setup error: {e}")
+                continue
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f"\033[1;31m[ zam2109roblox.shop ] - Error during initialization: {e}\033[0m")
+        Utilities.log_error(f"Initialization error: {e}")
+        raise
