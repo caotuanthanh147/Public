@@ -313,7 +313,18 @@ Tab1:CreateToggle({Name = "Can't Escape into Beam during Auto-Farm"; CurrentValu
 G_CanEscape = not Value
 end; })
 Tab1:CreateToggle({Name = "Enable Auto-Farm"; CurrentValue = false; Flag = "Lesbian4"; Callback = function(Value)
-GiftAutoFarm(Value)
+	G_AutoFarmEnabled = Value
+	if Value then
+		task.spawn(function()
+			while G_AutoFarmEnabled do
+				task.wait(.1)
+				if anyAvailableGifts() then
+					GiftAutoFarm(true)
+					repeat task.wait(.1) until not anyAvailableGifts() or not G_AutoFarmEnabled
+				end
+			end
+		end)
+	end
 end; })
 local Tab3 = Window:CreateTab("Enemies",0)
 function GetEnemies(a,b)
