@@ -1663,15 +1663,13 @@ class Runner:
     @staticmethod
     def monitor_presence(server_links, stop_event):
         in_game_status = {package_name: False for package_name, _ in server_links}
-        
+        offline_flagged = {}  
         while not stop_event.is_set():
             try:
                 for package_name, server_link in server_links:
                     ckhuy = FileManager.xuat(f"/data/data/{package_name}/app_webview/Default/Cookies")
                     user_id = globals()["_user_"][package_name]
-                    
                     presence_type = RobloxManager.check_user_online(user_id, ckhuy)
-                    
                     if not in_game_status[package_name]:
                         if presence_type == 2:
                             with status_lock:
@@ -1679,19 +1677,25 @@ class Runner:
                                 UIManager.update_status_table()
                             in_game_status[package_name] = True
                             print(f"\033[1;32m[ zam2109roblox.shop ] - {user_id} is now In-Game, monitoring started.\033[0m")
-                        continue 
-                    
+                        continue
                     if presence_type != 2:
-                        with status_lock:
-                            globals()["package_statuses"][package_name]["Status"] = "\033[1;31mNot In-Game, Rejoining!\033[0m"
-                            UIManager.update_status_table()
-                        print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
-                        RobloxManager.kill_roblox_process(package_name)
-                        if clear_cache_enabled:
-                            RobloxManager.delete_cache_for_package(package_name)
-                        time.sleep(2)
-                        threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
+                        if package_name not in offline_flagged:
+                            offline_flagged[package_name] = time.time()
+                            with status_lock:
+                                globals()["package_statuses"][package_name]["Status"] = "\033[1;33mOffline? Confirming...\033[0m"
+                                UIManager.update_status_table()
+                        elif time.time() - offline_flagged[package_name] >= 60:
+                            offline_flagged.pop(package_name)
+                            with status_lock:
+                                UIManager.update_status_table()
+                            print(f"\033[1;31m[ zam2109roblox.shop ] - {user_id} confirmed offline, rejoining...\033[0m")
+                            RobloxManager.kill_roblox_process(package_name)
+                            if clear_cache_enabled:
+                                RobloxManager.delete_cache_for_package(package_name)
+                            time.sleep(2)
+                            threading.Thread(target=RobloxManager.launch_roblox, args=[package_name, server_link], daemon=True).start()
                     else:
+                        offline_flagged.pop(package_name, None)
                         with status_lock:
                             globals()["package_statuses"][package_name]["Status"] = "\033[1;32mIn-Game\033[0m"
                             UIManager.update_status_table()
