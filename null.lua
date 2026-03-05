@@ -174,37 +174,32 @@ function GiftAutoFarm(a)
 			if AvailableGift.Name~="Spawn" then
 				workspace.Beacon.CanTouch = G_CanEscape
 				local GiftPosition = AvailableGift:GetAttribute("StartPosition")
-
 				while G_AutoFarmEnabled and AvailableGift:GetAttribute("Collected")==false and AvailableGift:GetAttribute("ClientCollected")==false do
 					local Speed = ((GiftPosition-HumanoidRootPart.Position).magnitude<51 and G_Speed) or (G_Speed+1)
 					if Speed>1 then
 						HumanoidRootPart.Anchored = true
 					end
-
 					local Tween = game:GetService("TweenService"):Create(
 						HumanoidRootPart,
 						TweenInfo.new(Speed, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
 						{Position = (GiftPosition + Vector3.new(G_X, G_Y, 0))}
 					)
 					Tween:Play()
-
 					repeat task.wait() until
 						AvailableGift:GetAttribute("ClientCollected") == true
 						or (HumanoidRootPart.Position - GiftPosition).Magnitude < 2
 						or G_AutoFarmEnabled == false
-
 					Tween:Cancel()
 					HumanoidRootPart.Anchored = false
-
 					if (HumanoidRootPart.Position - GiftPosition).Magnitude < 2
 						or AvailableGift:GetAttribute("ClientCollected") == true then
+						pcall(function()
+							game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("GiftCollected"):FireServer(AvailableGift)
+						end)
+						AvailableGift:SetAttribute("ClientCollected", true)
 						break
 					end
 				end
-
-				repeat task.wait() until
-					AvailableGift:GetAttribute("Collected") == true
-					or G_AutoFarmEnabled == false
 			else
 				workspace.Beacon.CanTouch = true
 				task.wait(.1)
