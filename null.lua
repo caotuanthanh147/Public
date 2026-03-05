@@ -165,39 +165,52 @@ local G_AutoFarmEnabled = false
 local G_CanEscape = true
 local G_X, G_Y = 0, 0
 function GiftAutoFarm(a)
-G_AutoFarmEnabled = a
-if a~=true then return end
-task.spawn(function()
-while task.wait(.1) do
-if G_AutoFarmEnabled==false then workspace.Beacon.CanTouch = true task.wait(.1) break end
-local AvailableGift = GetAvailableGift("Closest")
-if AvailableGift.Name~="Spawn" then
-workspace.Beacon.CanTouch = G_CanEscape
-local GiftPosition = AvailableGift:GetAttribute("StartPosition")
-local Speed = ((GiftPosition-HumanoidRootPart.Position).magnitude<51 and G_Speed) or (G_Speed+1) 
-if Speed>1 then
-HumanoidRootPart.Anchored = true
-end
-local Tween = game:GetService("TweenService"):Create(
-    HumanoidRootPart,
-    TweenInfo.new(Speed, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
-    {Position = (GiftPosition + Vector3.new(G_X, G_Y, 0))}
-)
-Tween:Play()
-repeat task.wait() until AvailableGift:GetAttribute("ClientCollected") == true
-    or (HumanoidRootPart.Position - GiftPosition).Magnitude < 4
-    or G_AutoFarmEnabled == false
-Tween:Cancel()
-HumanoidRootPart.Anchored = false
-local timeout = tick()
-repeat task.wait() until AvailableGift:GetAttribute("Collected") == true
-    or G_AutoFarmEnabled == false
-else
-workspace.Beacon.CanTouch = true
-task.wait(.1)
-end
-end
-end)
+	G_AutoFarmEnabled = a
+	if a~=true then return end
+	task.spawn(function()
+		while task.wait(.1) do
+			if G_AutoFarmEnabled==false then workspace.Beacon.CanTouch = true task.wait(.1) break end
+			local AvailableGift = GetAvailableGift("Closest")
+			if AvailableGift.Name~="Spawn" then
+				workspace.Beacon.CanTouch = G_CanEscape
+				local GiftPosition = AvailableGift:GetAttribute("StartPosition")
+
+				while G_AutoFarmEnabled and AvailableGift:GetAttribute("Collected")==false and AvailableGift:GetAttribute("ClientCollected")==false do
+					local Speed = ((GiftPosition-HumanoidRootPart.Position).magnitude<51 and G_Speed) or (G_Speed+1)
+					if Speed>1 then
+						HumanoidRootPart.Anchored = true
+					end
+
+					local Tween = game:GetService("TweenService"):Create(
+						HumanoidRootPart,
+						TweenInfo.new(Speed, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+						{Position = (GiftPosition + Vector3.new(G_X, G_Y, 0))}
+					)
+					Tween:Play()
+
+					repeat task.wait() until
+						AvailableGift:GetAttribute("ClientCollected") == true
+						or (HumanoidRootPart.Position - GiftPosition).Magnitude < 2
+						or G_AutoFarmEnabled == false
+
+					Tween:Cancel()
+					HumanoidRootPart.Anchored = false
+
+					if (HumanoidRootPart.Position - GiftPosition).Magnitude < 2
+						or AvailableGift:GetAttribute("ClientCollected") == true then
+						break
+					end
+				end
+
+				repeat task.wait() until
+					AvailableGift:GetAttribute("Collected") == true
+					or G_AutoFarmEnabled == false
+			else
+				workspace.Beacon.CanTouch = true
+				task.wait(.1)
+			end
+		end
+	end)
 end
 local Tab1 = Window:CreateTab("Gifts",0)
 local NG_Distance, NG_Cooldown = 40, 0.12
