@@ -192,7 +192,6 @@ HumanoidRootPart.Anchored = false
 local timeout = tick()
 repeat task.wait() until AvailableGift:GetAttribute("Collected") == true
     or G_AutoFarmEnabled == false
-    or (tick() - timeout) > 5
 else
 workspace.Beacon.CanTouch = true
 task.wait(.1)
