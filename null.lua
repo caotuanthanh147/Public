@@ -178,11 +178,21 @@ local Speed = ((GiftPosition-HumanoidRootPart.Position).magnitude<51 and G_Speed
 if Speed>1 then
 HumanoidRootPart.Anchored = true
 end
-local Tween = game:GetService("TweenService"):Create(HumanoidRootPart,TweenInfo.new(Speed,Enum.EasingStyle.Quad,Enum.EasingDirection.InOut),{Position=(GiftPosition + Vector3.new(G_X,G_Y,0))}):Play()
-repeat task.wait() until AvailableGift:GetAttribute("ClientCollected")==true or (HumanoidRootPart.Position - GiftPosition).Magnitude < 4 or G_AutoFarmEnabled==false
-if Tween~=nil then Tween:Cancel() Tween=nil end
+local Tween = game:GetService("TweenService"):Create(
+    HumanoidRootPart,
+    TweenInfo.new(Speed, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+    {Position = (GiftPosition + Vector3.new(G_X, G_Y, 0))}
+)
+Tween:Play()
+repeat task.wait() until AvailableGift:GetAttribute("ClientCollected") == true
+    or (HumanoidRootPart.Position - GiftPosition).Magnitude < 4
+    or G_AutoFarmEnabled == false
+Tween:Cancel()
 HumanoidRootPart.Anchored = false
-repeat task.wait() until AvailableGift:GetAttribute("Collected")==true or G_AutoFarmEnabled==false
+local timeout = tick()
+repeat task.wait() until AvailableGift:GetAttribute("Collected") == true
+    or G_AutoFarmEnabled == false
+    or (tick() - timeout) > 5
 else
 workspace.Beacon.CanTouch = true
 task.wait(.1)
