@@ -1214,7 +1214,7 @@ local function waitForNotification(...)
     local found = false
     local conn = notification.OnClientEvent:Connect(function(msg)
         for _, pattern in ipairs(patterns) do
-            if msg:find(pattern) then
+            if msg:match(pattern) then
                 found = true
                 break
             end
