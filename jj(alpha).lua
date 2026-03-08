@@ -1244,7 +1244,7 @@ ManTab:CreateToggle({
             while running.main do
                 joinQueue()
                 waitForNotification("Your opponent")    
-                waitForNotification("Mission Complete.") 
+                waitForNotification("Earned") 
             end
         end)
     end
