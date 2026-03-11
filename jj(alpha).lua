@@ -26,6 +26,7 @@ local MiscTab = Window:CreateTab("Misc", 4483345998)
 local ExTab = Window:CreateTab("Extra", 4483345998)
 local InvTab = Window:CreateTab("Inventory", 4483345998)
 local SkillTab = Window:CreateTab("Skill", 4483345998)
+local QTab = Window:CreateTab("Quest", 4483345998)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -472,7 +473,7 @@ MiscTab:CreateToggle({
         end
     end
 })
-
+local ftween = true
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local TOTAL_DISTANCE = 10
@@ -553,9 +554,9 @@ local function findTarget()
     if not liveFolder then return nil end
     local nearest, nearestDist = nil, math.huge
     for _, desc in ipairs(liveFolder:GetDescendants()) do
-        if desc:IsA("BasePart") and desc.Name == "HumanoidRootPart" and not playerChars[desc.Parent] and desc.Parent.Name ~= "Server" then
+        if desc:IsA("BasePart") and desc.Name == "HumanoidRootPart" and not playerChars[desc.Parent] and desc.Parent.Name ~= "Server" and not desc.Parent.Name:match("Hostage") then
             local d = (desc.Position - myPos).Magnitude
-            if d < nearestDist and d <= 200 then
+            if d < nearestDist and d <= 900 then
                 nearest, nearestDist = desc, d
             end
         end
@@ -604,6 +605,12 @@ ExTab:CreateToggle({
                 end
                 local hrp = player.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
+                if ftween and currentTargetPart then
+                    local hum = currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChildOfClass("Humanoid")
+                    if not hum or hum.Health <= 0 then
+                        currentTargetPart = nil
+                    end
+                end
                 currentTargetPart = findTarget()
                 if not currentTargetPart then return end
                 if not bodyVelocity or not bodyGyro then enableBodyControl(hrp) end
@@ -902,7 +909,6 @@ ManTab:CreateToggle({
 })
 local priorStat = { "PvEDamage" }
 local HttpService       = game:GetService("HttpService")
-
 local Players           = game:GetService("Players")
 local SlotData            = Players.LocalPlayer:WaitForChild("PlayerData"):WaitForChild("SlotData")
 local Inventory           = SlotData:WaitForChild("Inventory")
@@ -1003,7 +1009,7 @@ local function unequipAll()
         local accInfo = accessoryData[item.Name]
         if accInfo then
             equipRemote:FireServer({ Name = item.Name, Original = item, Data = item, New = accInfo })
-            task.wait(0.3)
+            task.wait(0.35)
         end
     end
 end
@@ -1020,7 +1026,7 @@ InvTab:CreateButton({
                 Data     = best.item,
                 New      = best.accInfo
             })
-            task.wait(0.3)
+            task.wait(0.35)
         end
     end
 })
@@ -1265,5 +1271,28 @@ ManTab:CreateToggle({
         end)
     end
 })
-
+local questIndex = 1
+QTab:CreateButton({
+    Name = "Teleport to Quest",
+    Callback = function()
+        local root = game:GetService("Players").LocalPlayer.Character
+            and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local markers = {}
+        for _, child in ipairs(workspace.Effects.questbrick:GetChildren()) do
+            local questMarker = child:FindFirstChild("Quest Marker")
+            if questMarker and questMarker.Enabled then
+                table.insert(markers, child)
+            end
+        end
+        if #markers == 0 then return end
+        if questIndex > #markers then questIndex = 1 end
+        local marker = markers[questIndex]
+        local pos = marker:IsA("BasePart") and marker.Position
+            or (marker:IsA("Model") and marker.PrimaryPart and marker.PrimaryPart.Position)
+        if not pos then return end
+        root.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
+        questIndex = questIndex % #markers + 1
+    end
+})
 Rayfield:LoadConfiguration()
