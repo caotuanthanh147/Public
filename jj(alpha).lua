@@ -555,9 +555,12 @@ local function findTarget()
     local nearest, nearestDist = nil, math.huge
     for _, desc in ipairs(liveFolder:GetDescendants()) do
         if desc:IsA("BasePart") and desc.Name == "HumanoidRootPart" and not playerChars[desc.Parent] and desc.Parent.Name ~= "Server" and not desc.Parent.Name:match("Hostage") then
-            local d = (desc.Position - myPos).Magnitude
-            if d < nearestDist and d <= 900 then
-                nearest, nearestDist = desc, d
+            local hum = desc.Parent:FindFirstChildOfClass("Humanoid")
+            if hum and (not ftween or hum.Health > 0) then
+                local d = (desc.Position - myPos).Magnitude
+                if d < nearestDist and d <= 900 then
+                    nearest, nearestDist = desc, d
+                end
             end
         end
     end
@@ -605,12 +608,6 @@ ExTab:CreateToggle({
                 end
                 local hrp = player.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
-                if ftween and currentTargetPart then
-                    local hum = currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChildOfClass("Humanoid")
-                    if not hum or hum.Health <= 0 then
-                        currentTargetPart = nil
-                    end
-                end
                 currentTargetPart = findTarget()
                 if not currentTargetPart then return end
                 if not bodyVelocity or not bodyGyro then enableBodyControl(hrp) end
