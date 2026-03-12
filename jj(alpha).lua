@@ -244,7 +244,9 @@ local function watchIFrame(npcModel)
         if child.Name == "IFrame" then
             child.AncestryChanged:Connect(function()
                 if not child.Parent then
-                    iframeSeen[npcName] = true
+                    if healthJumped[npcName] then
+                        iframeSeen[npcName] = true
+                    end
                 end
             end)
         end
@@ -322,6 +324,7 @@ ExTab:CreateToggle({
                         savedPos = hrp.Position
                         isVoiding = true
                     end
+                    print("voiding")
                     hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
                 else
                     if isVoiding and not npcAnchored then
@@ -403,6 +406,7 @@ local function fireSkill(key, ...)
     if not controller then warn("No controller for", key) return end
     local remote = controller:WaitForChild(key, 3)
     if not remote then warn("No remote:", key) return end
+    if not currentTargetPart then return end
     if currentTargetPart and currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChild("IFrame") then return end
     remote:FireServer(table.unpack(args))
 end
