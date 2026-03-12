@@ -246,6 +246,7 @@ local function watchIFrame(npcModel)
                 if not child.Parent then
                     if healthJumped[npcName] then
                         iframeSeen[npcName] = true
+                        
                     end
                 end
             end)
@@ -308,9 +309,8 @@ ExTab:CreateToggle({
                     local prevHP = lastHealth[npcName]
                     lastHealth[npcName] = currentHP
                     if prevHP then
-                        if currentHP < prevHP then
-                            healthJumped[npcName] = false 
-                        elseif currentHP > (prevHP + 500) then
+                        if currentHP > (prevHP + 500) then
+                           
                             healthJumped[npcName] = true
                         end
                     end
@@ -324,7 +324,7 @@ ExTab:CreateToggle({
                         savedPos = hrp.Position
                         isVoiding = true
                     end
-                    print("voiding")
+                    
                     hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
                 else
                     if isVoiding and not npcAnchored then
@@ -361,24 +361,18 @@ ExTab:CreateInput({
         end
     end
 })
-
-local player = game:GetService("Players").LocalPlayer
-
 local workspace = game:GetService("Workspace")
-
 local function getController()
     local char = player.Character
     if not char then return nil end
     local controller = char:FindFirstChild("client_character_controller")
     return controller
 end
-
 local intervals = {
     M1 = 0.2, M2 = 1,
     E = 1, R = 1, Z = 1, C = 1, X = 0.3, V = 1,
 }
 local threads = {}
-
 local function startLoop(key, fn)
     if threads[key] then return end
     local token = {}
@@ -393,11 +387,48 @@ local function startLoop(key, fn)
         end
     end)
 end
-
 local function stopLoop(key)
     threads[key] = nil
 end
-
+local skillCooldowns = {}
+local standCooldownConnection = nil
+local function getSkillNameForKeybind(keybind)
+    local char = player.Character
+    if not char then return nil end
+    local standName = char:GetAttribute("SummonedStand")
+    if not standName then return nil end
+    local ok, skillsData = pcall(function()
+        return game:GetService("ReplicatedStorage").requests.miscellaneous:WaitForChild("get_data"):InvokeServer("ability")
+    end)
+    if not ok or not skillsData then return nil end
+    for skillId, skill in pairs(skillsData) do
+        if skill.AbilityType == "Stand" and string.split(skillId, ": ")[1] == standName and skill.Keybind == keybind then
+            return skill.Name
+        end
+    end
+    return nil
+end
+local function isOnCooldown(keybind)
+    local skillName = getSkillNameForKeybind(keybind)
+    if not skillName then return false end
+    local endTime = skillCooldowns[skillName]
+    if not endTime then return false end
+    return tick() < endTime
+end
+local function startCooldownTracking()
+    if standCooldownConnection then return end
+    local standCooldownRemote = game:GetService("ReplicatedStorage").requests.general:WaitForChild("StandCooldown")
+    standCooldownConnection = standCooldownRemote.OnClientEvent:Connect(function(skillName, duration)
+        skillCooldowns[skillName] = tick() + duration
+    end)
+end
+local function stopCooldownTracking()
+    if standCooldownConnection then
+        standCooldownConnection:Disconnect()
+        standCooldownConnection = nil
+    end
+    skillCooldowns = {}
+end
 local function fireSkill(key, ...)
     local args = {...}
     local char = player.Character
@@ -407,13 +438,19 @@ local function fireSkill(key, ...)
     local remote = controller:WaitForChild(key, 3)
     if not remote then warn("No remote:", key) return end
     if not currentTargetPart then return end
-    if currentTargetPart and currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChild("IFrame") then return end
+    if currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChild("IFrame") then return end
+    local keybind = args[1] == "Skill" and args[2] or nil
+    if keybind and isOnCooldown(keybind) then return end
     remote:FireServer(table.unpack(args))
 end
-
+local function onToggleOff(key)
+    stopLoop(key)
+    if not next(threads) then
+        stopCooldownTracking()
+    end
+end
 local character = player.Character or player.CharacterAdded:Wait()
 local autoSummon = false
-
 SkillTab:CreateToggle({ Name = "Auto Summon Stand", CurrentValue = false, Flag = "AutoSummonStand", Callback = function(state)
     autoSummon = state
     if autoSummon then
@@ -441,41 +478,65 @@ SkillTab:CreateToggle({ Name = "Auto Summon Stand", CurrentValue = false, Flag =
         end)
     end
 end })
-
 SkillTab:CreateToggle({ Name = "Auto M1", CurrentValue = false, Flag = "lesbian101", Callback = function(v)
-    if v then startLoop("M1", function() fireSkill("M1", true, false) end)
-    else stopLoop("M1") end
+    if v then
+        startCooldownTracking()
+        startLoop("M1", function() fireSkill("M1", true, false) end)
+    else
+        onToggleOff("M1")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto M2", CurrentValue = false, Flag = "lesbian102", Callback = function(v)
-    if v then startLoop("M2", function() fireSkill("M2", true, false) end)
-    else stopLoop("M2") end
+    if v then
+        startCooldownTracking()
+        startLoop("M2", function() fireSkill("M2", true, false) end)
+    else
+        onToggleOff("M2")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill E", CurrentValue = false, Flag = "lesbian103", Callback = function(v)
-    if v then startLoop("E", function() fireSkill("Skill", "E", true) end)
-    else stopLoop("E") end
+    if v then
+        startCooldownTracking()
+        startLoop("E", function() fireSkill("Skill", "E", true) end)
+    else
+        onToggleOff("E")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill R", CurrentValue = false, Flag = "lesbian104", Callback = function(v)
-    if v then startLoop("R", function() fireSkill("Skill", "R", true) end)
-    else stopLoop("R") end
+    if v then
+        startCooldownTracking()
+        startLoop("R", function() fireSkill("Skill", "R", true) end)
+    else
+        onToggleOff("R")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill Z", CurrentValue = false, Flag = "lesbian105", Callback = function(v)
-    if v then startLoop("Z", function() fireSkill("Skill", "Z", true) end)
-    else stopLoop("Z") end
+    if v then
+        startCooldownTracking()
+        startLoop("Z", function() fireSkill("Skill", "Z", true) end)
+    else
+        onToggleOff("Z")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill C", CurrentValue = false, Flag = "lesbian106", Callback = function(v)
-    if v then startLoop("C", function() fireSkill("Skill", "C", true) end)
-    else stopLoop("C") end
+    if v then
+        startCooldownTracking()
+        startLoop("C", function() fireSkill("Skill", "C", true) end)
+    else
+        onToggleOff("C")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill X", CurrentValue = false, Flag = "lesbian107", Callback = function(v)
     if v then
+        startCooldownTracking()
         startLoop("X", function()
             if not isPhase2 then return end
             fireSkill("Skill", "X", true)
-            task.wait(.5)
+            task.wait(0.5)
             fireSkill("Skill", "X", true)
         end)
     else
-        stopLoop("X")
+        onToggleOff("X")
     end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill V", CurrentValue = false, Flag = "lesbian108", Callback = function(v)
