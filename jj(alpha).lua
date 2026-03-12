@@ -55,54 +55,10 @@ ExTab:CreateToggle({
         end
     end
 })
-local isAutoCollectActive = false
-local autoCollectConnection
-MiscTab:CreateToggle({
-    Name = "Auto Collect Items",
-    CurrentValue = false,
-    Callback = function(value)
-        isAutoCollectActive = value
-        if isAutoCollectActive then
-            if autoCollectConnection then
-                autoCollectConnection:Disconnect()
-            end
-            autoCollectConnection = RunService.Heartbeat:Connect(function()
-                local success, errorMessage = pcall(function()
-                    local player = Players.LocalPlayer
-                    if not player then return end
-                    local character = player.Character
-                    if not character then return end
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-                    for _, model in ipairs(workspace:GetChildren()) do
-                        if model:IsA("Model") then
-                            for _, obj in ipairs(model:GetDescendants()) do
-                                if obj:IsA("ProximityPrompt") then
-                                    if obj.Parent:IsA("BasePart") then
-                                        hrp.CFrame = obj.Parent.CFrame
-                                        task.wait(1)
-                                    end
-                                    fireproximityprompt(obj)
-                                end
-                            end
-                        end
-                    end
-                end)
-                if not success then
-                    warn("Error in auto collect loop: " .. errorMessage)
-                end
-            end)
-        else
-            if autoCollectConnection then
-                autoCollectConnection:Disconnect()
-                autoCollectConnection = nil
-            end
-        end
-    end
-})
 local ftween = true
+local isVoiding = false
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+
 local TOTAL_DISTANCE = 10
 local BODY_VEL_NAME = "AutoTweenBodyVelocity"
 local BODY_GYRO_NAME = "AutoTweenBodyGyro"
@@ -185,7 +141,7 @@ local function findTarget()
             local hum = desc.Parent:FindFirstChildOfClass("Humanoid")
             if hum and (not ftween or hum.Health > 0) then
                 local d = (desc.Position - myPos).Magnitude
-                if d < nearestDist and d <= 900 then
+                if d < nearestDist and d <= 2000 then
                     nearest, nearestDist = desc, d
                 end
             end
@@ -228,6 +184,7 @@ ExTab:CreateToggle({
             enableBodyControl(hrp)
             startNoclip()
             connection = RunService.Heartbeat:Connect(function()
+                if isVoiding then return end
                 if not isPlayerAlive() or not _G.isAutoCollectActive then
                     local h = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                     stopAll(h)
@@ -240,7 +197,6 @@ ExTab:CreateToggle({
                 if not bodyVelocity or not bodyGyro then enableBodyControl(hrp) end
                 local desiredPos = currentTargetPart.Position + Vector3.new(0, -TOTAL_DISTANCE, 0)
                 local diff = desiredPos - hrp.Position
-                
                 if diff.Magnitude > 200 then
                     hrp.CFrame = CFrame.new(desiredPos, currentTargetPart.Position)
                     bodyVelocity.Velocity = diff * 10
@@ -261,6 +217,109 @@ ExTab:CreateToggle({
             if humanoidDiedConnection then humanoidDiedConnection:Disconnect() humanoidDiedConnection = nil end
             local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             stopAll(hrp)
+        end
+    end
+})
+local phase1Seen = {}
+local phase2Time = {}
+local lastHealth = {}
+local VOID_NAMES = {"Jotaro", "Kira", "Avdol", "DIO"}
+local function isVoidTarget(hrpPart)
+    if not hrpPart or not hrpPart.Parent then return false end
+    local name = hrpPart.Parent.Name
+    for _, n in ipairs(VOID_NAMES) do
+        if name:lower():match(n:lower()) then return true end
+    end
+    return false
+end
+isPhase2 = false
+local savedPos = nil
+local voidConnection, voidCharAddedConnection, voidHumanoidDiedConnection
+ExTab:CreateToggle({
+    Name = "Void Farm",
+    CurrentValue = false,
+    Flag = "lesbian6",
+    Callback = function(value)
+        if value then
+            if not voidCharAddedConnection then
+                voidCharAddedConnection = player.CharacterAdded:Connect(function(character)
+                    if voidHumanoidDiedConnection then voidHumanoidDiedConnection:Disconnect() voidHumanoidDiedConnection = nil end
+                    isVoiding = false
+                    savedPos = nil
+                    local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+                    if humanoid then
+                        voidHumanoidDiedConnection = humanoid.Died:Connect(function()
+                            isVoiding = false
+                            savedPos = nil
+                        end)
+                    end
+                end)
+            end
+            voidConnection = RunService.Heartbeat:Connect(function()
+                if not isPlayerAlive() then return end
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                local targetHRP = currentTargetPart
+                local lastTarget = targetHRP
+                if not targetHRP or not targetHRP.Parent then
+                    if isVoiding and savedPos then
+                        hrp.CFrame = CFrame.new(savedPos)
+                    end
+                    isVoiding = false
+                    savedPos = nil
+                    if lastTarget and lastTarget.Parent then
+                        local n = lastTarget.Parent.Name
+                        phase1Seen[n] = nil
+                        phase2Time[n] = nil
+                        lastHealth[n] = nil
+                    end
+                    return
+                end
+                local npcName = targetHRP.Parent.Name
+                if not isVoidTarget(targetHRP) then
+                    isVoiding = false
+                    return
+                end
+                local hum = targetHRP.Parent:FindFirstChildOfClass("Humanoid")
+                if not hum then return end
+                local currentHP = hum.Health
+                local prevHP = lastHealth[npcName]
+                lastHealth[npcName] = currentHP
+                if prevHP then
+                    if currentHP < prevHP and not phase2Time[npcName] then
+                        phase1Seen[npcName] = true
+                    elseif phase1Seen[npcName] and currentHP > (prevHP + 1000) and not phase2Time[npcName] then
+                        phase2Time[npcName] = tick()
+                    else
+                    end
+                end
+                isPhase2 = false
+                if phase2Time[npcName] then
+                    local elapsed = tick() - phase2Time[npcName]
+                    if elapsed >= 9 then
+                        isPhase2 = true
+                    end
+                end
+                local npcAnchored = targetHRP.Anchored
+                if npcAnchored and isPhase2 then
+                    if not isVoiding then
+                        savedPos = hrp.Position
+                        isVoiding = true
+                    end
+                    hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
+                else
+                    isVoiding = false
+                end
+            end)
+        else
+            isVoiding = false
+            savedPos = nil
+            phase1Seen = {}
+            phase2Time = {}
+            lastHealth = {}
+            if voidConnection then voidConnection:Disconnect() voidConnection = nil end
+            if voidCharAddedConnection then voidCharAddedConnection:Disconnect() voidCharAddedConnection = nil end
+            if voidHumanoidDiedConnection then voidHumanoidDiedConnection:Disconnect() voidHumanoidDiedConnection = nil end
         end
     end
 })
@@ -289,8 +348,8 @@ local function getController()
 end
 
 local intervals = {
-    M1 = 0.1, M2 = 0.1,
-    E = 1, R = 1, Z = 1, C = 1, X = 1, V = 1,
+    M1 = 0.2, M2 = 1,
+    E = 1, R = 1, Z = 1, C = 1, X = 0.3, V = 1,
 }
 local threads = {}
 
@@ -380,8 +439,16 @@ SkillTab:CreateToggle({ Name = "Auto Skill C", CurrentValue = false, Flag = "les
     else stopLoop("C") end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill X", CurrentValue = false, Flag = "lesbian107", Callback = function(v)
-    if v then startLoop("X", function() fireSkill("Skill", "X", true) end)
-    else stopLoop("X") end
+    if v then
+        startLoop("X", function()
+            if not isPhase2 then return end
+            fireSkill("Skill", "X", true)
+            task.wait(.5)
+            fireSkill("Skill", "X", true)
+        end)
+    else
+        stopLoop("X")
+    end
 end })
 SkillTab:CreateToggle({ Name = "Auto Skill V", CurrentValue = false, Flag = "lesbian108", Callback = function(v)
     if v then startLoop("V", function() fireSkill("Skill", "V", true) end)
