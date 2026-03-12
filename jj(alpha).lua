@@ -220,9 +220,6 @@ ExTab:CreateToggle({
         end
     end
 })
-local phase1Seen = {}
-local phase2Time = {}
-local lastHealth = {}
 local VOID_NAMES = {"Jotaro", "Kira", "Avdol", "DIO"}
 local function isVoidTarget(hrpPart)
     if not hrpPart or not hrpPart.Parent then return false end
@@ -235,6 +232,21 @@ end
 isPhase2 = false
 local savedPos = nil
 local voidConnection, voidCharAddedConnection, voidHumanoidDiedConnection
+local iframeConnections = {}
+local function watchIFrame(npcModel)
+    local npcName = npcModel.Name
+    if iframeConnections[npcName] then return end
+    iframeConnections[npcName] = true
+    npcModel.ChildAdded:Connect(function(child)
+        if child.Name == "IFrame" then
+            child.AncestryChanged:Connect(function()
+                if not child.Parent then
+                    isPhase2 = true
+                end
+            end)
+        end
+    end)
+end
 ExTab:CreateToggle({
     Name = "Void Farm",
     CurrentValue = false,
@@ -245,11 +257,13 @@ ExTab:CreateToggle({
                 voidCharAddedConnection = player.CharacterAdded:Connect(function(character)
                     if voidHumanoidDiedConnection then voidHumanoidDiedConnection:Disconnect() voidHumanoidDiedConnection = nil end
                     isVoiding = false
+                    isPhase2 = false
                     savedPos = nil
                     local humanoid = character:FindFirstChildWhichIsA("Humanoid")
                     if humanoid then
                         voidHumanoidDiedConnection = humanoid.Died:Connect(function()
                             isVoiding = false
+                            isPhase2 = false
                             savedPos = nil
                         end)
                     end
@@ -266,40 +280,18 @@ ExTab:CreateToggle({
                         hrp.CFrame = CFrame.new(savedPos)
                     end
                     isVoiding = false
+                    isPhase2 = false
                     savedPos = nil
                     if lastTarget and lastTarget.Parent then
-                        local n = lastTarget.Parent.Name
-                        phase1Seen[n] = nil
-                        phase2Time[n] = nil
-                        lastHealth[n] = nil
+                        iframeConnections[lastTarget.Parent.Name] = nil
                     end
                     return
                 end
-                local npcName = targetHRP.Parent.Name
                 if not isVoidTarget(targetHRP) then
                     isVoiding = false
                     return
                 end
-                local hum = targetHRP.Parent:FindFirstChildOfClass("Humanoid")
-                if not hum then return end
-                local currentHP = hum.Health
-                local prevHP = lastHealth[npcName]
-                lastHealth[npcName] = currentHP
-                if prevHP then
-                    if currentHP < prevHP and not phase2Time[npcName] then
-                        phase1Seen[npcName] = true
-                    elseif phase1Seen[npcName] and currentHP > (prevHP + 1000) and not phase2Time[npcName] then
-                        phase2Time[npcName] = tick()
-                    else
-                    end
-                end
-                isPhase2 = false
-                if phase2Time[npcName] then
-                    local elapsed = tick() - phase2Time[npcName]
-                    if elapsed >= 9 then
-                        isPhase2 = true
-                    end
-                end
+                watchIFrame(targetHRP.Parent)
                 local npcAnchored = targetHRP.Anchored
                 if npcAnchored and isPhase2 then
                     if not isVoiding then
@@ -308,15 +300,19 @@ ExTab:CreateToggle({
                     end
                     hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
                 else
+                    if isVoiding and not npcAnchored then
+                        hrp.CFrame = CFrame.new(savedPos)
+                        savedPos = nil
+                        isPhase2 = false
+                    end
                     isVoiding = false
                 end
             end)
         else
             isVoiding = false
+            isPhase2 = false
             savedPos = nil
-            phase1Seen = {}
-            phase2Time = {}
-            lastHealth = {}
+            iframeConnections = {}
             if voidConnection then voidConnection:Disconnect() voidConnection = nil end
             if voidCharAddedConnection then voidCharAddedConnection:Disconnect() voidCharAddedConnection = nil end
             if voidHumanoidDiedConnection then voidHumanoidDiedConnection:Disconnect() voidHumanoidDiedConnection = nil end
@@ -380,6 +376,7 @@ local function fireSkill(key, ...)
     if not controller then warn("No controller for", key) return end
     local remote = controller:WaitForChild(key, 3)
     if not remote then warn("No remote:", key) return end
+    if currentTargetPart and currentTargetPart.Parent and currentTargetPart.Parent:FindFirstChild("IFrame") then return end
     remote:FireServer(table.unpack(args))
 end
 
