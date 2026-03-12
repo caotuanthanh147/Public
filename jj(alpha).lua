@@ -233,6 +233,9 @@ isPhase2 = false
 local savedPos = nil
 local voidConnection, voidCharAddedConnection, voidHumanoidDiedConnection
 local iframeConnections = {}
+local iframeSeen = {}     
+local healthJumped = {}   
+local lastHealth = {}
 local function watchIFrame(npcModel)
     local npcName = npcModel.Name
     if iframeConnections[npcName] then return end
@@ -241,7 +244,7 @@ local function watchIFrame(npcModel)
         if child.Name == "IFrame" then
             child.AncestryChanged:Connect(function()
                 if not child.Parent then
-                    isPhase2 = true
+                    iframeSeen[npcName] = true
                 end
             end)
         end
@@ -283,7 +286,11 @@ ExTab:CreateToggle({
                     isPhase2 = false
                     savedPos = nil
                     if lastTarget and lastTarget.Parent then
-                        iframeConnections[lastTarget.Parent.Name] = nil
+                        local n = lastTarget.Parent.Name
+                        iframeConnections[n] = nil
+                        iframeSeen[n] = nil
+                        healthJumped[n] = nil
+                        lastHealth[n] = nil
                     end
                     return
                 end
@@ -292,6 +299,23 @@ ExTab:CreateToggle({
                     return
                 end
                 watchIFrame(targetHRP.Parent)
+                local npcName = targetHRP.Parent.Name
+                local hum = targetHRP.Parent:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    local currentHP = hum.Health
+                    local prevHP = lastHealth[npcName]
+                    lastHealth[npcName] = currentHP
+                    if prevHP then
+                        if currentHP < prevHP then
+                            healthJumped[npcName] = false 
+                        elseif currentHP > (prevHP + 500) then
+                            healthJumped[npcName] = true
+                        end
+                    end
+                end
+                if iframeSeen[npcName] and healthJumped[npcName] then
+                    isPhase2 = true
+                end
                 local npcAnchored = targetHRP.Anchored
                 if npcAnchored and isPhase2 then
                     if not isVoiding then
@@ -301,7 +325,6 @@ ExTab:CreateToggle({
                     hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
                 else
                     if isVoiding and not npcAnchored then
-                        hrp.CFrame = CFrame.new(savedPos)
                         savedPos = nil
                         isPhase2 = false
                     end
@@ -311,8 +334,12 @@ ExTab:CreateToggle({
         else
             isVoiding = false
             isPhase2 = false
+            hrp.CFrame = CFrame.new(savedPos)
             savedPos = nil
             iframeConnections = {}
+            iframeSeen = {}
+            healthJumped = {}
+            lastHealth = {}
             if voidConnection then voidConnection:Disconnect() voidConnection = nil end
             if voidCharAddedConnection then voidCharAddedConnection:Disconnect() voidCharAddedConnection = nil end
             if voidHumanoidDiedConnection then voidHumanoidDiedConnection:Disconnect() voidHumanoidDiedConnection = nil end
