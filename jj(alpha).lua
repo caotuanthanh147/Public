@@ -475,8 +475,6 @@ local function runSkillLoop()
         end
         if skillsEnabled["X"] and isPhase2 and not isOnCooldown("X") then
             fireSkill("Skill", "X", true)
-            task.wait(0.5)
-            fireSkill("Skill", "X", true)
         end
         if skillsEnabled["M2"] and not isOnCooldown("M2 CD") then
             fireSkill("M2", true, false)
