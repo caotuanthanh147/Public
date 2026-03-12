@@ -58,7 +58,6 @@ ExTab:CreateToggle({
 local ftween = true
 local isVoiding = false
 local RunService = game:GetService("RunService")
-
 local TOTAL_DISTANCE = 10
 local BODY_VEL_NAME = "AutoTweenBodyVelocity"
 local BODY_GYRO_NAME = "AutoTweenBodyGyro"
@@ -88,15 +87,24 @@ local function enableBodyControl(hrp)
     bodyGyro.Parent = hrp
 end
 local function disableBodyControl(hrp)
-    if bodyVelocity then pcall(function() bodyVelocity:Destroy() end) bodyVelocity = nil end
-    if bodyGyro then pcall(function() bodyGyro:Destroy() end) bodyGyro = nil end
+    if bodyVelocity then
+        pcall(function() bodyVelocity.Velocity = Vector3.zero end)
+    end
     if hrp then
-        for _, inst in ipairs(hrp:GetChildren()) do
-            if inst.Name == BODY_VEL_NAME or inst.Name == BODY_GYRO_NAME then
-                pcall(function() inst:Destroy() end)
+        pcall(function() hrp.AssemblyLinearVelocity = Vector3.zero end)
+        pcall(function() hrp.AssemblyAngularVelocity = Vector3.zero end)
+    end
+    task.defer(function()
+        if bodyVelocity then pcall(function() bodyVelocity:Destroy() end) bodyVelocity = nil end
+        if bodyGyro then pcall(function() bodyGyro:Destroy() end) bodyGyro = nil end
+        if hrp then
+            for _, inst in ipairs(hrp:GetChildren()) do
+                if inst.Name == BODY_VEL_NAME or inst.Name == BODY_GYRO_NAME then
+                    pcall(function() inst:Destroy() end)
+                end
             end
         end
-    end
+    end)
 end
 local function startNoclip()
     if noclipActive then return end
