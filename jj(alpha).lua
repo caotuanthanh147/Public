@@ -184,7 +184,7 @@ ExTab:CreateToggle({
                 if not bodyVelocity or not bodyGyro then enableBodyControl(hrp) end
                 local desiredPos = currentTargetPart.Position + Vector3.new(0, -TOTAL_DISTANCE, 0)
                 local diff = desiredPos - hrp.Position
-                if diff.Magnitude > 200 then
+                if diff.Magnitude > 30 then
                     hrp.CFrame = CFrame.new(desiredPos, currentTargetPart.Position)
                     bodyVelocity.Velocity = diff * 10
                 else
