@@ -315,7 +315,6 @@ ExTab:CreateToggle({
                     hrp.CFrame = CFrame.new(targetHRP.Position.X, -475, targetHRP.Position.Z)
                 else
                     if isVoiding and not npcAnchored then
-                        savedPos = nil
                         isPhase2 = false
                     end
                     isVoiding = false
@@ -324,7 +323,6 @@ ExTab:CreateToggle({
         else
             isVoiding = false
             isPhase2 = false
-            hrp.CFrame = CFrame.new(savedPos)
             savedPos = nil
             iframeConnections = {}
             iframeSeen = {}
@@ -825,7 +823,7 @@ local function waitForNotification(...)
     local found = false
     local conn = notification.OnClientEvent:Connect(function(msg)
         for _, pattern in ipairs(patterns) do
-            if msg:match(pattern) then
+            if msg:lower():match(pattern) then
                 found = true
                 break
             end
@@ -855,7 +853,7 @@ ManTab:CreateToggle({
             while running.main do
                 joinQueue()
                 waitForNotification("Your opponent")    
-                waitForNotification("Earned") 
+                waitForNotification("Complete") 
             end
         end)
     end
