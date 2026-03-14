@@ -895,7 +895,7 @@ local RARITY_RANK = {
     Common = 1, Uncommon = 2, Rare = 3, Legendary = 4, Mythical = 5, Secret = 6
 }
 local MIN_RARITY = "Legendary"
-ExTab:CreateToggle({
+ShopTab:CreateToggle({
     Name = "Auto Buy Raid Shop",
     CurrentValue = false,
     Flag = "lesbian_raidshop",
@@ -969,7 +969,7 @@ ExTab:CreateToggle({
         end)
     end
 })
-ExTab:CreateToggle({
+ShopTab:CreateToggle({
     Name = "Auto Buy Shop",
     CurrentValue = false,
     Flag = "lesbian_shop",
