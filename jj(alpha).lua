@@ -1,12 +1,16 @@
 repeat task.wait() until game:IsLoaded()
-local plr = game:GetService("Players").LocalPlayer
-local rs = game:GetService("ReplicatedStorage")
+local Players             = game:GetService("Players")
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local RunService          = game:GetService("RunService")
+local HttpService         = game:GetService("HttpService")
+local workspace           = game:GetService("Workspace")
+local player              = Players.LocalPlayer
 pcall(function()
-    plr.PlayerGui["Main Menu"]:Destroy()
-    plr.PlayerGui.Logo_Loader:Destroy()
+    player.PlayerGui["Main Menu"]:Destroy()
+    player.PlayerGui.Logo_Loader:Destroy()
 end)
-rs.requests.character.spawn:FireServer()
-rs.requests.character_server_client.communicate:FireServer()
+ReplicatedStorage.requests.character.spawn:FireServer()
+ReplicatedStorage.requests.character_server_client.communicate:FireServer()
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
@@ -22,15 +26,12 @@ local Window = Rayfield:CreateWindow({
 })
 
 local ManTab = Window:CreateTab("Main", 4483345998)
-local MiscTab = Window:CreateTab("Misc", 4483345998)
+local ShopTab = Window:CreateTab("Shop", 4483345998)
 local ExTab = Window:CreateTab("Extra", 4483345998)
 local InvTab = Window:CreateTab("Inventory", 4483345998)
 local SkillTab = Window:CreateTab("Skill", 4483345998)
 local QTab = Window:CreateTab("Quest", 4483345998)
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer
 local autoRetryActive = false
 ExTab:CreateToggle({
     Name = "Auto Retry Raid",
@@ -57,7 +58,6 @@ ExTab:CreateToggle({
 })
 local ftween = true
 local isVoiding = false
-local RunService = game:GetService("RunService")
 local TOTAL_DISTANCE = 10
 local BODY_VEL_NAME = "AutoTweenBodyVelocity"
 local BODY_GYRO_NAME = "AutoTweenBodyGyro"
@@ -346,7 +346,6 @@ ExTab:CreateInput({
         end
     end
 })
-local workspace = game:GetService("Workspace")
 local threads = {}
 local skillsEnabled = {}
 local function startLoop(key, fn)
@@ -376,7 +375,7 @@ local function getSkillNameForKeybind(keybind)
     local standName = char:GetAttribute("SummonedStand")
     if not standName then return nil end
     local ok, skillsData = pcall(function()
-        return game:GetService("ReplicatedStorage").requests.miscellaneous:WaitForChild("get_data"):InvokeServer("ability")
+        return ReplicatedStorage.requests.miscellaneous:WaitForChild("get_data"):InvokeServer("ability")
     end)
     if not ok or not skillsData then return nil end
     for skillId, skill in pairs(skillsData) do
@@ -399,7 +398,7 @@ local function isOnCooldown(keybind)
 end
 local function startCooldownTracking()
     if standCooldownConnection then return end
-    local standCooldownRemote = game:GetService("ReplicatedStorage").requests.general:WaitForChild("StandCooldown")
+    local standCooldownRemote = ReplicatedStorage.requests.general:WaitForChild("StandCooldown")
     standCooldownConnection = standCooldownRemote.OnClientEvent:Connect(function(skillName, duration)
         skillCooldowns[skillName] = tick() + duration
     end)
@@ -511,11 +510,9 @@ SkillTab:CreateToggle({ Name = "Auto Skill C", CurrentValue = false, Flag = "les
 SkillTab:CreateToggle({ Name = "Auto Skill X", CurrentValue = false, Flag = "lesbian107", Callback = function(v) onToggleSkill("X",  v) end })
 SkillTab:CreateToggle({ Name = "Auto Skill V", CurrentValue = false, Flag = "lesbian108", Callback = function(v) onToggleSkill("V",  v) end })
 local priorStat = { "PvEDamage" }
-local HttpService       = game:GetService("HttpService")
-local Players           = game:GetService("Players")
-local SlotData            = Players.LocalPlayer:WaitForChild("PlayerData"):WaitForChild("SlotData")
+local SlotData            = player:WaitForChild("PlayerData"):WaitForChild("SlotData")
 local Inventory           = SlotData:WaitForChild("Inventory")
-local r = game:GetService("ReplicatedStorage").requests.character.use_item
+local r = ReplicatedStorage.requests.character.use_item
 local EquippedAccessories = SlotData:WaitForChild("EquippedAccessories")
 local equipRemote         = ReplicatedStorage.requests.character:WaitForChild("equip_accessory")
 local sellRemote          = ReplicatedStorage.requests.general:WaitForChild("SellItem")
@@ -668,7 +665,6 @@ InvTab:CreateButton({
 InvTab:CreateButton({
     Name = "Open All Chests",
     Callback = function()
-        
         for _, v in ipairs({"Rare Chest", "Legendary Chest", "Common Chest"}) do
             r:FireServer(v, { UseAll = true })
             task.wait(0.3)
@@ -685,13 +681,11 @@ local autoArrow = false
 local vfxConnection = nil
 local busyConnection = nil
 local isBusy = false
-
 local function waitUntilReady()
     while isBusy do
         task.wait()
     end
 end
-
 local function stopAuto()
     autoArrow = false
     if vfxConnection then
@@ -704,7 +698,6 @@ local function stopAuto()
     end
     isBusy = false
 end
-
 InvTab:CreateToggle({
     Name = "Auto Lucky Arrow",
     CurrentValue = false,
@@ -743,11 +736,10 @@ InvTab:CreateToggle({
         end
     end
 })
-local lp                = Players.LocalPlayer
-local notification      = ReplicatedStorage.requests.general.notification
+local notification = ReplicatedStorage.requests.general.notification
 local running = { main = false, alt = false }
 local function getNearestBoard()
-    local char = lp.Character
+    local char = player.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
     local boards = workspace.Map["Mission Boards"].PvP:GetChildren()
@@ -802,7 +794,7 @@ local function joinQueue()
                     boardPos = board.PrimaryPart.Position
                 end
                 if boardPos then
-                    local char = lp.Character
+                    local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
                         root.CFrame = CFrame.new(boardPos + Vector3.new(0, 3, 0))
@@ -833,14 +825,14 @@ local function waitForNotification(...)
     conn:Disconnect()
 end
 local function resetCharacter()
-    local char = lp.Character
+    local char = player.Character
     local hum  = char and char:FindFirstChildOfClass("Humanoid")
     if hum then hum.Health = 0 end
 end
 local function waitForRespawn()
-    local oldChar = lp.Character
-    repeat task.wait(0.5) until lp.Character ~= oldChar
-    repeat task.wait(0.5) until lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    local oldChar = player.Character
+    repeat task.wait(0.5) until player.Character ~= oldChar
+    repeat task.wait(0.5) until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     task.wait(0.5)
 end
 ManTab:CreateToggle({
@@ -878,8 +870,8 @@ local questIndex = 1
 QTab:CreateButton({
     Name = "Teleport to Quest",
     Callback = function()
-        local root = game:GetService("Players").LocalPlayer.Character
-            and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local root = player.Character
+            and player.Character:FindFirstChild("HumanoidRootPart")
         if not root then return end
         local markers = {}
         for _, child in ipairs(workspace.Effects.questbrick:GetChildren()) do
@@ -896,6 +888,139 @@ QTab:CreateButton({
         if not pos then return end
         root.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
         questIndex = questIndex % #markers + 1
+    end
+})
+local itemData = getData:InvokeServer("item")
+local RARITY_RANK = {
+    Common = 1, Uncommon = 2, Rare = 3, Legendary = 4, Mythical = 5, Secret = 6
+}
+local MIN_RARITY = "Legendary"
+ExTab:CreateToggle({
+    Name = "Auto Buy Raid Shop",
+    CurrentValue = false,
+    Flag = "lesbian_raidshop",
+    Callback = function(value)
+        if not value then return end
+        task.spawn(function()
+            local slotData = player:WaitForChild("PlayerData"):WaitForChild("SlotData")
+            local raidTokens = slotData:WaitForChild("RaidTokens")
+            local raidShopPurchases = slotData:WaitForChild("RaidShopPurchases")
+            local raidShopRemote = ReplicatedStorage.requests.character:WaitForChild("raid_shop")
+            local TARGET_ITEMS = {"Lucky Arrow", "Legendary Chest"}
+            local RAIDS = {
+                "Jotaro Kujo",
+                "Yoshikage Kira Bites the Dust",
+                "Muhammad Avdol",
+                "DIO",
+            }
+            local currentShopData = nil
+            raidShopRemote.OnClientEvent:Connect(function(p)
+                if p and p.Type == "UpdateRaidShop" and p.RaidShop then
+                    currentShopData = p.RaidShop
+                end
+            end)
+            local function getTokens(raidName)
+                local ok, decoded = pcall(function() return HttpService:JSONDecode(raidTokens.Value) end)
+                if ok and decoded then
+                    return tonumber(decoded[raidName]) or 0
+                end
+                return 0
+            end
+            local function getPurchased(shopVersion)
+                local ok, decoded = pcall(function() return HttpService:JSONDecode(raidShopPurchases.Value) end)
+                if ok and decoded and shopVersion then
+                    return decoded[tostring(shopVersion)] or {}
+                end
+                return {}
+            end
+            local function buyItems()
+                if not currentShopData then return end
+                local shopVersion = currentShopData.Version
+                for raidName, items in pairs(currentShopData) do
+                    if raidName == "Version" then continue end
+                    if not table.find(RAIDS, raidName) then continue end
+                    local tokens = getTokens(raidName)
+                    local purchased = getPurchased(shopVersion)
+                    local raidPurchased = purchased[raidName] or {}
+                    for _, itemName in ipairs(TARGET_ITEMS) do
+                        local itemInfo = items[itemName]
+                        if not itemInfo then continue end
+                        local price = itemInfo.Price or 0
+                        local stock = itemInfo.Stock or 0
+                        local bought = raidPurchased[itemName] or 0
+                        local remaining = stock - bought
+                        if remaining <= 0 then continue end
+                        while remaining > 0 and tokens >= price do
+                            raidShopRemote:FireServer(itemName, raidName)
+                            tokens -= price
+                            remaining -= 1
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end
+            raidTokens.Changed:Connect(function()
+                if value then buyItems() end
+            end)
+            raidShopPurchases.Changed:Connect(function()
+                if value then buyItems() end
+            end)
+            buyItems()
+        end)
+    end
+})
+ExTab:CreateToggle({
+    Name = "Auto Buy Shop",
+    CurrentValue = false,
+    Flag = "lesbian_shop",
+    Callback = function(value)
+        if not value then return end
+        task.spawn(function()
+            local slotData = player:WaitForChild("PlayerData"):WaitForChild("SlotData")
+            local cashShop = slotData:WaitForChild("CashShop")
+            local cashShopPurchases = slotData:WaitForChild("CashShopPurchases")
+            local cashShopRemote = ReplicatedStorage.requests.character:WaitForChild("cash_shop")
+            local function getRarity(itemName)
+                if accessoryData and accessoryData[itemName] then
+                    return accessoryData[itemName].Rarity
+                end
+                if itemData and itemData[itemName] then
+                    return itemData[itemName].Rarity
+                end
+                return nil
+            end
+            local function buyEligibleItems()
+                local ok, shopTable = pcall(function()
+                    return HttpService:JSONDecode(cashShop.Value)
+                end)
+                if not ok or not shopTable then return end
+                local ok2, purchasedTable = pcall(function()
+                    return HttpService:JSONDecode(cashShopPurchases.Value)
+                end)
+                local purchased = (ok2 and purchasedTable) or {}
+                for itemName, itemInfo in pairs(shopTable) do
+                    if itemName == "Version" then continue end
+                    if not itemInfo or not itemInfo.Stock then continue end
+                    local alreadyBought = purchased[itemName] or 0
+                    local remaining = itemInfo.Stock - alreadyBought
+                    if remaining <= 0 then continue end
+                    local rarity = getRarity(itemName)
+                    if not rarity then continue end
+                    if (RARITY_RANK[rarity] or 0) >= (RARITY_RANK[MIN_RARITY] or 0) then
+                        for _ = 1, remaining do
+                            cashShopRemote:FireServer(itemName)
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end
+            buyEligibleItems()
+            cashShop.Changed:Connect(function()
+                if _G.isAutoCollectActive then
+                    buyEligibleItems()
+                end
+            end)
+        end)
     end
 })
 Rayfield:LoadConfiguration()
