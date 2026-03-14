@@ -434,6 +434,9 @@ end
 local function runSkillLoop()
     if threads["skills"] then return end
     startLoop("skills", function()
+        if skillsEnabled["X"] and isPhase2 and not isOnCooldown("X") then
+            fireSkill("Skill", "X", true)
+        end
         if skillsEnabled["E"] and not isOnCooldown("E") then
             fireSkill("Skill", "E", true)
         end
@@ -448,9 +451,6 @@ local function runSkillLoop()
         end
         if skillsEnabled["V"] and not isOnCooldown("V") then
             fireSkill("Skill", "V", true)
-        end
-        if skillsEnabled["X"] and isPhase2 and not isOnCooldown("X") then
-            fireSkill("Skill", "X", true)
         end
         if skillsEnabled["M2"] and not isOnCooldown("M2 CD") then
             fireSkill("M2", true, false)
