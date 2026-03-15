@@ -138,6 +138,20 @@ local function getOurSummon()
     end
     return nil
 end
+local function countAliveAllies()
+    local count = 0
+    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+        if p:GetAttribute("isAlive") then
+            count = count + 1
+        end
+    end
+    for _, s in ipairs(workspace.Summons:GetChildren()) do
+        if s:GetAttribute("isAlive") and s:GetAttribute("Summoner") == LocalPlayer.Name then
+            count = count + 1
+        end
+    end
+    return math.max(count, 1)
+end
 local function isSummonTurnActive()
     if currentHighlight then
         for _, s in ipairs(workspace.Summons:GetChildren()) do
@@ -409,40 +423,6 @@ local function getSummonAbility()
     end
     return nil
 end
-local function getBuffHealAbility()
-    local hp    = LocalPlayer:GetAttribute("HP")    or 1
-    local maxHp = LocalPlayer:GetAttribute("MaxHP") or 1
-    if hp >= maxHp then return nil end
-    local energy    = LocalPlayer:GetAttribute("Energy") or 0
-    local abilities = latestPlayerData and latestPlayerData.Abilities or {}
-    for _, abilityName in ipairs(abilities) do
-        local data = Abilities[abilityName]
-        if data and (data.TargetType == "Self" or data.TargetType == "SingleAlly") then
-            local effects    = data.Effects or {}
-            local hasHeal    = effects["Heal"] ~= nil
-            local hasHoT     = false
-            local hasBuff    = false
-            for effectName, _ in pairs(effects) do
-                if isHoTEffect(effectName) then hasHoT = true end
-                if isBuffEffect(effectName) then hasBuff = true end
-            end
-            if (hasHeal or hasHoT) and hasBuff then
-                local cost = data.Cost == "X" and energy or (data.Cost or 0)
-                if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
-                    if hasHeal then
-                        local healVal = estimateHeal(data)
-                        if healVal > 0 and (hp + healVal) <= maxHp - 1 then
-                            return abilityName
-                        end
-                    else
-                        return abilityName
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
 local function getHealAbility()
     local hp    = LocalPlayer:GetAttribute("HP")    or 1
     local maxHp = LocalPlayer:GetAttribute("MaxHP") or 1
@@ -451,25 +431,71 @@ local function getHealAbility()
     local energy    = LocalPlayer:GetAttribute("Energy") or 0
     local abilities = latestPlayerData and latestPlayerData.Abilities or {}
     local bestAbility = nil
-    local bestHeal    = -1
+    local bestScore   = -1
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
         if data then
             local targetType = data.TargetType or ""
-            local isSelfHeal = (targetType == "Self" or targetType == "SingleAlly")
-            local effects    = data.Effects or {}
-            local hasHeal    = effects["Heal"] ~= nil
-            local hasBuff    = false
-            for effectName, _ in pairs(effects) do
+            local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
+            local effects  = data.Effects or {}
+            local hasHeal  = effects["Heal"] ~= nil
+            local hasBuff  = false
+            for effectName in pairs(effects) do
                 if isBuffEffect(effectName) then hasBuff = true break end
             end
-            if isSelfHeal and hasHeal and not hasBuff then
+            if isHealTarget and hasHeal and not hasBuff then
                 local cost = data.Cost == "X" and energy or (data.Cost or 0)
                 if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
                     local healVal = estimateHeal(data)
-                    if healVal > 0 and missing > 0 and (hp + healVal) <= maxHp - 1 then
-                        if healVal > bestHeal then
-                            bestHeal    = healVal
+                    local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
+                    if totalHeal > 0 and missing > 0 and (hp + healVal) <= maxHp - 1 then
+                        if totalHeal > bestScore then
+                            bestScore   = totalHeal
+                            bestAbility = abilityName
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return bestAbility
+end
+local function getBuffHealAbility()
+    local hp    = LocalPlayer:GetAttribute("HP")    or 1
+    local maxHp = LocalPlayer:GetAttribute("MaxHP") or 1
+    if hp >= maxHp then return nil end
+    local energy    = LocalPlayer:GetAttribute("Energy") or 0
+    local abilities = latestPlayerData and latestPlayerData.Abilities or {}
+    local bestAbility = nil
+    local bestScore   = -1
+    for _, abilityName in ipairs(abilities) do
+        local data = Abilities[abilityName]
+        if data then
+            local targetType = data.TargetType or ""
+            local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
+            local effects  = data.Effects or {}
+            local hasHeal  = effects["Heal"] ~= nil
+            local hasHoT   = false
+            local hasBuff  = false
+            for effectName in pairs(effects) do
+                if isHoTEffect(effectName) then hasHoT = true end
+                if isBuffEffect(effectName) then hasBuff = true end
+            end
+            if isHealTarget and (hasHeal or hasHoT) and hasBuff then
+                local cost = data.Cost == "X" and energy or (data.Cost or 0)
+                if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
+                    if hasHeal then
+                        local healVal   = estimateHeal(data)
+                        local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
+                        if totalHeal > 0 and (hp + healVal) <= maxHp - 1 then
+                            if totalHeal > bestScore then
+                                bestScore   = totalHeal
+                                bestAbility = abilityName
+                            end
+                        end
+                    else
+                        if 1 > bestScore then
+                            bestScore   = 1
                             bestAbility = abilityName
                         end
                     end
