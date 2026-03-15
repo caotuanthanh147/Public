@@ -6,33 +6,40 @@ local Items          = require(ReplicatedStorage:WaitForChild("Dictionaries"):Wa
 local PlayerInventory = Remotes:WaitForChild("PlayerInventory")
 local InvestStats     = Remotes:WaitForChild("InvestStats")
 local GetStats        = Remotes:WaitForChild("GetStats")
-local Encounters     = require(ReplicatedStorage:WaitForChild("Dictionaries"):WaitForChild("Encounters"))
+local Encounters      = require(ReplicatedStorage:WaitForChild("Dictionaries"):WaitForChild("Encounters"))
 local GetSceneOptions = Remotes:WaitForChild("GetSceneOptions")
 local SceneEvent      = Remotes:WaitForChild("SceneEvent")
 local VotingEvent     = Remotes:WaitForChild("VotingEvent")
+local PLAYER_CLASS  = "Priest"
+local PLAYER_WEAPON = "Tome"
+local ENCOUNTER_PREFERENCES = {
+    ["Druid"]  = { "Say hello", "Teach me", "Swear" },
+    ["Mystic"] = { "Break", "Take some" },
+}
 local STAT_UPGRADE_CONFIG = {
-    STR = { enabled = true,  priority = 1 },
+    STR = { enabled = false,  priority = 0 },
     DEX = { enabled = false, priority = 0 },
-    CON = { enabled = true,  priority = 2 },
+    CON = { enabled = true,  priority = 3 },
     INT = { enabled = false, priority = 0 },
-    FTH = { enabled = false, priority = 0 },
+    FTH = { enabled = true, priority = 1 },
     CHA = { enabled = false, priority = 0 },
     LCK = { enabled = false, priority = 0 },
 }
 local EQUIPMENT_STAT_WEIGHTS = {
-    FlatSTR = 3.0,
-    FlatDEX = 3.5,
-    FlatCON = 2.0,
-    FlatINT = 1,
-    FlatFTH = 0,
-    FlatCHA = 0,
-    FlatLCK = 4,
+    FlatSTR = 0,
+    FlatDEX = 0,
+    FlatCON = 1.0,
+    FlatINT = 1.0,
+    FlatFTH = 3.0,
+    FlatCHA = 3.0,
+    FlatLCK = 0,
 }
-local UPGRADE_THRESHOLD  = 4
-local SHOP_GOLD_THRESHOLD = 80  
+local UPGRADE_THRESHOLD   = 3
+local SHOP_GOLD_THRESHOLD = 80
 local currentStats     = {}
 local currentInventory = {}
 local currentEquipment = {}
+local shopInventory    = {}
 GetStats.OnClientEvent:Connect(function(p485, p486)
     if p486 == "Self" then currentStats = p485 end
 end)
@@ -40,6 +47,8 @@ PlayerInventory.OnClientEvent:Connect(function(p489, p490)
     if p489 == "Inventory" then
         currentInventory = p490.Player.Inventory
         currentEquipment = p490.Player.Equipment
+    elseif p489 == "Shop" then
+        shopInventory = p490 or {}
     end
 end)
 local function autoInvestStats()
@@ -84,6 +93,20 @@ local function getEquippedScore(slot)
     local data = Items[name]
     return data and scoreItemStats(data) or 0
 end
+local function getItemCategory(itemData)
+    local slot = itemData.Slot
+    if not slot then return "Misc" end
+    if slot == "Helmet"     then return "Armor" end
+    if slot == "Chestpiece" then return "Armor" end
+    if slot == "Leggings"   then return "Armor" end
+    if slot == "Boots"      then return "Armor" end
+    if slot == "Charm"      then return "Accessory" end
+    if slot == "Consumable" then return "Consumable" end
+    if slot == "Weapon" then
+        return (itemData.WeaponType == PLAYER_WEAPON) and "MyWeapon" or "OtherWeapon"
+    end
+    return "Misc"
+end
 local function canCraftFromInventory(itemName)
     local data = Items[itemName]
     if not data or not data.Recipe then return false end
@@ -98,27 +121,14 @@ local function canCraftFromInventory(itemName)
     end
     return true
 end
-local function getItemCategory(itemData)
-    local slot = itemData.Slot
-    if not slot then return "Misc" end
-    if slot == "Helmet"     then return "Armor" end
-    if slot == "Chestpiece" then return "Armor" end
-    if slot == "Leggings"   then return "Armor" end
-    if slot == "Boots"      then return "Armor" end
-    if slot == "Charm"      then return "Accessory" end
-    if slot == "Consumable" then return "Consumable" end
-    if slot == "Weapon" then
-        return itemData.WeaponType == "Fist" and "Fist" or "OtherWeapon"
-    end
-    return "Misc"
-end
 local function autoEquip()
     local bestPerSlot = {}
     for invKey, invItem in pairs(currentInventory) do
         local itemData = Items[invItem.Name]
         if itemData then
-            local slot = itemData.Slot
-            if slot and slot ~= "Consumable" then
+            local slot     = itemData.Slot
+            local category = getItemCategory(itemData)
+            if slot and slot ~= "Consumable" and category ~= "OtherWeapon" then
                 local score        = scoreItemStats(itemData)
                 local currentScore = getEquippedScore(slot)
                 if score - currentScore >= UPGRADE_THRESHOLD then
@@ -135,8 +145,8 @@ local function autoEquip()
     end
 end
 local function autoCraft()
-    local armorCandidates = {}   
-    local fallbackCandidates = {} 
+    local armorCandidates    = {}
+    local fallbackCandidates = {}
     for itemName, itemData in pairs(Items) do
         local category = getItemCategory(itemData)
         if category == "OtherWeapon" then continue end
@@ -180,26 +190,78 @@ local function autoCraft()
         autoEquip()
     end
 end
-SceneEvent.OnClientEvent:Connect(function(p31, p32)
-    if p31 ~= "OpenEncounterUI" then return end
-    task.spawn(function()
-        task.wait(0.3)
-        if p32["Scavenge"] then
-            VotingEvent:FireServer("Encounter", "Scavenge")
-            return
+local function isMaterialWanted(materialName)
+    for _, itemData in pairs(Items) do
+        if itemData.Recipe and itemData.Recipe[materialName] then
+            if scoreItemStats(itemData) > 0 then return true end
+            local effects = itemData.Effects or {}
+            if effects["Heal"] then return true end
         end
-        local options = {}
-        for optName, optData in pairs(p32) do
-            if optName ~= "ShortRest" then
-                table.insert(options, { name = optName, danger = optData.Danger or 0 })
-            end
+    end
+    return false
+end
+local function shouldSellItem(invKey, invItem)
+    local itemData = Items[invItem.Name]
+    if not itemData then return false end
+    local slot     = itemData.Slot
+    local category = getItemCategory(itemData)
+    if invItem.Name:lower():match("scroll") then return true end
+    if slot == "Weapon" and category == "OtherWeapon" then return true end
+    if slot and slot ~= "Consumable" and category ~= "OtherWeapon" then
+        local score        = scoreItemStats(itemData)
+        local currentScore = getEquippedScore(slot)
+        if score >= currentScore - UPGRADE_THRESHOLD then return false end
+        return true
+    end
+    if not slot then
+        return not isMaterialWanted(invItem.Name)
+    end
+    return false
+end
+local function autoShop()
+    local buyQueue = {}
+    for itemName, cost in pairs(shopInventory) do
+        local itemData = Items[itemName]
+        if not itemData then continue end
+        local slot     = itemData.Slot
+        local category = getItemCategory(itemData)
+        local score    = scoreItemStats(itemData)
+        local priority = 99
+        if category == "MyWeapon" then
+            local currentScore = getEquippedScore("Weapon")
+            if score > currentScore + UPGRADE_THRESHOLD then priority = 1 end
+        elseif category == "Accessory" then
+            local currentScore = getEquippedScore("Charm")
+            if score > currentScore + UPGRADE_THRESHOLD then priority = 2 end
+        elseif slot == "Consumable" then
+            local effects = itemData.Effects or {}
+            if effects["Heal"] then priority = 3 end
+        elseif not slot then
+            if isMaterialWanted(itemName) then priority = 4 end
         end
-        if #options == 0 then return end
-        table.sort(options, function(a, b) return a.danger < b.danger end)
-        VotingEvent:FireServer("Encounter", options[1].name)
+        if priority < 99 then
+            table.insert(buyQueue, { name = itemName, cost = cost, priority = priority, score = score })
+        end
+    end
+    table.sort(buyQueue, function(a, b)
+        if a.priority ~= b.priority then return a.priority < b.priority end
+        return a.score > b.score
     end)
-end)
-
+    for invKey, invItem in pairs(currentInventory) do
+        if shouldSellItem(invKey, invItem) then
+            PlayerInventory:FireServer("SellItem", invKey)
+            task.wait(0.2)
+        end
+    end
+    task.wait(.1)
+    for _, item in ipairs(buyQueue) do
+        local gold = LocalPlayer:GetAttribute("Gold") or 0
+        if gold >= item.cost then
+            PlayerInventory:FireServer("BuyItem", item.name)
+            task.wait(0.3)
+        end
+    end
+end
 SceneEvent.OnClientEvent:Connect(function(p31, p32, p33)
     if p31 ~= "OpenSceneUI" then return end
     task.spawn(function()
@@ -214,6 +276,43 @@ SceneEvent.OnClientEvent:Connect(function(p31, p32, p33)
             table.insert(keys, k)
         end
         if #keys == 0 then return end
+        if #keys == 1 then
+            local pick = keys[1]
+            if sceneData.Client then
+                VotingEvent:FireServer("SceneClient", pick)
+            else
+                VotingEvent:FireServer("Scene", pick)
+            end
+            return
+        end
+        local prefs = nil
+        for prefKey, prefOptions in pairs(ENCOUNTER_PREFERENCES) do
+            if p32:lower():find(prefKey:lower(), 1, true) then
+                print("[Scene] Matched pref key:", prefKey, "for scene:", p32)
+                prefs = prefOptions
+                break
+            end
+        end
+        if prefs then
+            for _, preferred in ipairs(prefs) do
+            print("[Scene] Raw option keys for", p32, "step:", p33)
+                for _, k in ipairs(keys) do
+                print("  option key:", k)
+                    if k:lower():find(preferred:lower(), 1, true) then
+                        print("[Scene] Voting preferred option:", k, "matched:", preferred)
+                        if sceneData.Client then
+                            VotingEvent:FireServer("SceneClient", k)
+                        else
+                            VotingEvent:FireServer("Scene", k)
+                        end
+                        return
+                    end
+                end
+            end
+            print("[Scene] No pref option matched, falling back to random")
+        else
+            print("[Scene] No prefs found for scene:", p32)
+        end
         table.sort(keys)
         local pick = keys[math.random(1, math.min(3, #keys))]
         if sceneData.Client then
@@ -223,7 +322,54 @@ SceneEvent.OnClientEvent:Connect(function(p31, p32, p33)
         end
     end)
 end)
-local RestFrame = LocalPlayer.PlayerGui.RestGUI.RestFrame
+SceneEvent.OnClientEvent:Connect(function(p31, p32)
+    if p31 ~= "OpenEncounterUI" then return end
+    task.spawn(function()
+        task.wait(0.3)
+        local gold = LocalPlayer:GetAttribute("Gold") or 0
+        if gold >= SHOP_GOLD_THRESHOLD then
+            for optName, optData in pairs(p32) do
+                if optName ~= "ShortRest" and optName ~= "Scavenge" then
+                    local nameMatch = optName:lower():match("shop")
+                    local descMatch = type(optData) == "table" and optData.Description and
+                        optData.Description:lower():match("shop")
+                    if nameMatch or descMatch then
+                        VotingEvent:FireServer("Encounter", optName)
+                        return
+                    end
+                end
+            end
+        end
+        for optName, _ in pairs(p32) do
+            for prefName, _ in pairs(ENCOUNTER_PREFERENCES) do
+                if optName:lower():find(prefName:lower()) then
+                    print("[Encounter] Voting preferred encounter:", optName, "matched pref:", prefName)
+                    VotingEvent:FireServer("Encounter", optName)
+                    return
+                end
+            end
+        end
+        if p32["Scavenge"] then
+            VotingEvent:FireServer("Encounter", "Scavenge")
+            return
+        end
+        local options = {}
+        for optName, optData in pairs(p32) do
+            if optName ~= "ShortRest" then
+                table.insert(options, { name = optName, danger = optData.Danger or 0 })
+            end
+        end
+        if #options == 0 then return end
+        if #options == 1 then
+            VotingEvent:FireServer("Encounter", options[1].name)
+            return
+        end
+        table.sort(options, function(a, b) return a.danger < b.danger end)
+        VotingEvent:FireServer("Encounter", options[1].name)
+    end)
+end)
+local RestFrame  = LocalPlayer.PlayerGui.RestGUI.RestFrame
+local ShopButton = RestFrame.Frame1.Shop
 task.spawn(function()
     local lastVisible = false
     while true do
@@ -231,6 +377,10 @@ task.spawn(function()
         if visible and not lastVisible then
             lastVisible = true
             task.spawn(function()
+                if ShopButton.Visible then
+                    autoShop()
+                    task.wait(0.3)
+                end
                 autoInvestStats()
                 task.wait(0.1)
                 autoEquip()
