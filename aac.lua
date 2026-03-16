@@ -30,8 +30,8 @@ local function isBuffEffect(effectName)
     if not e then return false end
     if e["Type"] == "DoT" or e["Type"] == "HoT" then return false end
     if e["DamageValue"] and e["DamageValue"] > 1 then return true end
-    if e["Value"]       and e["Value"] > 1       then return true end
-    if e["ScalingValue"]and e["ScalingValue"] > 0 then return true end
+    if e["Value"]        and e["Value"] > 1       then return true end
+    if e["ScalingValue"] and e["ScalingValue"] > 0 then return true end
     return false
 end
 local function isHoTEffect(effectName)
@@ -42,15 +42,15 @@ local function isDoTEffect(effectName)
     local e = Effects[effectName]
     return e and e["Type"] == "DoT"
 end
-local currentHighlight = nil   
-local isSummonTurn     = false
-local summonReference  = nil
-local summonCooldowns  = {}
-local latestSummonData = nil
-local playerCooldowns  = {}
-local enemyCooldowns   = {}
-local latestPlayerData = nil
-local combatInventory  = {}
+local currentHighlight  = nil
+local isSummonTurn      = false
+local summonReference   = nil
+local summonCooldowns   = {}
+local latestSummonData  = nil
+local playerCooldowns   = {}
+local enemyCooldowns    = {}
+local latestPlayerData  = nil
+local combatInventory   = {}
 local buffUsedThisFight = false
 task.spawn(function()
     if not LocalPlayer:GetAttribute("isLoaded") then
@@ -113,7 +113,7 @@ FireTurn.OnClientEvent:Connect(function(_, p294, p295)
 end)
 GetAbilities.OnClientEvent:Connect(function(p236, p237)
     if p237 then
-        latestSummonData = p236
+        latestSummonData = p236        
     else
         latestPlayerData = p236[LocalPlayer.Name]
     end
@@ -130,46 +130,34 @@ AttackFlash.OnClientEvent:Connect(function(p239)
 end)
 local function getOurSummon()
     for _, s in ipairs(workspace.Summons:GetChildren()) do
-        if s:GetAttribute("isAlive") then
-            if s:GetAttribute("Summoner") == LocalPlayer.Name then
-                return s
-            end
+        if s:GetAttribute("isAlive") and s:GetAttribute("Summoner") == LocalPlayer.Name then
+            return s
         end
     end
     return nil
 end
 local function countAliveAllies()
     local count = 0
-    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-        if p:GetAttribute("isAlive") then
-            count = count + 1
-        end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p:GetAttribute("isAlive") then count = count + 1 end
     end
     for _, s in ipairs(workspace.Summons:GetChildren()) do
-        if s:GetAttribute("isAlive") and s:GetAttribute("Summoner") == LocalPlayer.Name then
-            count = count + 1
-        end
+        if s:GetAttribute("isAlive") then count = count + 1 end
     end
     return math.max(count, 1)
 end
 local function isSummonTurnActive()
     if currentHighlight then
         for _, s in ipairs(workspace.Summons:GetChildren()) do
-            local alive    = s:GetAttribute("isAlive")
-            local summoner = s:GetAttribute("Summoner")
-            local expected = s.Name .. "_" .. LocalPlayer.Name
-            if alive and summoner == LocalPlayer.Name then
-                if currentHighlight == expected then
+            if s:GetAttribute("isAlive") and s:GetAttribute("Summoner") == LocalPlayer.Name then
+                if currentHighlight == s.Name .. "_" .. LocalPlayer.Name then
                     summonReference = s
                     return true
                 end
             end
         end
     end
-    if isSummonTurn then
-        return true
-    end
-    return false
+    return isSummonTurn
 end
 local function getActiveDamageMultiplier()
     local mult = 1.0
@@ -184,30 +172,17 @@ local function getActiveDamageMultiplier()
     end
     return mult
 end
-local function estimateDamage(data, applyBuffs)
-    local base      = data.Damage or 0
-    local scaling   = data.Scaling or {}
-    local multihit  = data.Multihit or 1
-    local statBonus = 0
-    for statName, multiplier in pairs(scaling) do
-        statBonus = statBonus + ((LocalPlayer:GetAttribute(statName) or 0) * multiplier)
+local function estimateDoTTotal(effectName, stacks, target)
+    local e = Effects[effectName]
+    if not e or e["Type"] ~= "DoT" then return 0 end
+    stacks = (type(stacks) == "number" and stacks > 0) and stacks or 1
+    local perTurn = 1
+    if e["Formula"] then
+        local t = target or LocalPlayer
+        local ok, result = pcall(e["Formula"], t)
+        if ok and type(result) == "number" then perTurn = result end
     end
-    local raw = (base + statBonus) * multihit
-    if applyBuffs then raw = raw * getActiveDamageMultiplier() end
-    return raw
-end
-local function estimateHeal(data)
-    local maxHp     = LocalPlayer:GetAttribute("MaxHP") or 1
-    local effects   = data.Effects or {}
-    local flat      = effects["Heal"] or 0
-    local maxHealPc = effects["MaxHeal"] or 0
-    local fromMaxHp = maxHp * maxHealPc
-    local scaling   = data.Scaling or {}
-    local statBonus = 0
-    for statName, multiplier in pairs(scaling) do
-        statBonus = statBonus + ((LocalPlayer:GetAttribute(statName) or 0) * multiplier)
-    end
-    return flat + fromMaxHp + statBonus
+    return perTurn * stacks
 end
 local function estimateDoTDamage(effectName)
     local e = Effects[effectName]
@@ -216,15 +191,47 @@ local function estimateDoTDamage(effectName)
         local ok, result = pcall(e["Formula"], LocalPlayer)
         if ok and type(result) == "number" then return result end
     end
-    return 1  
+    return 1
+end
+local function estimateTotalDamage(data, applyBuffs, target)
+    local base      = data.Damage or 0
+    local scaling   = data.Scaling or {}
+    local multihit  = data.Multihit or 1
+    local statBonus = 0
+    for statName, multiplier in pairs(scaling) do
+        statBonus = statBonus + ((LocalPlayer:GetAttribute(statName) or 0) * multiplier)
+    end
+    local direct = (base + statBonus) * multihit
+    if applyBuffs then direct = direct * getActiveDamageMultiplier() end
+    local dotTotal = 0
+    local effects  = data.Effects or {}
+    for effectName, stacks in pairs(effects) do
+        dotTotal = dotTotal + estimateDoTTotal(effectName, stacks, target)
+    end
+    return direct, dotTotal, direct + dotTotal
+end
+local function estimateDamage(data, applyBuffs)
+    local d, _, _ = estimateTotalDamage(data, applyBuffs, nil)
+    return d
+end
+local function estimateHeal(data)
+    local maxHp     = LocalPlayer:GetAttribute("MaxHP") or 1
+    local effects   = data.Effects or {}
+    local flat      = effects["Heal"] or 0
+    local maxHealPc = effects["MaxHeal"] or 0
+    local scaling   = data.Scaling or {}
+    local statBonus = 0
+    for statName, multiplier in pairs(scaling) do
+        statBonus = statBonus + ((LocalPlayer:GetAttribute(statName) or 0) * multiplier)
+    end
+    return flat + (maxHp * maxHealPc) + statBonus
 end
 local function isBossFight()
     local ourMaxHp = LocalPlayer:GetAttribute("MaxHP") or 1
     for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
-        if enemy:GetAttribute("isAlive") then
-            if (enemy:GetAttribute("MaxHP") or 0) >= ourMaxHp * BOSS_HP_MULTIPLIER then
-                return true
-            end
+        if enemy:GetAttribute("isAlive") and
+           (enemy:GetAttribute("MaxHP") or 0) >= ourMaxHp * BOSS_HP_MULTIPLIER then
+            return true
         end
     end
     return false
@@ -238,14 +245,10 @@ local function findConsumable(mode)
             local effects = data.Effects or {}
             local hasHeal = effects["Heal"] ~= nil
             if mode == "heal" and hasHeal then
-                local healVal = effects["Heal"] or 0
-                if healVal > bestValue then
-                    bestValue = healVal
-                    bestName  = itemName
-                end
+                local v = effects["Heal"] or 0
+                if v > bestValue then bestValue = v; bestName = itemName end
             elseif mode == "buff" and not hasHeal then
-                bestName = itemName
-                break
+                return itemName
             end
         end
     end
@@ -260,10 +263,7 @@ local function getConsumableToUse()
     end
     if not buffUsedThisFight and isBossFight() then
         local item = findConsumable("buff")
-        if item then
-            buffUsedThisFight = true
-            return item
-        end
+        if item then buffUsedThisFight = true; return item end
     end
     return nil
 end
@@ -280,8 +280,7 @@ local function shouldBlock()
                         if data.Effects and data.Effects["Heal"] then continue end
                         if not enemyCooldowns[abilityName] then
                             if enemyEnergy >= data.Cost - ENERGY_MARGIN then
-                                local threatDmg = data.Damage or 0
-                                if threatDmg > ourMaxHp * BLOCK_DANGER_THRESHOLD then
+                                if (data.Damage or 0) > ourMaxHp * BLOCK_DANGER_THRESHOLD then
                                     return true
                                 end
                             end
@@ -297,12 +296,11 @@ local function getThreatScore(enemy)
     local hp    = enemy:GetAttribute("HP")    or 1
     local maxHp = enemy:GetAttribute("MaxHP") or 1
     local hpRatio     = hp / maxHp
-    local finishBonus = (hpRatio < 0.3) and 50 or 0
-    local baseScore   = (1 - hpRatio) * 100 + finishBonus
-    local enemyDef  = EnemyData[enemy.Name]
-    local ourMaxHp  = LocalPlayer:GetAttribute("MaxHP") or 1
-    local totalDmg  = 0
-    local abilCount = 0
+    local baseScore   = (1 - hpRatio) * 100 + ((hpRatio < 0.3) and 50 or 0)
+    local enemyDef    = EnemyData[enemy.Name]
+    local ourMaxHp    = LocalPlayer:GetAttribute("MaxHP") or 1
+    local totalDmg    = 0
+    local abilCount   = 0
     if enemyDef and enemyDef.Abilities then
         for _, abilityName in ipairs(enemyDef.Abilities) do
             local data = Abilities[abilityName]
@@ -319,8 +317,7 @@ local function getThreatScore(enemy)
         end
     end
     if abilCount > 0 then
-        local avgDmg = totalDmg / abilCount
-        baseScore = baseScore + (avgDmg / ourMaxHp) * 100
+        baseScore = baseScore + ((totalDmg / abilCount) / ourMaxHp) * 100
     end
     return baseScore
 end
@@ -330,62 +327,83 @@ local function getBestTarget()
     for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
         if enemy:GetAttribute("isAlive") then
             local score = getThreatScore(enemy)
-            if score > bestScore then
-                bestScore = score
-                best      = enemy
-            end
+            if score > bestScore then bestScore = score; best = enemy end
         end
     end
     return best
 end
-local function canKill(enemy, abilityData)
-    return estimateDamage(abilityData, true) >= (enemy:GetAttribute("HP") or math.huge) - KILL_EPSILON
+local function getBestAbilityAndTarget()
+    local energy    = LocalPlayer:GetAttribute("Energy") or 0
+    local abilities = latestPlayerData and latestPlayerData.Abilities or {}
+    local bestAbility = nil
+    local bestTarget  = nil
+    local bestScore   = -math.huge
+    for _, abilityName in ipairs(abilities) do
+        local data = Abilities[abilityName]
+        if not data then continue end
+        local cost = data.Cost == "X" and energy or (data.Cost or 0)
+        if cost > energy then continue end
+        if (playerCooldowns[abilityName] or 0) > 0 then continue end
+        local targetType  = data.TargetType or ""
+        local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
+        if not isOffensive then continue end
+        if targetType == "AllEnemy" then
+            local totalEffective = 0
+            for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+                if enemy:GetAttribute("isAlive") then
+                    local eHp = enemy:GetAttribute("HP") or 1
+                    local _, _, total = estimateTotalDamage(data, true, enemy)
+                    totalEffective = totalEffective + math.min(total, eHp)
+                end
+            end
+            local score = totalEffective / math.max(cost, 1)
+            if score > bestScore then
+                bestScore   = score
+                bestAbility = abilityName
+                bestTarget  = getBestTarget()
+            end
+        else
+            for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+                if enemy:GetAttribute("isAlive") then
+                    local eHp    = enemy:GetAttribute("HP") or 1
+                    local direct, dotTotal, total = estimateTotalDamage(data, true, enemy)
+                    local effective  = math.min(total, eHp)
+                    local killBonus  = (total >= eHp - KILL_EPSILON) and (effective * 0.5) or 0
+                    local dotValue   = dotTotal * 0.7
+                    local score      = (effective + killBonus + dotValue) / math.max(cost, 1)
+                    if score > bestScore then
+                        bestScore   = score
+                        bestAbility = abilityName
+                        bestTarget  = enemy
+                    end
+                end
+            end
+        end
+    end
+    return bestAbility, bestTarget
 end
 local function getKillShot()
     local energy    = LocalPlayer:GetAttribute("Energy") or 0
     local abilities = latestPlayerData and latestPlayerData.Abilities or {}
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
-        if data then
-            local cost = data.Cost == "X" and energy or data.Cost
-            local onCooldown  = (playerCooldowns[abilityName] or 0) > 0
-            local canAfford   = cost <= energy
-            local targetType  = data.TargetType or ""
-            local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
-            if isOffensive and canAfford and not onCooldown then
-                for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
-                    if enemy:GetAttribute("isAlive") and canKill(enemy, data) then
-                        return abilityName, enemy
-                    end
+        if not data then continue end
+        local cost = data.Cost == "X" and energy or (data.Cost or 0)
+        if cost > energy then continue end
+        if (playerCooldowns[abilityName] or 0) > 0 then continue end
+        local targetType  = data.TargetType or ""
+        local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
+        if not isOffensive then continue end
+        for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+            if enemy:GetAttribute("isAlive") then
+                local _, _, total = estimateTotalDamage(data, true, enemy)
+                if total >= (enemy:GetAttribute("HP") or math.huge) - KILL_EPSILON then
+                    return abilityName, enemy
                 end
             end
         end
     end
     return nil, nil
-end
-local function getBestAbility()
-    local energy     = LocalPlayer:GetAttribute("Energy") or 0
-    local best       = nil
-    local bestDamage = -1
-    local abilities  = latestPlayerData and latestPlayerData.Abilities or {}
-    for _, abilityName in ipairs(abilities) do
-        local data = Abilities[abilityName]
-        if data then
-            local cost = data.Cost == "X" and energy or data.Cost
-            local onCooldown  = (playerCooldowns[abilityName] or 0) > 0
-            local canAfford   = cost <= energy
-            local targetType  = data.TargetType or ""
-            local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
-            if isOffensive and canAfford and not onCooldown then
-                local dmg = estimateDamage(data, true)
-                if dmg > bestDamage then
-                    bestDamage = dmg
-                    best       = abilityName
-                end
-            end
-        end
-    end
-    return best
 end
 local function getBestBuffAbility()
     local energy    = LocalPlayer:GetAttribute("Energy") or 0
@@ -396,12 +414,11 @@ local function getBestBuffAbility()
             local cost = data.Cost == "X" and energy or (data.Cost or 0)
             if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
                 local effects = data.Effects or {}
-                if effects["Heal"] then continue end  
+                if effects["Heal"] then continue end
                 for effectName, _ in pairs(effects) do
-                    if isBuffEffect(effectName) or isHoTEffect(effectName) then
-                        if not LocalPlayer:GetAttribute(effectName) then
-                            return abilityName
-                        end
+                    if (isBuffEffect(effectName) or isHoTEffect(effectName))
+                       and not LocalPlayer:GetAttribute(effectName) then
+                        return abilityName
                     end
                 end
             end
@@ -434,25 +451,24 @@ local function getHealAbility()
     local bestScore   = -1
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
-        if data then
-            local targetType = data.TargetType or ""
-            local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
-            local effects  = data.Effects or {}
-            local hasHeal  = effects["Heal"] ~= nil
-            local hasBuff  = false
-            for effectName in pairs(effects) do
-                if isBuffEffect(effectName) then hasBuff = true break end
-            end
-            if isHealTarget and hasHeal and not hasBuff then
-                local cost = data.Cost == "X" and energy or (data.Cost or 0)
-                if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
-                    local healVal = estimateHeal(data)
-                    local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
-                    if totalHeal > 0 and missing > 0 and (hp + healVal) <= maxHp - 1 then
-                        if totalHeal > bestScore then
-                            bestScore   = totalHeal
-                            bestAbility = abilityName
-                        end
+        if not data then continue end
+        local targetType   = data.TargetType or ""
+        local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
+        local effects      = data.Effects or {}
+        local hasHeal      = effects["Heal"] ~= nil
+        local hasBuff      = false
+        for effectName in pairs(effects) do
+            if isBuffEffect(effectName) then hasBuff = true break end
+        end
+        if isHealTarget and hasHeal and not hasBuff then
+            local cost = data.Cost == "X" and energy or (data.Cost or 0)
+            if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
+                local healVal   = estimateHeal(data)
+                local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
+                if totalHeal > 0 and missing > 0 and (hp + healVal) <= maxHp - 1 then
+                    if totalHeal > bestScore then
+                        bestScore   = totalHeal
+                        bestAbility = abilityName
                     end
                 end
             end
@@ -470,35 +486,29 @@ local function getBuffHealAbility()
     local bestScore   = -1
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
-        if data then
-            local targetType = data.TargetType or ""
-            local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
-            local effects  = data.Effects or {}
-            local hasHeal  = effects["Heal"] ~= nil
-            local hasHoT   = false
-            local hasBuff  = false
-            for effectName in pairs(effects) do
-                if isHoTEffect(effectName) then hasHoT = true end
-                if isBuffEffect(effectName) then hasBuff = true end
-            end
-            if isHealTarget and (hasHeal or hasHoT) and hasBuff then
-                local cost = data.Cost == "X" and energy or (data.Cost or 0)
-                if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
-                    if hasHeal then
-                        local healVal   = estimateHeal(data)
-                        local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
-                        if totalHeal > 0 and (hp + healVal) <= maxHp - 1 then
-                            if totalHeal > bestScore then
-                                bestScore   = totalHeal
-                                bestAbility = abilityName
-                            end
-                        end
-                    else
-                        if 1 > bestScore then
-                            bestScore   = 1
-                            bestAbility = abilityName
-                        end
+        if not data then continue end
+        local targetType   = data.TargetType or ""
+        local isHealTarget = (targetType == "Self" or targetType == "SingleAlly" or targetType == "AllAlly")
+        local effects      = data.Effects or {}
+        local hasHeal      = effects["Heal"] ~= nil
+        local hasHoT, hasBuff = false, false
+        for effectName in pairs(effects) do
+            if isHoTEffect(effectName) then hasHoT = true end
+            if isBuffEffect(effectName) then hasBuff = true end
+        end
+        if isHealTarget and (hasHeal or hasHoT) and hasBuff then
+            local cost = data.Cost == "X" and energy or (data.Cost or 0)
+            if cost <= energy and (playerCooldowns[abilityName] or 0) == 0 then
+                if hasHeal then
+                    local healVal   = estimateHeal(data)
+                    local totalHeal = (targetType == "AllAlly") and (healVal * countAliveAllies()) or healVal
+                    if totalHeal > 0 and (hp + healVal) <= maxHp - 1 and totalHeal > bestScore then
+                        bestScore   = totalHeal
+                        bestAbility = abilityName
                     end
+                elseif 1 > bestScore then
+                    bestScore   = 1
+                    bestAbility = abilityName
                 end
             end
         end
@@ -511,9 +521,8 @@ local function isWaitingForEnergy(checkerFn)
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
         if data then
-            local cost       = data.Cost == "X" and energy or (data.Cost or 0)
-            local onCooldown = (playerCooldowns[abilityName] or 0) > 0
-            if not onCooldown and cost > energy then
+            local cost = data.Cost == "X" and energy or (data.Cost or 0)
+            if (playerCooldowns[abilityName] or 0) == 0 and cost > energy then
                 if checkerFn(abilityName, data) then return true end
             end
         end
@@ -527,36 +536,37 @@ local function isHealAbilityCheck(_, data)
     local hp    = LocalPlayer:GetAttribute("HP") or 1
     local maxHp = LocalPlayer:GetAttribute("MaxHP") or 1
     if hp >= maxHp then return false end
-    local effects    = data.Effects or {}
-    local hasHeal    = effects["Heal"] ~= nil
-    local hasBuff    = false
+    local effects = data.Effects or {}
+    if not effects["Heal"] then return false end
+    local hasBuff = false
     for effectName in pairs(effects) do
         if isBuffEffect(effectName) then hasBuff = true break end
     end
-    local targetType = data.TargetType or ""
-    return (targetType == "Self" or targetType == "SingleAlly") and hasHeal and not hasBuff
+    local t = data.TargetType or ""
+    return (t == "Self" or t == "SingleAlly" or t == "AllAlly") and not hasBuff
 end
 local function isBuffHealAbilityCheck(_, data)
     local hp    = LocalPlayer:GetAttribute("HP") or 1
     local maxHp = LocalPlayer:GetAttribute("MaxHP") or 1
     if hp >= maxHp then return false end
     local effects = data.Effects or {}
-    local hasHeal = effects["Heal"] ~= nil
-    local hasHoT  = false
-    local hasBuff = false
+    local hasHeal, hasHoT, hasBuff = false, false, false
     for effectName in pairs(effects) do
+        if effects["Heal"] then hasHeal = true end
         if isHoTEffect(effectName) then hasHoT = true end
         if isBuffEffect(effectName) then hasBuff = true end
     end
-    local targetType = data.TargetType or ""
-    return (targetType == "Self" or targetType == "SingleAlly") and (hasHeal or hasHoT) and hasBuff
+    local t = data.TargetType or ""
+    return (t == "Self" or t == "SingleAlly" or t == "AllAlly") and (hasHeal or hasHoT) and hasBuff
 end
 local function isBuffAbilityCheck(_, data)
-    if data.TargetType ~= "Self" and data.TargetType ~= "SingleAlly" then return false end
+    local t = data.TargetType or ""
+    if t ~= "Self" and t ~= "SingleAlly" then return false end
     local effects = data.Effects or {}
     if effects["Heal"] then return false end
     for effectName in pairs(effects) do
-        if (isBuffEffect(effectName) or isHoTEffect(effectName)) and not LocalPlayer:GetAttribute(effectName) then
+        if (isBuffEffect(effectName) or isHoTEffect(effectName))
+           and not LocalPlayer:GetAttribute(effectName) then
             return true
         end
     end
@@ -615,12 +625,8 @@ local function takeTurn()
         return
     end
     if USE_ABILITIES then
-        local target = getBestTarget()
-        if not target then
-            return
-        end
-        local abilityName = getBestAbility()
-        if abilityName then
+        local abilityName, target = getBestAbilityAndTarget()
+        if abilityName and target then
             local data = Abilities[abilityName]
             local cost = data and (data.Cost == "X" and (LocalPlayer:GetAttribute("Energy") or 0) or (data.Cost or 0)) or 0
             if cost == 0 or not saveEnergy then
@@ -636,31 +642,29 @@ local function takeSummonTurn()
     task.wait(0.1)
     if not LocalPlayer:GetAttribute("Turn") then return end
     local summon = summonReference or getOurSummon()
-    if not summon then
-        return
-    end
+    if not summon then return end
     local energy    = summon:GetAttribute("Energy") or 0
     local abilities = latestSummonData and latestSummonData.Abilities or {}
-    for _, a in ipairs(abilities) do
-        local data = Abilities[a]
-        if data then
-            local cost = data.Cost == "X" and energy or (data.Cost or 0)
-        end
-    end
     local bestAbility = nil
-    local bestDamage  = -1
+    local bestScore   = -math.huge
     for _, abilityName in ipairs(abilities) do
         local data = Abilities[abilityName]
-        if data then
-            local cost = data.Cost == "X" and energy or (data.Cost or 0)
-            local onCooldown  = (summonCooldowns[abilityName] or 0) > 0
-            local canAfford   = cost <= energy
-            local targetType  = data.TargetType or ""
-            local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
-            if isOffensive and canAfford and not onCooldown then
-                local dmg = estimateDamage(data, false)
-                if dmg > bestDamage then
-                    bestDamage  = dmg
+        if not data then continue end
+        local cost = data.Cost == "X" and energy or (data.Cost or 0)
+        if cost > energy then continue end
+        if (summonCooldowns[abilityName] or 0) > 0 then continue end
+        local targetType  = data.TargetType or ""
+        local isOffensive = (targetType == "SingleEnemy" or targetType == "AllEnemy")
+        if not isOffensive then continue end
+        for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+            if enemy:GetAttribute("isAlive") then
+                local eHp    = enemy:GetAttribute("HP") or 1
+                local _, dotTotal, total = estimateTotalDamage(data, false, enemy)
+                local effective = math.min(total, eHp)
+                local killBonus = (total >= eHp - KILL_EPSILON) and (effective * 0.5) or 0
+                local score     = (effective + killBonus + dotTotal * 0.7) / math.max(cost, 1)
+                if score > bestScore then
+                    bestScore   = score
                     bestAbility = abilityName
                 end
             end
@@ -669,7 +673,6 @@ local function takeSummonTurn()
     local target = getBestTarget()
     if bestAbility and target then
         TurnDecision:FireServer("Ability", target, bestAbility, summon)
-        return
     end
 end
 local turnConnection
@@ -679,11 +682,8 @@ local function startBot()
         if attr == "Turn" and LocalPlayer:GetAttribute("Turn") then
             task.spawn(function()
                 task.wait(0.2)
-                if not LocalPlayer:GetAttribute("Turn") then
-                    return
-                end
-                local summonActive = isSummonTurnActive()
-                if summonActive then
+                if not LocalPlayer:GetAttribute("Turn") then return end
+                if isSummonTurnActive() then
                     if not summonReference then summonReference = getOurSummon() end
                     takeSummonTurn()
                 else
@@ -696,8 +696,7 @@ local function startBot()
         task.spawn(function()
             task.wait(0.2)
             if not LocalPlayer:GetAttribute("Turn") then return end
-            local summonActive = isSummonTurnActive()
-            if summonActive then
+            if isSummonTurnActive() then
                 if not summonReference then summonReference = getOurSummon() end
                 takeSummonTurn()
             else
