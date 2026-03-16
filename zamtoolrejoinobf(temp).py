@@ -1722,6 +1722,7 @@ class Runner:
     def update_status_table_periodically():
         while True:
             UIManager.update_status_table()
+            time.sleep(30)
 
 def check_activation_status():
     try:
