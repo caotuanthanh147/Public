@@ -437,7 +437,6 @@ local function getDesiredPosition(hrp, targetModel)
     end
     return pivot.Position + offset, pivot.Position
 end
-local lastTeleportTime = 0
 local function teleportToIsland(portalId)
     TeleportRemote:FireServer(portalId)
 end
@@ -490,7 +489,7 @@ local charAddedConnections = {}
 local diedConnections      = {}
 local isTeleporting        = {}
 _G.AutoNearestActive = false
-local FARM_PRIORITY = { boss = 3, enemy = 2, nearest = 1, level = 1 }
+local FARM_PRIORITY = { summonBoss = 4, boss = 3, enemy = 2, nearest = 1, level = 1 }
 local function disableBodyControl(hrp)
     if not hrp then return end
     for _, inst in ipairs(hrp:GetChildren()) do
@@ -1105,6 +1104,278 @@ DunTab:CreateToggle({
             hasReplayed = true
             pcall(function() ReplayRemote:FireServer("sponsor") end)
         end
+    end
+})
+local SummonBossConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SummonableBossConfig"))
+local RequestSummonBoss = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestSummonBoss")
+local SummonBossResult  = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SummonBossResult")
+local function getPityValues()
+    local ok, text = pcall(function()
+        return player.PlayerGui
+            :WaitForChild("BossUI", 2)
+            :WaitForChild("MainFrame", 2)
+            :WaitForChild("BossHPBar", 2)
+            :WaitForChild("Pity", 2).Text
+    end)
+    if not ok or not text then return 0, 25 end
+    local cur, max = text:match("(%d+)/(%d+)")
+    return tonumber(cur) or 0, tonumber(max) or 25
+end
+local function isSummonBossAlive()
+    local npcFolder = workspace:FindFirstChild("NPCs")
+    if not npcFolder then return false end
+    for bossId in pairs(SummonBossConfig:GetAllBosses()) do
+        local model = npcFolder:FindFirstChild(bossId)
+        if model then
+            local hum = model:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                return true
+            end
+        end
+    end
+    return false
+end
+local function summonAndFarm(bossId, difficulty)
+    local bossData = SummonBossConfig:GetBoss(bossId)
+    if not bossData then return end
+    if bossData.hasDifficulty then
+        pcall(function()
+            RequestSummonBoss:FireServer(bossId, difficulty or "Normal")
+        end)
+    else
+        pcall(function()
+            RequestSummonBoss:FireServer(bossId)
+        end)
+    end
+    local tempData = {
+        name = bossId,
+        island = "Boss"
+    }
+    startFarmLoop("summonBoss", { tempData }, function()
+        return _G.AutoSummonBossActive
+    end)
+    local timeout = tick() + 60
+    repeat
+        task.wait(.5)
+    until not isSummonBossAlive() or tick() > timeout or not _G.AutoSummonBossActive
+    stopFarm("summonBoss")
+    task.wait(bossData.cooldown)
+end
+local SUMMON_BOSS_OPTIONS = {}
+local SUMMON_BOSS_IDS     = {}
+for bossId, bossData in pairs(SummonBossConfig:GetAllBosses()) do
+    table.insert(SUMMON_BOSS_OPTIONS, bossData.displayName or bossId)
+    SUMMON_BOSS_IDS[bossData.displayName or bossId] = bossId
+end
+table.sort(SUMMON_BOSS_OPTIONS)
+_G.AutoSummonBossActive = false
+_G.PityProtection       = false
+local selectedSummonBoss      = SUMMON_BOSS_IDS[SUMMON_BOSS_OPTIONS[1]]
+local selectedSummonDifficulty = "Normal"
+ManTab:CreateDropdown({
+    Name = "Summon Boss", Options = SUMMON_BOSS_OPTIONS,
+    CurrentOption = { SUMMON_BOSS_OPTIONS[1] }, Flag = "summon_boss_select",
+    Callback = function(s)
+        selectedSummonBoss = SUMMON_BOSS_IDS[s[1]] or selectedSummonBoss
+    end
+})
+ManTab:CreateDropdown({
+    Name = "Summon Difficulty", Options = {"Normal","Medium","Hard","Extreme"},
+    CurrentOption = {"Normal"}, Flag = "summon_diff_select",
+    Callback = function(s)
+        selectedSummonDifficulty = s[1] or "Normal"
+    end
+})
+ManTab:CreateToggle({
+    Name = "Pity Protection",
+    CurrentValue = false, Flag = "pity_protection",
+    Callback = function(v) _G.PityProtection = v end
+})
+ManTab:CreateToggle({
+    Name = "Auto Summon Boss Farm",
+    CurrentValue = false, Flag = "auto_summon_boss",
+    Callback = function(value)
+        _G.AutoSummonBossActive = value
+        if not value then stopFarmFull("summonBoss") return end
+        task.spawn(function()
+            while _G.AutoSummonBossActive do
+                if isPlayerAlive() then
+                    if _G.PityProtection then
+                        local cur, max = getPityValues()
+                        if cur >= max - 1 then
+                            repeat
+                                task.wait(0.5)
+                                cur = getPityValues()
+                            until cur < max - 1 or not _G.PityProtection or not _G.AutoSummonBossActive
+                            if not _G.AutoSummonBossActive then break end
+                        end
+                    end
+                    summonAndFarm(selectedSummonBoss, selectedSummonDifficulty)
+                end
+                task.wait(1)
+            end
+        end)
+    end
+})
+local CodesConfig   = require(ReplicatedStorage:WaitForChild("CodesConfig"))
+local CodeRedeem    = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("CodeRedeem")
+InvTab:CreateButton({
+    Name = "Redeem All Codes",
+    Callback = function()
+        local codes = CodesConfig.Codes
+        if not codes then
+            return
+        end
+        task.spawn(function()
+            for code in pairs(codes) do
+                local ok, result = pcall(function()
+                    return CodeRedeem:InvokeServer(code)
+                end)
+                if ok then
+                    print("[Codes] Redeemed:", code, "→", result)
+                else
+                    warn("[Codes] Failed:", code, result)
+                end
+                task.wait(0.5) 
+            end
+        end)
+    end
+})
+local function tweenToNPC(npcNameOrModel, onArrival)
+    local target
+    if typeof(npcNameOrModel) == "Instance" then
+        target = npcNameOrModel
+    else
+        local serviceNPCs = workspace:FindFirstChild("ServiceNPCs")
+        if serviceNPCs then
+            for _, npc in ipairs(serviceNPCs:GetChildren()) do
+                if npc.Name == npcNameOrModel and npc:IsA("Model") then
+                    target = npc
+                    break
+                end
+            end
+        end
+    end
+    if not target then
+        return
+    end
+    local char = player.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        return
+    end
+    enableBodyControl(hrp)
+    startNoclip()
+    local timeout = tick() + 15
+    while tick() < timeout do
+        local npcPos = target:GetPivot().Position
+        local diff   = npcPos - hrp.Position
+        if diff.Magnitude <= 6 then
+            break
+        end
+        local desiredPos = npcPos - diff.Unit * 5
+        local lerped = Vector3.new(
+            hrp.Position.X + (desiredPos.X - hrp.Position.X) * 0.2,
+            desiredPos.Y,
+            hrp.Position.Z + (desiredPos.Z - hrp.Position.Z) * 0.2
+        )
+        hrp.CFrame                 = CFrame.new(lerped, npcPos)
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        bodyVelocity.Velocity      = Vector3.zero
+        task.wait(0.05)
+    end
+    stopNoclip()
+    if bodyVelocity then
+        bodyVelocity.Velocity = Vector3.zero
+    end
+    disableBodyControl(hrp)
+    task.wait(0.2)
+    if onArrival then
+        onArrival()
+    end
+end
+local RS = game:GetService("ReplicatedStorage")
+local PortalConfig = require(RS:WaitForChild("PortalConfig"))
+local TeleportRemote = RS:WaitForChild("Remotes"):WaitForChild("TeleportToPortal")
+local serviceNPCs = workspace:WaitForChild("ServiceNPCs")
+local IslandToPortal = {}
+for portalId, data in pairs(PortalConfig.Portals) do
+    IslandToPortal[data.IslandFolder] = portalId
+end
+local NPCIslandMap = {}
+do
+    local crystals = {}
+    for _, island in ipairs(workspace:GetChildren()) do
+        local model = island:FindFirstChild("Model")
+        if model then
+            table.insert(crystals, model)
+        end
+    end
+    for _, npc in ipairs(serviceNPCs:GetChildren()) do
+        if npc:IsA("Model") then
+            local npcPos = npc:GetPivot().Position
+            local closestIsland
+            local shortest = math.huge
+            for _, crystal in ipairs(crystals) do
+                local dist = (npcPos - crystal:GetPivot().Position).Magnitude
+                if dist < shortest then
+                    shortest = dist
+                    closestIsland = crystal.Parent.Name
+                end
+            end
+            NPCIslandMap[npc.Name] = closestIsland
+        end
+    end
+end
+local function teleportToIsland(islandFolder)
+    local portalId = IslandToPortal[islandFolder]
+    if portalId then
+        TeleportRemote:FireServer(portalId)
+    end
+end
+local function smartTweenToNPC(npcName)
+    local npc = serviceNPCs:FindFirstChild(npcName)
+    if not npc then
+        return
+    end
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        return
+    end
+    local dist = (npc:GetPivot().Position - hrp.Position).Magnitude
+    if dist >= 300 then
+        local islandFolder = NPCIslandMap[npcName]
+        if islandFolder then
+            teleportToIsland(islandFolder)
+            task.wait(1.5)
+        end
+    end
+    tweenToNPC(npc)
+end
+local SERVICE_NPC_OPTIONS = {}
+for _, npc in ipairs(serviceNPCs:GetChildren()) do
+    if npc:IsA("Model") then
+        table.insert(SERVICE_NPC_OPTIONS, npc.Name)
+    end
+end
+table.sort(SERVICE_NPC_OPTIONS)
+local selectedServiceNPC = SERVICE_NPC_OPTIONS[1]
+InvTab:CreateDropdown({
+    Name = "Select NPC",
+    Options = SERVICE_NPC_OPTIONS,
+    CurrentOption = { SERVICE_NPC_OPTIONS[1] or "" },
+    Flag = "tween_npc_select",
+    Callback = function(s)
+        selectedServiceNPC = s[1]
+    end
+})
+InvTab:CreateButton({
+    Name = "Tween to NPC",
+    Callback = function()
+        if not selectedServiceNPC then return end
+        task.spawn(function()
+            smartTweenToNPC(selectedServiceNPC)
+        end)
     end
 })
 Rayfield:LoadConfiguration()
