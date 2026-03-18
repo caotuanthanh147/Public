@@ -1218,7 +1218,11 @@ DunTab:CreateDropdown({
         SelectedDungeon = option
     end
 })
-local sdun = game:GetService("Players").LocalPlayer.PlayerGui.DungeonPortalJoinUI.LeaveButton.Visible
+local LeaveButton = game:GetService("Players").LocalPlayer
+    .PlayerGui:WaitForChild("DungeonPortalJoinUI"):WaitForChild("LeaveButton")
+local function isInDungeon()
+    return LeaveButton.Visible
+end
 DunTab:CreateToggle({
     Name = "Auto Join Dungeon",
     CurrentValue = false,
@@ -1229,11 +1233,13 @@ DunTab:CreateToggle({
         if v then
             task.spawn(function()
                 while _G.AutoJoinDungeon do
-                if sdun then break end
+                    if isInDungeon() then
+                        task.wait(1)
+                        continue
+                    end
                     local dungeonId = dungeonMap[SelectedDungeon]
                     if dungeonId then
                         RequestDungeonPortal:FireServer(dungeonId)
-                    else
                     end
                     task.wait(4)
                 end
@@ -1324,17 +1330,16 @@ DunTab:CreateToggle({
 local SummonBossConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SummonableBossConfig"))
 local RequestSummonBoss = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestSummonBoss")
 local SummonBossResult  = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SummonBossResult")
+local BossUIShow        = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("BossUIShow")
+local _cachedPity    = 0
+local _cachedMaxPity = 25
+BossUIShow.OnClientEvent:Connect(function(data)
+    if not data then return end
+    if data.pity    then _cachedPity    = data.pity    end
+    if data.maxPity then _cachedMaxPity = data.maxPity end
+end)
 local function getPityValues()
-    local ok, text = pcall(function()
-        return player.PlayerGui
-            :WaitForChild("BossUI", 2)
-            :WaitForChild("MainFrame", 2)
-            :WaitForChild("BossHPBar", 2)
-            :WaitForChild("Pity", 2).Text
-    end)
-    if not ok or not text then return 0, 25 end
-    local cur, max = text:match("(%d+)/(%d+)")
-    return tonumber(cur) , tonumber(max)
+    return _cachedPity, _cachedMaxPity
 end
 local function isSummonBossAlive()
     local npcFolder = workspace:FindFirstChild("NPCs")
@@ -1362,10 +1367,7 @@ local function summonAndFarm(bossId, difficulty)
             RequestSummonBoss:FireServer(bossId)
         end)
     end
-    local tempData = {
-        name = bossId,
-        island = "Boss"
-    }
+    local tempData = { name = bossId, island = "Boss" }
     startFarmLoop("summonBoss", { tempData }, function()
         return _G.AutoSummonBossActive
     end)
@@ -1379,13 +1381,14 @@ end
 table.sort(SUMMON_BOSS_OPTIONS)
 _G.AutoSummonBossActive = false
 _G.PityProtection       = false
-local selectedSummonBoss      = SUMMON_BOSS_IDS[SUMMON_BOSS_OPTIONS[1]]
+local DEFAULT_BOSS = "Saber"
+local selectedSummonBoss = SUMMON_BOSS_IDS[DEFAULT_BOSS] or SUMMON_BOSS_IDS[SUMMON_BOSS_OPTIONS[1]]
 local selectedSummonDifficulty = "Normal"
 ManTab:CreateDropdown({
     Name = "Summon Boss", Options = SUMMON_BOSS_OPTIONS,
-    CurrentOption = { SUMMON_BOSS_OPTIONS[1] }, Flag = "summon_boss_select",
+    CurrentOption = { DEFAULT_BOSS }, Flag = "summon_boss_select",
     Callback = function(s)
-        selectedSummonBoss = SUMMON_BOSS_IDS[s[1]] or selectedSummonBoss
+        selectedSummonBoss = SUMMON_BOSS_IDS[s[1]] or selectedSummonBoss  
     end
 })
 ManTab:CreateDropdown({
@@ -1418,6 +1421,10 @@ ManTab:CreateToggle({
                             until cur < max - 1 or not _G.PityProtection or not _G.AutoSummonBossActive
                             if not _G.AutoSummonBossActive then break end
                         end
+                    end
+                    if isSummonBossAlive() then
+                        task.wait(1)
+                        continue
                     end
                     summonAndFarm(selectedSummonBoss, selectedSummonDifficulty)
                 end
