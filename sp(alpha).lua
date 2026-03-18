@@ -450,7 +450,7 @@ for _, entry in ipairs(QUEST_ORDER) do
     }
 end
 local extraBosses = {
-            { name = "YamatoBoss", display = "Yamato Boss" },
+    { name = "YamatoBoss", display = "Yamato Boss" },
 }
 for _, npcName in ipairs(NPCRegistry.Categories.Combat) do
     prefix, num = npcName:match("^(.-)(%d+)$")
@@ -461,7 +461,7 @@ for _, npcName in ipairs(NPCRegistry.Categories.Combat) do
             local entry = {
                 display  = prefix,
                 prefix   = prefix,
-                island   = npcIslandCache[prefix],  
+                island   = npcIslandCache[prefix],
                 questNPC = q and q.questNPC or nil,
                 minLevel = q and q.minLevel or 0,
             }
@@ -474,26 +474,26 @@ for _, npcName in ipairs(NPCRegistry.Categories.Combat) do
         local entry = {
             display  = npcName,
             name     = npcName,
-            island   = npcIslandCache[npcName],  
+            island   = npcIslandCache[npcName],
             questNPC = q and q.questNPC or nil,
             minLevel = q and q.minLevel or 0,
         }
         table.insert(BOSSES, entry)
         table.insert(BOSS_OPTIONS, npcName)
         BOSS_BY_DISPLAY[npcName] = entry
-        for _, extra in ipairs(extraBosses) do
-            local q = npcTypeToQuest[extra.name]
-            local entry = {
-                display  = extra.display,
-                name     = extra.name,
-                questNPC = q and q.questNPC or nil,
-                minLevel = q and q.minLevel or 0,
-            }
-            table.insert(BOSSES, entry)
-            table.insert(BOSS_OPTIONS, extra.display)
-            BOSS_BY_DISPLAY[extra.display] = entry
-        end
     end
+end
+for _, extra in ipairs(extraBosses) do
+    local q = npcTypeToQuest[extra.name]
+    local entry = {
+        display  = extra.display,
+        name     = extra.name,
+        questNPC = q and q.questNPC or nil,
+        minLevel = q and q.minLevel or 0,
+    }
+    table.insert(BOSSES, entry)
+    table.insert(BOSS_OPTIONS, extra.display)
+    BOSS_BY_DISPLAY[extra.display] = entry
 end
 local function findNpcDataByType(npcType)
     if MOB_BY_DISPLAY[npcType] then return MOB_BY_DISPLAY[npcType] end
