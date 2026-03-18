@@ -990,9 +990,9 @@ ManTab:CreateToggle({
                         local needsAccept = not active
                             or (expected and active:lower() ~= expected:lower())
                         if needsAccept then
-                            local wasRunning = lastTarget == bestTarget
                             stopFarm("level")
-                            local targetModel, dist = findTargetByData(bestTarget)
+                            lastTarget = nil  
+                            local _, dist = findTargetByData(bestTarget)
                             if dist > 600 then
                                 local islandFolder = resolveIsland(bestTarget)
                                 if islandFolder then
@@ -1004,16 +1004,13 @@ ManTab:CreateToggle({
                                 end
                             end
                             acceptQuest(bestTarget.questNPC)
-                            if wasRunning then
-                                startFarmLoop("level", bestTarget, function() return _G.AutoLevelActive end)
-                            else
-                                lastTarget = nil  
-                            end
                         end
                     end
-                    if bestTarget ~= lastTarget then
+                    if bestTarget and (bestTarget ~= lastTarget or not isFarmRunning("level")) then
                         lastTarget = bestTarget
-                        startFarmLoop("level", bestTarget, function() return _G.AutoLevelActive end)
+                        startFarmLoop("level", bestTarget, function()
+                            return _G.AutoLevelActive
+                        end)
                     end
                     task.wait(5)
                 else
