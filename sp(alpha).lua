@@ -1313,7 +1313,7 @@ DunTab:CreateToggle({
     Flag = "AutoJoinDungeon",
     Callback = function(v)
         _G.AutoJoinDungeon = v
-        p() then return end
+        if not game.PlaceId == 77747658251236 then return end
         if v then
             task.spawn(function()
                 while _G.AutoJoinDungeon do
