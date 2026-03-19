@@ -8,6 +8,19 @@ local Window = Rayfield:CreateWindow({
       FileName = "Settings"
    }
 })
+local function p()
+    local pp = AssetService:GetGamePlacesAsync()
+    while true do
+        for _, place in pp:GetCurrentPage() do
+            if place.PlaceId == 77747658251236 then
+                return true
+            end
+        end
+        if pp.IsFinished then break end
+        pp:AdvanceToNextPageAsync()
+    end
+    return false
+end
 local ManTab = Window:CreateTab("Main", 4483345998)
 local SkillTab = Window:CreateTab("Skills", 4483345998)
 local InvTab = Window:CreateTab("Inventory", 4483345998)
@@ -721,7 +734,7 @@ local function teleportToIsland(portalId)
     local islandPos = islandPositions[islandFolder]
     if islandPos then
         local dist = (hrp.Position - islandPos).Magnitude
-        if dist < 300 then
+        if dist < 400 then
             return 
         end
     end
@@ -822,11 +835,15 @@ local function startFarmLoop(key, npcDataList, isActiveFunc)
     end
     stopFarm(key)
     isTeleporting[key] = false
-    if charAddedConnections[key] then charAddedConnections[key]:Disconnect() end
+    if charAddedConnections[key] then
+        charAddedConnections[key]:Disconnect()
+    end
     charAddedConnections[key] = player.CharacterAdded:Connect(function(char)
         onCharacterAdded_farm(char, key)
         local hrp = char:WaitForChild("HumanoidRootPart", 5)
-        if hrp then enableBodyControl(hrp) end
+        if hrp then
+            enableBodyControl(hrp)
+        end
         startNoclip()
     end)
     if player.Character then
@@ -834,7 +851,7 @@ local function startFarmLoop(key, npcDataList, isActiveFunc)
         enableBodyControl(player.Character:FindFirstChild("HumanoidRootPart"))
         startNoclip()
     end
-    activeConnections[key] = RunService.Heartbeat:Connect(function()
+    activeConnections[key] = RunService.Heartbeat:Connect(function(dt)
         if not isActiveFunc() or not isPlayerAlive() then
             stopFarm(key)
             stopNoclip()
@@ -843,16 +860,21 @@ local function startFarmLoop(key, npcDataList, isActiveFunc)
         local myPriority = FARM_PRIORITY[key] or 0
         for otherKey, otherPriority in pairs(FARM_PRIORITY) do
             if otherKey ~= key
-            and otherPriority > myPriority
-            and activeConnections[otherKey]
-            and farmHasTarget[otherKey] then
+                and otherPriority > myPriority
+                and activeConnections[otherKey]
+                and farmHasTarget[otherKey]
+            then
                 farmHasTarget[key] = false
                 return
             end
         end
-        if isTeleporting[key] then return end
+        if isTeleporting[key] then
+            return
+        end
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
+        if not hrp then
+            return
+        end
         local list = npcDataList
         local bestModel, bestDist, bestData = nil, math.huge, nil
         for _, npcData in ipairs(list) do
@@ -864,8 +886,15 @@ local function startFarmLoop(key, npcDataList, isActiveFunc)
             end
         end
         farmHasTarget[key] = bestModel ~= nil
-        if not bestModel then return end
-        if bestDist > 600 then
+        if not bestModel then
+            return
+        end
+        local hum = bestModel:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 or not bestModel:IsDescendantOf(workspace) then
+            farmHasTarget[key] = false
+            return
+        end
+        if bestDist > 400 then
             local islandFolder = resolveIsland(bestData)
             if islandFolder then
                 local portalId = IslandToPortal[islandFolder]
@@ -880,18 +909,40 @@ local function startFarmLoop(key, npcDataList, isActiveFunc)
             end
             return
         end
+        if bestDist <= 6 then
+            local ok, tp = pcall(function()
+                local _, t = getDesiredPosition(hrp, bestModel)
+                return t
+            end)
+            if not ok then
+                return
+            end
+            hrp.CFrame = CFrame.new(hrp.Position, tp)
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            if bodyVelocity then
+                bodyVelocity.Velocity = Vector3.zero
+            end
+            return
+        end
         if not bodyVelocity or not bodyVelocity.Parent then
             enableBodyControl(hrp)
         end
-        local desiredPos, targetPos = getDesiredPosition(hrp, bestModel)
-        local lerpedXZ = Vector3.new(
-            hrp.Position.X + (desiredPos.X - hrp.Position.X) * (TWEEN_SPEED * 0.015),
-            desiredPos.Y,
-            hrp.Position.Z + (desiredPos.Z - hrp.Position.Z) * (TWEEN_SPEED * 0.015)
-        )
-        hrp.CFrame                 = CFrame.new(lerpedXZ, targetPos)
+        local dp, tp
+        local ok = pcall(function()
+            dp, tp = getDesiredPosition(hrp, bestModel)
+        end)
+        if not ok or not dp or not tp then
+            return
+        end
+        local toTarget = dp - hrp.Position
+        if toTarget.Magnitude < 0.01 then return end
+        local moveDist = math.min(TWEEN_SPEED * dt, toTarget.Magnitude)
+        local nextPos  = hrp.Position + toTarget.Unit * moveDist
+        hrp.CFrame                 = CFrame.new(nextPos, tp)
         hrp.AssemblyLinearVelocity = Vector3.zero
-        if bodyVelocity then bodyVelocity.Velocity = Vector3.zero end
+        if bodyVelocity then
+            bodyVelocity.Velocity = Vector3.zero
+        end
     end)
 end
 local selectedMobs = { NORMAL_MOBS[1] }
@@ -993,7 +1044,7 @@ ManTab:CreateToggle({
                             stopFarm("level")
                             lastTarget = nil  
                             local _, dist = findTargetByData(bestTarget)
-                            if dist > 600 then
+                            if dist > 400 then
                                 local islandFolder = resolveIsland(bestTarget)
                                 if islandFolder then
                                     local portalId = IslandToPortal[islandFolder]
@@ -1006,7 +1057,7 @@ ManTab:CreateToggle({
                             acceptQuest(bestTarget.questNPC)
                         end
                     end
-                    if bestTarget and (bestTarget ~= lastTarget or not isFarmRunning("level")) then
+                    if bestTarget and (bestTarget ~= lastTarget) then
                         lastTarget = bestTarget
                         startFarmLoop("level", bestTarget, function()
                             return _G.AutoLevelActive
@@ -1046,7 +1097,9 @@ local function findNearestAny()
     return closestModel, closestDist
 end
 ManTab:CreateToggle({
-    Name = "Auto Farm Nearest", CurrentValue = false, Flag = "auto_nearest",
+    Name = "Auto Farm Nearest",
+    CurrentValue = false,
+    Flag = "auto_nearest",
     Callback = function(value)
         _G.AutoNearestActive = value
         if not value then
@@ -1061,7 +1114,9 @@ ManTab:CreateToggle({
         charAddedConnections["nearest"] = player.CharacterAdded:Connect(function(char)
             onCharacterAdded_farm(char, "nearest")
             local hrp = char:WaitForChild("HumanoidRootPart", 5)
-            if hrp then enableBodyControl(hrp) end
+            if hrp then
+                enableBodyControl(hrp)
+            end
             startNoclip()
         end)
         if player.Character then
@@ -1069,7 +1124,7 @@ ManTab:CreateToggle({
             enableBodyControl(player.Character:FindFirstChild("HumanoidRootPart"))
             startNoclip()
         end
-        activeConnections["nearest"] = RunService.Heartbeat:Connect(function()
+        activeConnections["nearest"] = RunService.Heartbeat:Connect(function(dt)
             if not _G.AutoNearestActive or not isPlayerAlive() then
                 local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                 stopFarm("nearest")
@@ -1080,21 +1135,35 @@ ManTab:CreateToggle({
             local myPriority = FARM_PRIORITY["nearest"] or 0
             for otherKey, otherPriority in pairs(FARM_PRIORITY) do
                 if otherKey ~= "nearest"
-                and otherPriority > myPriority
-                and activeConnections[otherKey]
-                and farmHasTarget[otherKey] then
+                    and otherPriority > myPriority
+                    and activeConnections[otherKey]
+                    and farmHasTarget[otherKey]
+                then
                     farmHasTarget["nearest"] = false
                     return
                 end
             end
-            if isTeleporting["nearest"] then return end
+            if isTeleporting["nearest"] then
+                return
+            end
             local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
+            if not hrp then
+                return
+            end
             local model, dist = findNearestAny()
             farmHasTarget["nearest"] = model ~= nil
-            if not model then return end
-            if dist > 300 then
-                local ok, npcPos = pcall(function() return model:GetPivot().Position end)
+            if not model then
+                return
+            end
+            local hum = model:FindFirstChildOfClass("Humanoid")
+            if not hum or hum.Health <= 0 or not model:IsDescendantOf(workspace) then
+                farmHasTarget["nearest"] = false
+                return
+            end
+            if dist > 400 then
+                local ok, npcPos = pcall(function()
+                    return model:GetPivot().Position
+                end)
                 if ok then
                     local islandFolder = getClosestIsland(npcPos)
                     if islandFolder then
@@ -1107,12 +1176,13 @@ ManTab:CreateToggle({
                                 repeat
                                     task.wait(0.3)
                                     local _, d = findNearestAny()
-                                    if d and d <= 300 then break end
+                                    if d and d <= 400 then
+                                        break
+                                    end
                                 until tick() > deadline
                                 isTeleporting["nearest"] = false
                             end)
                         end
-                        return
                     end
                 end
                 return
@@ -1120,15 +1190,31 @@ ManTab:CreateToggle({
             if not bodyVelocity or not bodyVelocity.Parent then
                 enableBodyControl(hrp)
             end
-            local desiredPos, targetPos = getDesiredPosition(hrp, model)
-            local lerpedXZ = Vector3.new(
-                hrp.Position.X + (desiredPos.X - hrp.Position.X) * (TWEEN_SPEED * 0.015),
-                desiredPos.Y,
-                hrp.Position.Z + (desiredPos.Z - hrp.Position.Z) * (TWEEN_SPEED * 0.015)
-            )
-            hrp.CFrame                 = CFrame.new(lerpedXZ, targetPos)
+            local dp, tp
+            local ok = pcall(function()
+                dp, tp = getDesiredPosition(hrp, model)
+            end)
+            if not ok or not dp or not tp then
+                return
+            end
+            if dist <= 6 then
+                hrp.CFrame = CFrame.new(hrp.Position, tp)
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                if bodyVelocity then
+                    bodyVelocity.Velocity = Vector3.zero
+                end
+                return
+            end
+            local toTarget = dp - hrp.Position
+            if toTarget.Magnitude < 0.01 then return end
+            local moveDist = math.min(TWEEN_SPEED * dt, toTarget.Magnitude)
+            local nextPos  = hrp.Position + toTarget.Unit * moveDist
+            hrp.CFrame                 = CFrame.new(nextPos, tp)
             hrp.AssemblyLinearVelocity = Vector3.zero
-            if bodyVelocity then bodyVelocity.Velocity = Vector3.zero end
+            if bodyVelocity then
+                bodyVelocity.Velocity = Vector3.zero
+            end
+            return
         end)
     end
 })
@@ -1226,7 +1312,7 @@ DunTab:CreateToggle({
     Flag = "AutoJoinDungeon",
     Callback = function(v)
         _G.AutoJoinDungeon = v
-        if game.PlaceId == 99684056491472 then return end
+        p() then return end
         if v then
             task.spawn(function()
                 while _G.AutoJoinDungeon do
@@ -1324,50 +1410,38 @@ DunTab:CreateToggle({
         end
     end
 })
-local SummonBossConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SummonableBossConfig"))
-local RequestSummonBoss = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestSummonBoss")
-local SummonBossResult  = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SummonBossResult")
+local SummonBossConfig  = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SummonableBossConfig"))
 local BossUIShow        = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("BossUIShow")
-local _cachedPity    = 0
-local _cachedMaxPity = 25
+local RequestAutoSpawn  = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestAutoSpawn")
+local _cachedPity  = 0
+local _autoSpawnOn = false
 BossUIShow.OnClientEvent:Connect(function(data)
     if not data then return end
-    if data.pity    then _cachedPity    = data.pity    end
-    if data.maxPity then _cachedMaxPity = data.maxPity end
+    if data.pity ~= nil then _cachedPity = data.pity end
 end)
-local function getPityValues()
-    return _cachedPity, _cachedMaxPity
-end
-local function isSummonBossAlive()
-    local npcFolder = workspace:FindFirstChild("NPCs")
-    if not npcFolder then return false end
-    for bossId in pairs(SummonBossConfig:GetAllBosses()) do
-        local model = npcFolder:FindFirstChild(bossId)
-        if model then
-            local hum = model:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                return true
-            end
-        end
-    end
-    return false
-end
-local function summonAndFarm(bossId, difficulty)
+local function fireAutoSpawn(bossId, difficulty)
     local bossData = SummonBossConfig:GetBoss(bossId)
     if not bossData then return end
     if bossData.hasDifficulty then
-        pcall(function()
-            RequestSummonBoss:FireServer(bossId, difficulty or "Normal")
-        end)
+        pcall(function() RequestAutoSpawn:FireServer(bossId, difficulty or "Normal") end)
     else
-        pcall(function()
-            RequestSummonBoss:FireServer(bossId)
-        end)
+        pcall(function() RequestAutoSpawn:FireServer(bossId) end)
     end
+end
+local function startAutoSpawn(bossId, difficulty)
+    if _autoSpawnOn then return end
+    _autoSpawnOn = true
+    fireAutoSpawn(bossId, difficulty)
     local tempData = { name = bossId, island = "Boss" }
     startFarmLoop("summonBoss", { tempData }, function()
         return _G.AutoSummonBossActive
     end)
+end
+local function stopAutoSpawn(bossId, difficulty)
+    if not _autoSpawnOn then return end
+    _autoSpawnOn = false
+    fireAutoSpawn(bossId, difficulty)  
+    stopFarmFull("summonBoss")
 end
 local SUMMON_BOSS_OPTIONS = {}
 local SUMMON_BOSS_IDS     = {}
@@ -1378,14 +1452,14 @@ end
 table.sort(SUMMON_BOSS_OPTIONS)
 _G.AutoSummonBossActive = false
 _G.PityProtection       = false
-local DEFAULT_BOSS = "Saber"
-local selectedSummonBoss = SUMMON_BOSS_IDS[DEFAULT_BOSS] or SUMMON_BOSS_IDS[SUMMON_BOSS_OPTIONS[1]]
+local DEFAULT_BOSS             = "Saber"
+local selectedSummonBoss       = SUMMON_BOSS_IDS[DEFAULT_BOSS] or SUMMON_BOSS_IDS[SUMMON_BOSS_OPTIONS[1]]
 local selectedSummonDifficulty = "Normal"
 ManTab:CreateDropdown({
     Name = "Summon Boss", Options = SUMMON_BOSS_OPTIONS,
     CurrentOption = { DEFAULT_BOSS }, Flag = "summon_boss_select",
     Callback = function(s)
-        selectedSummonBoss = SUMMON_BOSS_IDS[s[1]] or selectedSummonBoss  
+        selectedSummonBoss = SUMMON_BOSS_IDS[s[1]] or selectedSummonBoss
     end
 })
 ManTab:CreateDropdown({
@@ -1405,28 +1479,31 @@ ManTab:CreateToggle({
     CurrentValue = false, Flag = "auto_summon_boss",
     Callback = function(value)
         _G.AutoSummonBossActive = value
-        if not value then stopFarmFull("summonBoss") return end
+        if not value then
+            stopAutoSpawn(selectedSummonBoss, selectedSummonDifficulty)
+            return
+        end
         task.spawn(function()
             while _G.AutoSummonBossActive do
                 if isPlayerAlive() then
                     if _G.PityProtection then
-                        local cur, max = getPityValues()
-                        if cur >= max - 1 then
+                        if _cachedPity >= 24 then
+                            stopAutoSpawn(selectedSummonBoss, selectedSummonDifficulty)
                             repeat
                                 task.wait(0.5)
-                                cur = getPityValues()
-                            until cur < max - 1 or not _G.PityProtection or not _G.AutoSummonBossActive
+                            until _cachedPity == 0
+                                or not _G.PityProtection
+                                or not _G.AutoSummonBossActive
                             if not _G.AutoSummonBossActive then break end
                         end
                     end
-                    if isSummonBossAlive() then
-                        task.wait(1)
-                        continue
-                    end
-                    summonAndFarm(selectedSummonBoss, selectedSummonDifficulty)
+                    startAutoSpawn(selectedSummonBoss, selectedSummonDifficulty)
+                else
+                    stopAutoSpawn(selectedSummonBoss, selectedSummonDifficulty)
                 end
                 task.wait(1)
             end
+            stopAutoSpawn(selectedSummonBoss, selectedSummonDifficulty)
         end)
     end
 })
@@ -1472,26 +1549,26 @@ local function tweenToNPC(npcNameOrModel, onArrival)
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     local timeout = tick() + 15
-    local STEP_DIST = TWEEN_SPEED * 0.05 * 40
+    enableBodyControl(hrp)
+    startNoclip()
     while tick() < timeout do
+        local dt = RunService.Heartbeat:Wait()  
+        hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then break end
         local npcPos = target:GetPivot().Position
         local diff   = npcPos - hrp.Position
         local dist   = diff.Magnitude
         if dist <= 6 then break end
         local desiredPos = npcPos - diff.Unit * 5
         local toTarget   = desiredPos - hrp.Position
-        local moveDist   = math.min(STEP_DIST, toTarget.Magnitude) 
+        local moveDist   = math.min(TWEEN_SPEED * dt, toTarget.Magnitude)
         local nextPos    = hrp.Position + toTarget.Unit * moveDist
-        enableBodyControl(hrp)
-        startNoclip()
-        hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, desiredPos.Y, nextPos.Z))
+        local lookAt     = Vector3.new(npcPos.X, desiredPos.Y, npcPos.Z)
+        hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, desiredPos.Y, nextPos.Z), lookAt)
         if bodyVelocity then bodyVelocity.Velocity = Vector3.zero end
-        task.wait(0.05)
     end
     disableBodyControl(hrp)
     stopNoclip()
-    if bodyVelocity then bodyVelocity.Velocity = Vector3.zero end
-    task.wait(0.2)
     if onArrival then
         onArrival()
     end
@@ -1559,14 +1636,14 @@ local function smartTweenToNPC(npcName)
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     local dist = (npc:GetPivot().Position - hrp.Position).Magnitude
-    if dist >= 300 then
+    if dist >= 200 then
         local entry = NPCIslandMap[npcName]
         if entry then
             teleportToIsland(entry.portal)
             task.wait(1.5)
-            tweenToNPC(npc)
         end    
     end
+    tweenToNPC(npc)
 end
 local SERVICE_NPC_OPTIONS = {}
 for _, npc in ipairs(serviceNPCs:GetChildren()) do
