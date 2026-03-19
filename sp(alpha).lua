@@ -8,6 +8,7 @@ local Window = Rayfield:CreateWindow({
       FileName = "Settings"
    }
 })
+local AssetService = game:GetService("AssetService")
 local function p()
     local pp = AssetService:GetGamePlacesAsync()
     while true do
