@@ -1,0 +1,6 @@
+[18:55:39] __namecall hook installed
+[18:55:39] MacroLabel Idle | Waiting
+[18:55:39] MacroLabel Recording [0]
+[18:55:50] MacroLabel Idle | Stopped (0)
+[18:56:16] MacroLabel Idle | Waiting
+[18:56:16] MacroLabel Recording [0]
