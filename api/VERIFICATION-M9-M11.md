@@ -148,3 +148,40 @@ New features:
 Browser verification: craft → extract (messy text, sealed-ref class) → revoke chain (dialog → confirm → revoked + toast) → Blacklist view shows both leak:<watermark> rows → Audit shows admin.leak.revoke; trace flow Sessions→Leak tools prefilled→extract (watermark-id class) → revoked key card; Users WATCH · 18 row; zero JS errors; 13/13 palette walk; webhook chain regression still signed-200/tampered-400; sticky headers still pinned (thTopVsScroller 0 at scrollTop 300); CSV export still toasts.
 
 NOT-RUN: real keyboard a11y audit beyond the palette/inspector/trace shortcuts; leak workflow against a production-sized sessions table (limit 200 on abuse-scores, top-N on lookup sessions list — indexed queries, but no load test).
+
+---
+
+## Session 7 addendum (M11 "live-ops" round) — 2026-10-10
+
+Scope: polling + freshness affordances, Overview KPI drilldowns, shortcuts
+overlay. api/ module code untouched (229/229 baseline holds).
+
+- useApiData: optional `opts.pollMs` (interval setState inside the callback —
+  lint-safe) + `lastUpdatedAt` (client-only Date.now() at settle; never
+  rendered during SSR — no hydration/prerender concern). Migrated: Overview
+  15s, Audit 20s (own intervals removed), Sessions 30s, Blacklist 60s NEW.
+- FreshnessPill (freshness.tsx): "updated Xs ago" ticking age, click =
+  refresh now, pulse dot while live, amber tint + dot when stale (>2× poll),
+  aria-label + title with the poll cadence. Rendered on all four polling
+  views (computed placements verified per view).
+- Overview drilldowns: Active keys → Keys, Sessions → Sessions view, Tamper
+  → Leak tools. Cards get role="button" tabIndex=0 aria-label Enter/Space
+  handlers + hover ring + arrow affordance (a11y-first fix applied after the
+  first cut was mouse-only). Validations card stays static (no target view).
+- Shortcuts overlay (shortcuts.tsx): "?" (shift+/, guarded against
+  INPUT/TEXTAREA/SELECT/contentEditable targets) toggles; Esc closes; palette
+  command "Keyboard shortcuts" + footer hint added. 10 rows (6 nav, 4
+  interactions incl. drilldown/copy/pill/print).
+- Browser verification: pill present + age ticking on all 4 views; pill
+  click refires fetch (inspector count grows); drilldown click AND focused
+  Enter both navigate (Keys view reached both ways); "?" press opens (note:
+  agent-browser `keyboard type` uses insertText — no keydown — use `press`);
+  Esc closes; typed "?" into a field does not trigger; 13/13 view walk;
+  palette typed-nav + reopen-empty (stale-query fix intact); webhook chain
+  signed-200 → tampered-400; zero NEW console errors (dev.log prerender
+  count 0 — the browser buffer's 2 entries are the pre-fix stale artifacts
+  from the s6 round); lint 0 errors 0 warnings.
+- NOT-RUN: prefers-reduced-motion interaction with the pill's pulse dot
+  (inherits the existing globals reduced-motion block — animation: none
+  applies to .pulse-dot::after but the dot itself is a static element);
+  multi-tab staleness behavior (client-only state by design).

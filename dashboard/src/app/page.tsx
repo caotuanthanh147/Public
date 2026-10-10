@@ -22,6 +22,7 @@ import { SettingsView } from "@/components/dashboard/settings";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { CommandPalette, type Command } from "@/components/dashboard/command-palette";
 import { ApiInspectorButton, ApiInspectorPanel, ApiProgressBar } from "@/components/dashboard/api-inspector";
+import { ShortcutsDialog } from "@/components/dashboard/shortcuts";
 import {
   ShieldCheck,
   BarChart3,
@@ -43,6 +44,7 @@ import {
   Activity,
   Fingerprint,
   Printer,
+  Keyboard,
 } from "lucide-react";
 
 type ViewId =
@@ -105,6 +107,7 @@ export default function Home(): React.JSX.Element {
     return () => window.removeEventListener("beforeprint", stamp);
   }, []);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   // Bumped on every palette OPEN; used as the palette's React key so each open
   // remounts it with a clean query (a stale filter would strand navigation —
   // found in QA). Closing does not bump, so Radix exit animations survive.
@@ -128,7 +131,8 @@ export default function Home(): React.JSX.Element {
       .catch(() => setDevMode(false));
   }, []);
 
-  // ⌘K / Ctrl+K opens the palette; ⌘I / Ctrl+I opens the API inspector
+  // ⌘K / Ctrl+K opens the palette; ⌘I / Ctrl+I opens the API inspector;
+  // "?" (shift+/) opens the shortcuts overlay when no field is focused.
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -138,6 +142,13 @@ export default function Home(): React.JSX.Element {
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") {
         e.preventDefault();
         setInspectorOpen((o) => !o);
+      } else if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const t = e.target as HTMLElement | null;
+        const tag = t !== null ? t.tagName : "";
+        if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && t?.isContentEditable !== true) {
+          e.preventDefault();
+          setHelpOpen((o) => !o);
+        }
       }
     }
     window.addEventListener("keydown", onKey);
@@ -182,6 +193,14 @@ export default function Home(): React.JSX.Element {
         setPrintedAt(new Date().toLocaleString());
         window.print();
       },
+    },
+    {
+      id: "shortcuts-help",
+      label: "Keyboard shortcuts",
+      hint: "help",
+      group: "System",
+      icon: <Keyboard className="h-4 w-4" />,
+      run: () => setHelpOpen(true),
     },
   ];
 
@@ -308,7 +327,7 @@ export default function Home(): React.JSX.Element {
 
             <div className="hidden rounded-lg border border-dashed p-3 lg:block">
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                <Kbd className="border bg-background px-1 font-mono">⌘K</Kbd> palette · <Kbd className="border bg-background px-1 font-mono">⌘I</Kbd> API inspector
+                <Kbd className="border bg-background px-1 font-mono">⌘K</Kbd> palette · <Kbd className="border bg-background px-1 font-mono">⌘I</Kbd> API inspector · <Kbd className="border bg-background px-1 font-mono">?</Kbd> shortcuts
               </p>
             </div>
           </div>
@@ -327,7 +346,7 @@ export default function Home(): React.JSX.Element {
             <p className="text-sm text-muted-foreground">{current.sub}</p>
           </div>
           <div key={view} className="view-enter">
-            {view === "overview" && <OverviewView />}
+            {view === "overview" && <OverviewView onNavigate={go} />}
             {view === "keys" && <KeysView />}
             {view === "scripts" && <ScriptsView />}
             {view === "users" && <UsersView />}
@@ -374,6 +393,7 @@ export default function Home(): React.JSX.Element {
         }}
         commands={commands}
       />
+      <ShortcutsDialog open={helpOpen} onOpenChange={setHelpOpen} />
       <ApiInspectorPanel open={inspectorOpen} onClose={() => setInspectorOpen(false)} />
     </div>
   );

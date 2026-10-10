@@ -11,14 +11,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatTime, gw, SessionRow, shortHash } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
 import { copyText, csvTimestamp, exportCsv } from "@/lib/export-utils";
+import { FreshnessPill } from "@/components/dashboard/freshness";
 import { Download, Fingerprint, RefreshCw, Stamp } from "lucide-react";
 
 export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => void }): React.JSX.Element {
   const [keyFilter, setKeyFilter] = useState("");
   const trimmed = keyFilter.trim();
-  const { data, error, refresh } = useApiData(
+  const { data, error, refresh, lastUpdatedAt } = useApiData(
     () => gw<{ rows: SessionRow[]; total: number }>("GET", `/admin/sessions?limit=100${trimmed.length > 0 ? `&key_id=${encodeURIComponent(trimmed)}` : ""}`),
     [trimmed],
+    { pollMs: 30000 },
   );
   const rows = data?.rows ?? null;
   const total = data?.total ?? 0;
@@ -38,6 +40,7 @@ export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => v
       )}
       <div className="flex flex-wrap items-center gap-2">
         <Input value={keyFilter} onChange={(e) => setKeyFilter(e.target.value)} placeholder="filter by key id" className="w-64 font-mono" />
+        <FreshnessPill lastUpdatedAt={lastUpdatedAt} onRefresh={refresh} pollMs={30000} />
         <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="refresh">
           <RefreshCw className="h-4 w-4" />
         </Button>

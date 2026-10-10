@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FreshnessPill } from "@/components/dashboard/freshness";
 import { ActivityBarChart, DonutChart, Sparkline, Meter } from "@/components/dashboard/charts";
 import { AnalyticsOverview, AuditEntry, KeyRow, NodeRow, ProtocolVersionRow, SyncData, gw, formatTime } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
-import { Activity, CheckCircle2, KeyRound, Server, ShieldAlert, TrendingUp, Users, Zap } from "lucide-react";
+import { ArrowUpRight, Activity, CheckCircle2, KeyRound, Server, ShieldAlert, TrendingUp, Users, Zap } from "lucide-react";
 
 interface OverviewData {
   analytics: AnalyticsOverview;
@@ -26,9 +27,13 @@ function dayKey(unix: number, now: number): number {
   return Math.floor((now - unix) / DAY);
 }
 
-export function OverviewView(): React.JSX.Element {
+// KPI drilldown targets (page.tsx `go` — typed independently to avoid a
+// circular import with the view-id union).
+export type DrilldownView = "keys" | "sessions" | "audit" | "leak";
+
+export function OverviewView({ onNavigate }: { onNavigate?: (v: DrilldownView) => void }): React.JSX.Element {
   const [copied, setCopied] = useState(false);
-  const { data, error, refresh } = useApiData<OverviewData>(async () => {
+  const { data, error, refresh, lastUpdatedAt } = useApiData<OverviewData>(async () => {
     const [analytics, sync, nodes, protocols, audit, keys] = await Promise.all([
       gw<AnalyticsOverview>("GET", "/admin/analytics/overview"),
       gw<SyncData>("GET", "/sync"),
@@ -38,12 +43,7 @@ export function OverviewView(): React.JSX.Element {
       gw<{ rows: KeyRow[] }>("GET", "/admin/keys?limit=500").then((r) => r.rows),
     ]);
     return { analytics, sync, nodes, protocols, audit, keys };
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => refresh(), 15000);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  }, [], { pollMs: 15000 });
 
   // 14-day chart series, computed from real rows. "now" comes from the
   // server /sync timestamp (pure per fetched data — no Date.now() in render).
@@ -127,6 +127,7 @@ export function OverviewView(): React.JSX.Element {
     spark: number[];
     accent: string;
     stroke: string;
+    drill?: DrilldownView;
   }[] = [
     {
       label: "Active keys",
@@ -136,6 +137,7 @@ export function OverviewView(): React.JSX.Element {
       spark: charts.keysPerDay,
       accent: "from-emerald-500 to-teal-600",
       stroke: "#10b981",
+      drill: "keys",
     },
     {
       label: "Sessions (24h)",
@@ -145,6 +147,7 @@ export function OverviewView(): React.JSX.Element {
       spark: charts.keySeries.map((v, i) => v + charts.freeSeries[i]!),
       accent: "from-teal-500 to-emerald-600",
       stroke: "#14b8a6",
+      drill: "sessions",
     },
     {
       label: "Validations OK (24h)",
@@ -163,19 +166,50 @@ export function OverviewView(): React.JSX.Element {
       spark: charts.securitySeries,
       accent: "from-amber-500 to-rose-600",
       stroke: "#f59e0b",
+      drill: "leak",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* stat cards */}
+      {/* live freshness + stat cards */}
+      {onNavigate !== undefined && (
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Activity className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+            Live analytics from the real /admin/analytics/overview endpoint — stat cards drill down.
+          </p>
+          <FreshnessPill lastUpdatedAt={lastUpdatedAt} onRefresh={refresh} pollMs={15000} />
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="group relative overflow-hidden pt-0 transition-all hover:-translate-y-0.5 hover:shadow-md">
+        {stats.map((s) => {
+          const drillable = s.drill !== undefined && onNavigate !== undefined;
+          return (
+          <Card
+            key={s.label}
+            className={`group relative overflow-hidden pt-0 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+              drillable ? "cursor-pointer hover:ring-1 hover:ring-emerald-500/40" : ""
+            }`}
+            onClick={drillable ? () => onNavigate(s.drill as DrilldownView) : undefined}
+            role={drillable ? "button" : undefined}
+            tabIndex={drillable ? 0 : undefined}
+            aria-label={drillable ? `${s.label}: ${s.value} — open the ${s.drill} view` : undefined}
+            onKeyDown={
+              drillable
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onNavigate(s.drill as DrilldownView);
+                    }
+                  }
+                : undefined
+            }
+          >
             <div className={`h-1 w-full bg-gradient-to-r ${s.accent}`} aria-hidden />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s.label}</CardTitle>
-              <div className={`flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br ${s.accent} text-white shadow-sm`}>
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br ${s.accent} text-white shadow-sm">
                 {s.icon}
               </div>
             </CardHeader>
@@ -186,8 +220,17 @@ export function OverviewView(): React.JSX.Element {
                 <Sparkline values={s.spark} stroke={s.stroke} fill={s.stroke} />
               </div>
             </CardContent>
+            {drillable && (
+              <span
+                className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-md bg-background/80 text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                aria-hidden
+              >
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </span>
+            )}
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* charts row */}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { FreshnessPill } from "@/components/dashboard/freshness";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -83,14 +84,9 @@ function relTime(unix: number): string {
 }
 
 export function AuditView(): React.JSX.Element {
-  const { data, error, refresh } = useApiData(() => gw<{ entries: AuditEntry[] }>("GET", "/admin/audit?limit=200"), []);
+  const { data, error, refresh, lastUpdatedAt } = useApiData(() => gw<{ entries: AuditEntry[] }>("GET", "/admin/audit?limit=200"), [], { pollMs: 20000 });
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    const timer = setInterval(() => refresh(), 20000);
-    return () => clearInterval(timer);
-  }, [refresh]);
 
   const rows: AuditEntry[] | null = data?.entries ?? null;
   const filtered = useMemo(() => {
@@ -124,6 +120,7 @@ export function AuditView(): React.JSX.Element {
           Every mutation through the admin API lands here — key creates/revokes, HWID resets, script versions, blacklists, node and
           protocol changes, and free-flow claims. Polls every 20s.
         </p>
+        <FreshnessPill lastUpdatedAt={lastUpdatedAt} onRefresh={refresh} pollMs={20000} />
         <div className="relative flex-1 lg:max-w-52">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="search actor/action/detail" className="pl-8" />
