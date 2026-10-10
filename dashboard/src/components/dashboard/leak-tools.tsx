@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TierBadge, StatusBadge } from "@/components/dashboard/badges";
 import { copyText } from "@/lib/export-utils";
@@ -38,6 +45,7 @@ import {
 import { useApiData } from "@/lib/use-api-data";
 import { toast } from "sonner";
 import {
+  Activity,
   CalendarClock,
   Fingerprint,
   Gamepad2,
@@ -53,6 +61,17 @@ const SOURCE_LABEL: Record<string, string> = {
   sealed_ref: "sealed payload ref",
   session_token: "session token",
   watermark_id: "watermark id",
+};
+
+// §11 check names pinned in D-M7-13 (loader/checks/env_checks.lua v1).
+const TAMPER_CHECKS = ["identity.changed", "env.changed", "headers.injected", "headers.modified", "timing.inflated"] as const;
+
+const CHECK_HINTS: Record<(typeof TAMPER_CHECKS)[number], string> = {
+  "identity.changed": "a critical function's object identity differed from baseline (post-baseline hooking / newcclosure re-wrap)",
+  "env.changed": "executor identity, version or syn presence changed since baseline",
+  "headers.injected": "a completed request carried a post-call header-table addition outside the taught executor set (§1.2.9)",
+  "headers.modified": "an SDK-set header was removed or rewritten mid-call (HTTP spy)",
+  "timing.inflated": "median work-unit time ≥ 20× the per-machine baseline (debug-hook single-stepping)",
 };
 
 function ScoreBadge({ score }: { score: AbuseScore }): React.JSX.Element {
@@ -128,6 +147,20 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
   // expiry tint in the session table.
   const [lookedAtMs, setLookedAtMs] = useState(0);
 
+  // §11 tamper pipeline demo (M7 s2): pick a check, fire the REAL wire.
+  const [checkName, setCheckName] = useState<(typeof TAMPER_CHECKS)[number]>("headers.injected");
+  const [checkDetail, setCheckDetail] = useState("");
+  const [tamperBusy, setTamperBusy] = useState(false);
+  const [tamperResult, setTamperResult] = useState<{
+    key_id: string;
+    session_token: string;
+    watermark_id: string;
+    check: string;
+    detail: string;
+    heartbeat_code: string | null;
+    tamper_event_recorded: boolean;
+  } | null>(null);
+
   // Abuse scores for context on the leaked key (D-M7-7): fetched once per
   // lookup result, joined client-side.
   const { data: scoresData } = useApiData<AbuseScoresResponse>(
@@ -158,8 +191,9 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
     }
   }
 
-  async function runLookup(): Promise<void> {
-    if (artifact.trim().length === 0) {
+  async function runLookup(override?: string): Promise<void> {
+    const text = override ?? artifact;
+    if (text.trim().length === 0) {
       toast.error("Paste a leaked artifact first");
       return;
     }
@@ -168,7 +202,7 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
     setLookup(null);
     setRevoked(null);
     try {
-      const res = await gw<LeakLookupResponse>("POST", "/admin/leak/lookup", { artifact });
+      const res = await gw<LeakLookupResponse>("POST", "/admin/leak/lookup", { artifact: text });
       setLookup(res);
       setLookedAtMs(Date.now());
       toast.success(`Watermark recovered — ${SOURCE_LABEL[res.extraction.source] ?? res.extraction.source}`);
@@ -197,6 +231,33 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
       toast.error(e instanceof Error ? e.message : "revoke failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  // §11 pipeline: mint → real handshake → heartbeat tamper report → the
+  // event lands server-side (silent to the client — the heartbeat answered
+  // a normal envelope).
+  async function fireTamper(): Promise<void> {
+    setTamperBusy(true);
+    setTamperResult(null);
+    try {
+      const res = await fetch("/api/dash/simulate-tamper", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ check: checkName, detail: checkDetail || undefined }),
+      });
+      if (!res.ok) throw new Error(`tamper sim failed (${res.status})`);
+      const data = (await res.json()) as NonNullable<typeof tamperResult>;
+      setTamperResult(data);
+      toast.success(
+        data.tamper_event_recorded
+          ? `Tamper event recorded — heartbeat answered ${data.heartbeat_code ?? "…"} (silent, §11)`
+          : `Heartbeat answered ${data.heartbeat_code ?? "…"} but no tamper event found — investigate`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "tamper sim failed");
+    } finally {
+      setTamperBusy(false);
     }
   }
 
@@ -254,6 +315,82 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
           <AlertDescription>{lookupError}</AlertDescription>
         </Alert>
       )}
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Activity className="h-4 w-4" />
+            §11 tamper pipeline (D-M7-6 wire · env_checks.lua v1)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Fires the exact wire <span className="font-mono">loader/checks/env_checks.lua</span> produces in production: mint → real X25519 handshake → heartbeat carrying the silent{" "}
+            <span className="font-mono">tamper</span> field. The server records a <span className="font-mono">client:&lt;check&gt;</span> event and answers a normal envelope — the client never learns it was acted on.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={checkName} onValueChange={(v) => setCheckName(v as (typeof TAMPER_CHECKS)[number])}>
+              <SelectTrigger className="h-8 w-52 font-mono text-xs" aria-label="§11 check">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TAMPER_CHECKS.map((c) => (
+                  <SelectItem key={c} value={c} className="font-mono text-xs">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input
+              value={checkDetail}
+              onChange={(e) => setCheckDetail(e.target.value)}
+              placeholder="detail (optional, ≤128 chars)"
+              aria-label="tamper check detail"
+              className="h-8 w-56 rounded-md border bg-transparent px-2.5 font-mono text-xs outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+            <Button size="sm" onClick={fireTamper} disabled={tamperBusy} className="gap-1.5">
+              {tamperBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Activity className="h-4 w-4" aria-hidden />}
+              Fire tamper report (real heartbeat)
+            </Button>
+          </div>
+          <p className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            <span className="font-mono">{checkName}</span> — {CHECK_HINTS[checkName]}
+          </p>
+          {tamperResult !== null && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={tamperResult.tamper_event_recorded ? "destructive" : "secondary"} className="gap-1">
+                  <ShieldAlert className="h-3 w-3" aria-hidden />
+                  {tamperResult.tamper_event_recorded ? "tamper event recorded" : "no event found"}
+                </Badge>
+                <Badge variant="secondary" className="font-mono text-[10px]">
+                  heartbeat → {tamperResult.heartbeat_code ?? "?"}
+                </Badge>
+                <span className="font-mono text-xs text-muted-foreground">
+                  key {tamperResult.key_id.slice(0, 10)}… · check {tamperResult.check}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 gap-1.5"
+                  onClick={() => {
+                    setArtifact(tamperResult.session_token);
+                    setTamperResult(null);
+                    void runLookup(tamperResult.session_token);
+                  }}
+                >
+                  <Search className="h-3.5 w-3.5" aria-hidden />
+                  Correlate in extractor
+                </Button>
+              </div>
+              <p className="font-mono text-[11px] text-muted-foreground">
+                session {tamperResult.session_token} → event detail{" "}
+                <span className="text-rose-600 dark:text-rose-400">client:{tamperResult.check}:{tamperResult.detail}</span> (feeds the abuse score, D-M7-7)
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {busy && lookup === null && lookupError === null && (
         <div className="space-y-2">

@@ -11,7 +11,17 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
-    "next-env.d.ts",  ]),
+    "next-env.d.ts",
+    // Not part of the dashboard package: the api/ module has its own
+    // toolchain (bun test + tsc), skills/ is read-only tooling. Public/ and
+    // SavedFolder/ are the fleet's git mirrors (glm-owned module trees with
+    // their own lint gates), upload/ is read-only game captures.
+    "api/**",
+    "skills/**",
+    "Public/**",
+    "SavedFolder/**",
+    "upload/**",
+  ]),
 ]);
 
 export default eslintConfig;

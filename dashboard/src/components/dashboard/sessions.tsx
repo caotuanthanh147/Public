@@ -10,8 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime, gw, SessionRow, shortHash } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
-import { copyText } from "@/lib/export-utils";
-import { Fingerprint, RefreshCw, Stamp } from "lucide-react";
+import { copyText, csvTimestamp, exportCsv } from "@/lib/export-utils";
+import { Download, Fingerprint, RefreshCw, Stamp } from "lucide-react";
 
 export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => void }): React.JSX.Element {
   const [keyFilter, setKeyFilter] = useState("");
@@ -22,6 +22,11 @@ export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => v
   );
   const rows = data?.rows ?? null;
   const total = data?.total ?? 0;
+
+  function exportSessionsCsv(): void {
+    if (rows === null) return;
+    exportCsv(`sessions-${csvTimestamp()}`, ["session_id", "watermark_id", "key_id", "script_id", "version", "hwid_hash", "ip_hash", "place_id", "created_at", "expires_at"], rows.map((r) => [r.id, r.watermark_id, r.key_id ?? "", r.script_id, r.version, r.hwid_hash, r.ip_hash, r.place_id ?? "", r.created_at, r.expires_at]));
+  }
 
   return (
     <div className="space-y-4">
@@ -35,6 +40,9 @@ export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => v
         <Input value={keyFilter} onChange={(e) => setKeyFilter(e.target.value)} placeholder="filter by key id" className="w-64 font-mono" />
         <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="refresh">
           <RefreshCw className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={exportSessionsCsv} disabled={rows === null || rows.length === 0} aria-label="export sessions as CSV" title="export CSV">
+          <Download className="h-4 w-4" />
         </Button>
         <p className="text-sm text-muted-foreground">
           Every auth/init creates a session row with a unique watermark id — leak tracing joins from here (doc §12).

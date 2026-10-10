@@ -13,7 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BlacklistRow, formatTime, gw } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
-import { Ban, Plus, RefreshCw } from "lucide-react";
+import { csvTimestamp, exportCsv } from "@/lib/export-utils";
+import { Ban, Download, Plus, RefreshCw } from "lucide-react";
 
 const KINDS = ["hwid", "ip", "roblox_user", "discord"] as const;
 
@@ -115,9 +116,16 @@ export function BlacklistView(): React.JSX.Element {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-muted-foreground">{rows === null ? "loading…" : `${rows.length} entr${rows.length === 1 ? "y" : "ies"}`}</CardTitle>
-          <CardDescription>
+          <CardDescription className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => refresh()}>
               <RefreshCw className="mr-1 h-3 w-3" /> refresh
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => {
+              if (rows !== null) {
+                exportCsv(`blacklist-${csvTimestamp()}`, ["id", "kind", "value_hash", "reason", "created_by", "created_at"], rows.map((r) => [r.id, r.kind, r.value_hash, r.reason ?? "", r.created_by, r.created_at]));
+              }
+            }} disabled={rows === null || rows.length === 0}>
+              <Download className="mr-1 h-3 w-3" /> CSV
             </Button>
           </CardDescription>
         </CardHeader>

@@ -42,6 +42,7 @@ import {
   Command as CommandIcon,
   Activity,
   Fingerprint,
+  Printer,
 } from "lucide-react";
 
 type ViewId =
@@ -95,6 +96,14 @@ export default function Home(): React.JSX.Element {
   const [view, setView] = useState<ViewId>("overview");
   const [menuOpen, setMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState<boolean | null>(null);
+  // Print letterhead timestamp — resolved at print time (toLocaleString is
+  // locale/tz-dependent: a server-rendered value would hydration-mismatch).
+  const [printedAt, setPrintedAt] = useState<string | null>(null);
+  useEffect(() => {
+    const stamp = () => setPrintedAt(new Date().toLocaleString());
+    window.addEventListener("beforeprint", stamp);
+    return () => window.removeEventListener("beforeprint", stamp);
+  }, []);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // Bumped on every palette OPEN; used as the palette's React key so each open
   // remounts it with a clean query (a stale filter would strand navigation —
@@ -162,6 +171,17 @@ export default function Home(): React.JSX.Element {
       group: "System",
       icon: <Activity className="h-4 w-4" />,
       run: () => setInspectorOpen(true),
+    },
+    {
+      id: "print-view",
+      label: "Print / save as PDF",
+      hint: "export",
+      group: "System",
+      icon: <Printer className="h-4 w-4" />,
+      run: () => {
+        setPrintedAt(new Date().toLocaleString());
+        window.print();
+      },
     },
   ];
 
@@ -295,7 +315,14 @@ export default function Home(): React.JSX.Element {
         </nav>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-5">
+          {/* Print-only letterhead: view title + timestamp (hidden on screen). */}
+          <div className="print-only border-b pb-2">
+            <p className="text-sm font-semibold">Yuri Licensing Platform — {current.title}</p>
+            <p className="text-xs text-muted-foreground">
+              {printedAt !== null ? `printed ${printedAt} · dev-mode data` : "dashboard export"}
+            </p>
+          </div>
+          <div className="mb-5 print:mb-3">
             <h1 className="text-2xl font-semibold tracking-tight">{current.title}</h1>
             <p className="text-sm text-muted-foreground">{current.sub}</p>
           </div>

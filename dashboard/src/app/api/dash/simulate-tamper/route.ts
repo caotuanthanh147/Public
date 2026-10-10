@@ -1,11 +1,10 @@
-// POST /api/dash/craft-leak-artifact — DEV-ONLY (DASH_DEV_MODE) helper for
-// the Leak tools view (module M7): mints a demo key through the REAL admin
-// API, runs a REAL /auth/:id/init handshake server-side (a miniature client
-// using the api's own crypto — X25519 + HKDF + AEAD open), and returns what
-// a leaker would hold: the sealed payload_ref, wrapped in deliberately messy
-// text so the tolerant extractor (D-M7-8) is proven end to end in-browser.
-// The revoke chain then runs against the SAME session — everything on screen
-// is production code.
+// POST /api/dash/simulate-tamper — DEV-ONLY (DASH_DEV_MODE) helper for the
+// Leak tools view (module M7 s2): mints a demo key through the REAL admin
+// API, runs a REAL /auth/:id/init handshake server-side, then POSTs the
+// D-M7-6 tamper report through the REAL heartbeat endpoint — the exact
+// wire loader/checks/env_checks.lua produces in production. Returns the
+// session + the event history so the browser demo proves the full §11
+// pipeline: client check → silent tamper event → abuse-score correlation.
 
 import { NextRequest, NextResponse } from "next/server";
 import { buildRoutes, dispatch } from "@api/src/router";
@@ -16,6 +15,8 @@ import { b64urlDecode, b64urlEncode, toHex } from "@api/src/contracts";
 import { generateX25519KeyPair, x25519SharedSecret } from "@api/src/x25519";
 import { DASH_DEV_MODE, DEMO_PROJECT_ID, DEMO_SCRIPT_ID, getStore } from "@/server/store";
 
+const CHECKS = new Set(["identity.changed", "env.changed", "headers.injected", "headers.modified", "timing.inflated"]);
+
 export async function POST(request: NextRequest): Promise<Response> {
   if (!DASH_DEV_MODE) {
     return NextResponse.json({ error: "dev_only" }, { status: 404 });
@@ -24,17 +25,18 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    /* no body — defaults */
+    /* defaults */
   }
-  void body;
+  const check = typeof body.check === "string" && CHECKS.has(body.check) ? body.check : "headers.injected";
+  const detail = typeof body.detail === "string" && body.detail.length > 0 && body.detail.length <= 128 ? body.detail : "demo:x-spy-trace";
+
   const store = await getStore();
   const { ctx, config } = store;
 
-  // Fresh demo identity per invocation: a revoke-chain run blacklists this
-  // run's hwid+ip hashes, and the next craft must start clean (TEST-NET-2
-  // documentation range, so nothing real can collide).
+  // Fresh demo identity per invocation (a prior revoke-chain demo may have
+  // blacklisted the shared demo ip/hwid — TEST-NET-2 range, nothing real).
   const demoIp = `198.51.100.${1 + Math.floor(Math.random() * 254)}`;
-  const demoHwid = `HWID-LEAK-SIM-${toHex(randomBytes(4))}`;
+  const demoHwid = `HWID-TAMPER-SIM-${toHex(randomBytes(4))}`;
 
   async function signed(method: string, path: string, body: Record<string, unknown> | null, headers: Record<string, string> = {}): Promise<Response> {
     const bodyBytes = body !== null ? utf8(JSON.stringify(body)) : new Uint8Array(0);
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     tier: "paid",
     count: 1,
     days: 30,
-    note: "leak sim " + new Date(Math.floor(ctx.nowSec) * 1000).toISOString().slice(0, 10),
+    note: "tamper sim " + new Date(Math.floor(ctx.nowSec) * 1000).toISOString().slice(0, 10),
     script_ids: [DEMO_SCRIPT_ID],
   }, { authorization: `Bearer ${store.devAdminToken}` });
   if (createRes.status !== 201) {
@@ -79,7 +81,6 @@ export async function POST(request: NextRequest): Promise<Response> {
   const client = generateX25519KeyPair(randomBytes(32));
   const clientNonce = randomBytes(16);
   const hello = b64urlEncode(concatBytes(client.publicKey, clientNonce));
-  // Bind a HWID so the revoke chain has both an hwid_hash and an ip_hash.
   const initRes = await signed("POST", `/auth/${DEMO_SCRIPT_ID}/init`, {
     v: 1,
     key: minted.key,
@@ -90,7 +91,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     hello,
   }, { "Delta-User-Identifier": demoHwid });
   if (initRes.headers.get("content-type") !== "text/plain") {
-    return NextResponse.json({ error: "handshake_failed", status: initRes.status }, { status: 500 });
+    const body = await initRes.text();
+    return NextResponse.json({ error: "handshake_failed", status: initRes.status, body: body.slice(0, 300) }, { status: 500 });
   }
   const wire = b64urlDecode(await initRes.text());
   const serverPub = wire.subarray(0, 32);
@@ -106,26 +108,30 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
   const parsed = JSON.parse(new TextDecoder().decode(plain)) as {
     session_token: string;
-    payload_ref: string;
     watermark_id: string;
   };
 
-  // 3) Wrap the sealed ref in deliberately messy leaked-dump text so the
-  // browser demo proves the free-text scan (D-M7-8 "survives reformatting").
-  const stamp = new Date(Math.floor(ctx.nowSec) * 1000).toISOString();
-  const artifact = [
-    "-- dump begins --",
-    `attacker-notes ${stamp} :: loader cache snapshot`,
-    `{"v":2,"session":"${parsed.session_token}","ref":"${parsed.payload_ref}","wm":"${parsed.watermark_id}"}`,
-    "garbage padding row that means nothing to the extractor",
-    "-- dump ends --",
-  ].join("\n");
+  // 3) The D-M7-6 tamper report through the REAL heartbeat (D-M7-15 wire).
+  const hbRes = await signed("POST", `/auth/${DEMO_SCRIPT_ID}/heartbeat`, {
+    v: 1,
+    session_token: parsed.session_token,
+    tamper: { check, detail },
+  });
+  const hbCode = hbRes.status === 200 ? ((await hbRes.json()) as { code?: string }).code ?? null : null;
+
+  // 4) Correlate through the REAL leak workflow (events + score inputs).
+  const lookupRes = await signed("POST", "/admin/leak/lookup", { watermark_id: parsed.watermark_id }, { authorization: `Bearer ${store.devAdminToken}` });
+  const lookup = lookupRes.status === 200 ? ((await lookupRes.json()) as Record<string, unknown>) : null;
 
   return NextResponse.json({
     key_id: minted.id,
-    watermark_id: parsed.watermark_id,
     session_token: parsed.session_token,
-    payload_ref: parsed.payload_ref,
-    artifact,
+    watermark_id: parsed.watermark_id,
+    check,
+    detail,
+    heartbeat_code: hbCode,
+    tamper_event_recorded: lookup !== null
+      && Array.isArray(lookup.events)
+      && (lookup.events as Array<{ type?: string; detail?: string }>).some((e) => e.type === "tamper" && (e.detail ?? "").startsWith(`client:${check}`)),
   });
 }
