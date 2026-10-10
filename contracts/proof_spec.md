@@ -71,26 +71,32 @@ Clarifications:
   field), not the 32-byte build hash — the client cannot know the
   build hash before decrypting.
 
-## Cross-check vs M1 (api/src/auth.ts, commit 76e8ccb) — MERGE DECISION NEEDED
+## RESOLUTION (2026-10-10, M1 session 3 = Public 617d386) — wire aligned, C1/C2/C4/C5/C6 superseded
 
-M1 and M3 independently resolved the same doc.md §5.5/§5.7 gaps.
-Current state:
+M1 (main-agent) and M3 (glm1) ran a cross-check (api/test/cross-m3.test.ts
+13/13 vs contracts/test_vectors.json; see also the M1↔M3 msgs). The server
+side adopted M3's proof + canonical-JSON specs; the client side (this
+module, loader/init/handshake.lua session 2) adopts M1's wire formats:
 
-| Item | M3 (this module) | M1 (api/src/auth.ts) | Status |
-|---|---|---|---|
-| session_key derivation | HKDF(shared, client_nonce‖server_nonce, "session-key", 32) | identical | **MATCH** |
-| server nonce transport | x-nonce response header (C1) | inline in body: pk(32)‖serverNonce(16)‖ct‖tag | **DIVERGES** — M3 should adopt M1's (cleaner); M1 is the server |
-| init AEAD nonce / aad | 12 zero bytes / empty (C2) | serverNonce[0..12) / scriptId‖serverPub‖serverNonce | **DIVERGES** — adopt M1's |
-| payload response layout | b64url(ct‖tag), payload_key, zero nonce (C5) | b64url(nonce(12)‖ct‖tag), payloadKey, aad=scriptId‖sessionId | **DIVERGES** — adopt M1's |
-| payload key inputs | salt=build_id‖watermark_id (client-known) | salt=buildHash(32), info="payload-key"‖watermark(16) | **DIVERGES + M1 GAP**: buildHash & watermark exist only inside M1's sealed payload_ref (refSealKey) — the client cannot derive payloadKey from anything it has |
-| canonical JSON | contracts/canonical_json.md (nulls dropped) | api/src/contracts.ts canonicalValue (arrays supported, null → ? ) | **NEEDS ALIGNMENT** (M1's canonicalJson must drop nulls identically for the SDK's x-sig check; note also discord_id/note are null in the common case) |
+- **C1/C2 (init response):** superseded — the server nonce travels IN the
+  body: `b64url(serverPub(32) | serverNonce(16) | ct | tag)`. AEAD nonce =
+  `serverNonce[0..12)`; aad = `scriptId | serverPub | serverNonce`.
+- **C4 (watermark transport):** resolved server-side — the init plaintext
+  now carries `build_hash` (hex) and `watermark_id` (hex, 16B) alongside
+  session_token/payload_ref. payload() still accepts an explicit
+  watermark override (defensive), but the contract source is the init
+  plaintext.
+- **C5/C6 (payload response + key):** superseded — payload response =
+  `b64url(nonce(12) | ct | tag)`; payload_key = HKDF-SHA256(sessionKey,
+  salt = fromHex(build_hash) [32B], info = "payload-key" | fromHex
+  (watermark_id) [16B]); aad = `scriptId | sessionId(16 raw, =
+  b64urlDecode(session_token))`. The zero-none construction and the
+  ASCII `build_id || watermark_id` salt are RETIRED.
+- **C3 (canonical null):** unchanged — M1 adopted the drop-null rule.
 
-**Proposed resolution (minimal change, keeps M1's wire formats):**
-M1 adds `build_hash` (hex) and `watermark_id` (hex) to the init response
-plaintext. The client then derives exactly per M1:
-`payloadKey = HKDF(sessionKey, salt = fromHex(build_hash), info = "payload-key" ‖ fromHex(watermark_id), 32)`,
-AEAD nonce = response prefix, aad = scriptId ‖ fromHex(session_id).
-M3's handshake switches to M1's init layout and payload derivation as
-soon as that lands (the change is localized to loader/init/handshake.lua).
-Until then the two sides do NOT interoperate on /auth/* (deliberately
-flagged rather than silently guessed — doc.md READ FIRST rule).
+Contracts/test_vectors.json now also carries the x25519 (RFC 7748 §5.2
+scalarmult ×2, §6.1 DH, §6.1 iterated I=1) and ed25519 (RFC 8032 §7.1,
+all 5) sections for M1's cross-implementation suite (their request);
+generated + verified by tests/gen_vectors_ext.lua (every entry re-checked
+against the shipped implementations before write; existing sections
+verified zero-drift).
