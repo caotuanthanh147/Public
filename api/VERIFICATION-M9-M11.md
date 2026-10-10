@@ -106,3 +106,25 @@ Bugs found and fixed this session:
 3. Seed enrichment race: initial fire-and-forget async IIFE in the sync seed function → converted to awaited loop.
 
 NOT-RUN (honest list): keyboard-only a11y walkthrough beyond palette nav; mobile-viewport pass (nav collapse manually checked only); CSV re-import round-trip; long-poll under load.
+
+## M11 session 4 (observability round) — verification addendum
+
+Scope: dashboard UX/observability. api/ module code untouched; one dashboard-owned route changed (simulate-webhook propagates the inner webhook HTTP status — the dash harness route, not module code). Suite baseline unchanged.
+
+QA-found bugs fixed this session (browser-verified before/after):
+1. Command palette matching: "freekey" could not find "Free-key flow" (plain substring vs hyphenated labels) → normalized matching (strip non-alphanumerics from query and haystack). Walk went 10/12 → 12/12.
+2. ScrollArea never constrained height (pre-existing since first delivery): root max-h-96 resolved but viewport height:100% → auto (percentage heights don't resolve against max-height parents) → tables rendered full-height and the page scrolled instead. Fixed: viewport gets max-h-[inherit]; root gets overflow-hidden.
+3. Table's own overflow-x-auto wrapper was the nearest scroll container, defeating sticky theads → wrapper de-scrolled (views own the scroll div now: max-h-* overflow-auto). Sticky thead verified: scrollTop=300/3429, clientHeight=384, thead offset 0.0px (pinned).
+4. Tampered webhook simulator masked its inner 400 as HTTP 200 in the request log → dash route now propagates the inner status; inspector entry reads POST /api/dash/simulate-webhook 400 and the header error badge shows 1.
+
+New features:
+- Live API request inspector (⌘I / Ctrl+I, header button, palette command "Open API request inspector"): right slide-over with per-request method/path/status/latency/age, live stats strip (logged/ok/errors/avg), hide-GET-polls filter, clear, cap 80, in-flight footer. ALL dashboard→server traffic instrumented (gw() + dash routes: validate-key, simulate-webhook, totp, info).
+- Top progress bar while requests are in flight (gradient sweep, reduced-motion safe).
+- Users view: row click → user detail dialog (identity stats + "Their keys" list with tier/status badges; client-side join so roblox identities resolve too — server-side q only matches discord).
+- Shared badge atoms (badges.tsx) for tier/status reused across Keys + Users.
+
+Styling: sticky table headers with inset border shadow + uppercase micro-label column heads across all 9 table views; Payments tabs switched to the animated line-variant underline; tables now truly scroll internally (max-h respected) with pinned headers.
+
+Browser verification: 12/12 palette walk (incl. previously-broken freekey/nodes); user dialog (identity 203040 → 2 keys, 42 execs, key list renders); inspector (61+ entries live, stats strip, filter → 0 shown for all-GET log, error badge after tampered webhook); sticky header math above; console clean after fresh reload (HMR reload warnings during edits only).
+
+NOT-RUN: real keyboard a11y audit beyond palette/inspector shortcuts; inspector under >80 rapid requests (ring cap logic unit-reasoned, not stress-tested).
