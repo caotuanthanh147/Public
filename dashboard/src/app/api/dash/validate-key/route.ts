@@ -4,7 +4,7 @@
 // the signed request input server-side and returns the signed envelope.
 
 import { NextRequest, NextResponse } from "next/server";
-import { b64urlEncode } from "@api/src/contracts";
+import { b64urlEncode, toHex } from "@api/src/contracts";
 import { randomBytes, hmacSha256, sha256Hex, utf8 } from "@api/src/crypto";
 import { proofPayload } from "@api/src/flow";
 import { buildRoutes, dispatch } from "@api/src/router";
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   const now = Math.floor(Date.now() / 1000);
   const nonce = b64urlEncode(randomBytes(16));
   const payloadBody = utf8(JSON.stringify({ key, script_id: DEMO_SCRIPT_ID, lv: "1.0.0" }));
-  const proof = b64urlEncode(await hmacSha256(store.config.proofKey, proofPayload("POST", "/check_key", String(now), nonce, await sha256Hex(payloadBody))));
+  const proof = toHex(await hmacSha256(store.config.proofKey, proofPayload("POST", "/check_key", String(now), nonce, await sha256Hex(payloadBody))));
   const input: RequestInput = {
     method: "POST",
     path: "/check_key",

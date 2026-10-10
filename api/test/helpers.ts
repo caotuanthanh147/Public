@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { DOC_SCHEMA_SQL, SqliteAdapter } from "../src/db";
 import { MemoryNonceStore, MemoryRateLimiter } from "../src/state";
 import { utf8 } from "../src/crypto";
-import { b64urlEncode } from "../src/contracts";
+import { b64urlEncode, toHex } from "../src/contracts";
 import { generateSigningKeys, makeSigner, makeVerifier, randomBytes, sha256Hex, hmacSha256 } from "../src/crypto";
 import { ApiConfig, AppContext, RequestInput, proofPayload } from "../src/flow";
 import { generateKey, hashKey, projectHwidSalt, hashHwid } from "../src/keys";
@@ -137,7 +137,7 @@ export async function makeSignedInput(
   const nonce = opts.nonce ?? b64urlEncode(randomBytes(16));
   const bodyBytes = opts.bodyBytes ?? (body !== null ? utf8(JSON.stringify(body)) : new Uint8Array(0));
   const bodyHashHex = await sha256Hex(bodyBytes);
-  const proof = b64urlEncode(await hmacSha256(PROOF_KEY, proofPayload(method, path, String(ts), nonce, bodyHashHex)));
+  const proof = toHex(await hmacSha256(PROOF_KEY, proofPayload(method, path, String(ts), nonce, bodyHashHex)));
   const headers: Record<string, string> = {
     "x-ts": String(ts),
     "x-nonce": nonce,
