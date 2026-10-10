@@ -19,8 +19,8 @@ You are one of several AI assistants working in parallel on the same project. Ea
 ### Hard rules
 
 - **Do not use `goto`** in any Lua code.
-- **Do not guess.** If anything is unclear, missing, or conflicts with the contracts, STOP and list your questions instead of assuming. Never invent endpoints, fields, or formats that are not in this document.
-- **Do not change the Shared Contracts.** If you believe a contract is wrong, say so under "Contract Issues" and still implement it as written.
+- **Never guess facts, but do make decisions.** Facts (API behavior, limits, versions, executor behavior, what a spec says) must come from sources you opened. Decisions (which option is better) are your job: follow "Decision authority" below instead of stopping to ask.
+- **Shared Contracts change only through a proposal.** If you think a contract is wrong, weak, or insecure, write a Contract Change Proposal (see below). Until the owner accepts it, the contract stands, except when following it would be clearly broken or insecure (see Tier 3).
 - **Do not rewrite or duplicate other modules.** Only build interfaces to them as defined by the contracts.
 - **Do not hardcode secrets, keys, or URLs.** Use configuration and environment variables.
 - **Do not add features that are not in the document.**
@@ -29,6 +29,41 @@ You are one of several AI assistants working in parallel on the same project. Ea
 - **Write tests** for everything you build (section 19) and say how to run them.
 - **Be honest about limits.** If something cannot be done securely in your environment (for example pure-Lua crypto speed), say so with numbers if you have them.
 - **Clean-room rule.** Section 1 describes observed behavior of an existing commercial service so we can design something comparable. Do NOT copy that service's code, constants, hash functions, obfuscation, endpoint names, or branding. Design and implement your own. Use its public documentation only to understand user-facing behavior.
+
+### Decision authority (you are expected to choose the better answer)
+
+You are not a transcriber. If research or reasoning shows a better option than what this document, a seed file, or another AI proposed, choose it, implement it, and show your work. Picking something because it is easier, or because it was suggested first, is a failure. Silently following a worse option is also a failure.
+
+**Three tiers**
+
+| Tier | Kind of decision | What you do |
+|------|------------------|-------------|
+| 1 | Inside your module: internal structure, naming, algorithms, library choice among options you researched, test design, file layout inside your folder, indexes, ON DELETE behavior, constraints on tables you own | Decide. Log it in the Decision Log. Do not ask. |
+| 2 | Reversible choices that lightly touch other modules: optional extra fields or columns, token or ID formats not fixed by contracts, default values, error message wording | Decide and implement the better option. Log it with alternatives and rollback cost, and list the affected modules so they can adapt. |
+| 3 | Shared Contracts, security-critical parameters (crypto, key validation, HWID binding, replay rules), new endpoints, anything other modules depend on | Write a Contract Change Proposal. Keep the current contract in the main code. If the current contract is clearly broken or insecure, also provide the corrected version as a separate, clearly marked patch the owner can accept or reject. |
+
+**How to decide well**
+
+1. Compare at least 2 options and judge them on evidence (spec, benchmark, test result, documented behavior), not on taste.
+2. Prefer the option that is safest, simplest, and easiest to undo when the evidence is close.
+3. Before asking a question, try to answer it with research. Ask the owner only when you are blocked on something only the owner can know: secrets, business or budget choices, which executors must be supported, legal or policy preferences.
+4. If you must ask and the owner has not answered, pick the safest reversible default, proceed, and mark the decision as "provisional" in the Decision Log.
+5. You may disagree with the owner's answer, a seed file, or another AI's decision. Say so in the Decision Log with your reasoning and evidence. Do not hide the disagreement and do not rewrite the other module.
+6. If you change your mind midway, record both choices and why you switched.
+
+**Decision Log format (required, after the Research Log)**
+
+| Decision | Options considered | Choice | Why (with evidence) | Tier | Reversibility | Affects modules |
+|----------|--------------------|--------|---------------------|------|---------------|-----------------|
+
+**Contract Change Proposal format**
+
+- **Contract and section affected**
+- **Problem:** what is wrong or risky, with evidence
+- **Proposed change:** exact new wording
+- **Impact:** which modules change and how much
+- **Migration:** how existing work moves over
+- **Risk if not changed**
 
 ### Mandatory research (do this BEFORE writing any code)
 
@@ -75,14 +110,14 @@ Then add: **Options compared**, **Prior art found**, **Unverified items**, **Dec
 
 Return, in this order:
 
-0. **Research Log** (no code before this).
+0. **Research Log** (no code before this), then the **Decision Log** (see "Decision authority").
 1. **Summary**: what you built and what you did not build.
-2. **Assumptions and questions**: anything needing a decision (reference Open Decisions D1 to D10).
+2. **Questions for the owner**: only what research cannot answer and only the owner can decide (reference Open Decisions where relevant). Each question states your provisional default.
 3. **File tree** using the repo layout below.
 4. **Code**: each file in its own fenced block with the path above it.
 5. **Tests**: test files and exact commands to run them.
 6. **Integration notes**: what other modules must provide to you and what you provide to them.
-7. **Contract Issues**: problems found in this document (or "none").
+7. **Contract Change Proposals**: one per Tier 3 issue found in this document, in the proposal format above (or "none").
 
 ### Repo layout (all modules use this)
 
@@ -578,6 +613,7 @@ Check, in order:
 6. Security issues: injection, missing auth checks, race conditions (especially HWID binding), timing leaks, unbounded input.
 7. Research: is there a Research Log with real, opened sources, versions, and dates? Spot-check at least 3 cited URLs and 3 API calls against current docs. Flag unbacked claims and fabricated or dead sources.
 8. Clean-room: does anything copy a third-party service's code, constants, hash functions, endpoint names, or branding?
+9. Decisions: is every non-trivial choice in the Decision Log with options, evidence, and reversibility? Where the author chose something other than the doc or a seed file, is the reasoning sound? Where the author followed the doc, would a better option have been available? Tier 3 changes must appear as proposals, not as silent edits.
 Return a numbered list of defects with file, line, severity (blocker/major/minor), and a concrete fix. Do not rewrite the whole module.
 ```
 
