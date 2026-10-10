@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { csvTimestamp, exportCsv } from "@/lib/export-utils";
 import { AuditEntry, formatTime, gw } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
-import { Banknote, Download, Gift, KeyRound, RefreshCw, ScrollText, Search, ServerCog, ShieldAlert } from "lucide-react";
+import { Banknote, Download, Fingerprint, Gift, KeyRound, RefreshCw, ScrollText, Search, ServerCog, ShieldAlert } from "lucide-react";
 
 const CATEGORIES = [
   { value: "all", label: "all actions" },
@@ -35,6 +35,12 @@ function categorize(action: string): string {
 
 function ActionBadge({ action }: { action: string }): React.JSX.Element {
   const cat = categorize(action);
+  if (action.startsWith("admin.leak"))
+    return (
+      <Badge variant="outline" className="gap-1 border-rose-600/40 bg-rose-600/15 text-rose-700 dark:text-rose-300">
+        <Fingerprint className="h-3 w-3" aria-hidden /> {action}
+      </Badge>
+    );
   if (cat === "payment")
     return (
       <Badge variant="outline" className="gap-1 border-emerald-600/30 bg-emerald-600/10 text-emerald-700 dark:text-emerald-400">

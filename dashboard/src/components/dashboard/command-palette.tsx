@@ -66,7 +66,9 @@ export function CommandPalette({
   );
 
   // Open/close transitions happen in the dialog's own onOpenChange wrapper so
-  // no state is set from an effect body.
+  // no state is set from an effect body. (Fresh state on every open is also
+  // guaranteed structurally: the parent keys this component by an open-session
+  // counter, so each open remounts the palette with a clean query.)
   function handleOpenChange(o: boolean): void {
     if (o) {
       setQuery("");

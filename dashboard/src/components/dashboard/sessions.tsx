@@ -10,9 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime, gw, SessionRow, shortHash } from "@/lib/api";
 import { useApiData } from "@/lib/use-api-data";
+import { copyText } from "@/lib/export-utils";
 import { Fingerprint, RefreshCw, Stamp } from "lucide-react";
 
-export function SessionsView(): React.JSX.Element {
+export function SessionsView({ onTrace }: { onTrace?: (watermarkId: string) => void }): React.JSX.Element {
   const [keyFilter, setKeyFilter] = useState("");
   const trimmed = keyFilter.trim();
   const { data, error, refresh } = useApiData(
@@ -76,7 +77,25 @@ export function SessionsView(): React.JSX.Element {
                       <TableCell className="font-mono text-xs">
                         <span className="inline-flex items-center gap-1">
                           <Stamp className="h-3 w-3 text-muted-foreground" />
-                          {shortHash(r.watermark_id, 8)}
+                          <button
+                            type="button"
+                            className="transition-colors hover:text-emerald-600 hover:underline dark:hover:text-emerald-400"
+                            onClick={() => copyText(r.watermark_id, "Watermark copied")}
+                            title="click to copy watermark id"
+                          >
+                            {shortHash(r.watermark_id, 8)}
+                          </button>
+                          {onTrace !== undefined && (
+                            <button
+                              type="button"
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-emerald-600 dark:hover:text-emerald-400"
+                              onClick={() => onTrace(r.watermark_id)}
+                              aria-label={`trace watermark ${r.watermark_id} in leak tools`}
+                              title="trace in Leak tools"
+                            >
+                              <Fingerprint className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </span>
                       </TableCell>
                       <TableCell className="font-mono text-xs">

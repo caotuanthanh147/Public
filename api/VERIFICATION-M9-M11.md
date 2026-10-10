@@ -128,3 +128,23 @@ Styling: sticky table headers with inset border shadow + uppercase micro-label c
 Browser verification: 12/12 palette walk (incl. previously-broken freekey/nodes); user dialog (identity 203040 → 2 keys, 42 execs, key list renders); inspector (61+ entries live, stats strip, filter → 0 shown for all-GET log, error badge after tampered webhook); sticky header math above; console clean after fresh reload (HMR reload warnings during edits only).
 
 NOT-RUN: real keyboard a11y audit beyond palette/inspector shortcuts; inspector under >80 rapid requests (ring cap logic unit-reasoned, not stress-tested).
+
+## M11 session 5 (M7 leak-tools round) — verification addendum
+
+Scope: dashboard M7 surface (Leak tools view + Users Risk column + Sessions trace) driving the REAL M7 endpoints (module code in api/src/leak.ts + auth.ts changes per DECISIONS-M7). api suite 212→229 (test/m7.test.ts, all green); tsc clean; lint 0.
+
+QA-found bugs fixed this session (browser-verified before/after):
+1. Command palette stale query (pre-existing, real user-facing bug): reopening via Ctrl/⌘-K or the header button left the previous query in the input — Radix onOpenChange(true) never fires for prop-driven opens, so the reset never ran; the accumulated filter made Enter a no-op and stranded navigation (repro: type "keys", Enter, reopen — input still read "keys"). Fixed structurally: parent keys the palette by an open-session counter so every open remounts with clean state (close does not bump → exit animations preserved). Verified: type→navigate→reopen shows empty input; 13/13 palette walk; toggle-close/reopen cycles.
+2. react-hooks/set-state-in-effect blocked the naive reset-in-effect fix → the session-key remount pattern is the lint-clean structural fix (same pattern reused for the leak-trace prefill).
+
+New features:
+- Leak tools view (doc §16 page list now complete): tolerant-artifact textarea → POST /admin/leak/lookup → extraction-source badge + watermark card (copy) + key card (tier/status/identity/note/expiry/revoke state) + score badge + sessions table + recent events; "Run revoke chain" behind a confirmation dialog with hwid/ip checkboxes + false-positive warning; executed-state alert; idempotency surfaced.
+- "Craft demo leak (real handshake)" dev route: mints a key through the REAL admin API + runs a REAL auth-init handshake server-side (X25519+HKDF+AEAD client in the route) → returns a deliberately messy dump so the free-text extraction class is proven in-browser end to end.
+- Users view Risk column: /admin/abuse-scores joined through the key list per identity (worst active key band; clean rows muted). User detail dialog gains a per-key Risk column.
+- Sessions view: watermark cells copyable + fingerprint trace button → jumps to Leak tools with the watermark prefilled (key-remount prefill, no set-state-from-props).
+- Audit view: admin.leak.* actions render a distinct fingerprint destructive badge.
+- seedAbuseDemo: idempotent seed (own marker) — active key with 3 client tamper reports + HWID churn → WATCH · 18 renders on first load.
+
+Browser verification: craft → extract (messy text, sealed-ref class) → revoke chain (dialog → confirm → revoked + toast) → Blacklist view shows both leak:<watermark> rows → Audit shows admin.leak.revoke; trace flow Sessions→Leak tools prefilled→extract (watermark-id class) → revoked key card; Users WATCH · 18 row; zero JS errors; 13/13 palette walk; webhook chain regression still signed-200/tampered-400; sticky headers still pinned (thTopVsScroller 0 at scrollTop 300); CSV export still toasts.
+
+NOT-RUN: real keyboard a11y audit beyond the palette/inspector/trace shortcuts; leak workflow against a production-sized sessions table (limit 200 on abuse-scores, top-N on lookup sessions list — indexed queries, but no load test).
