@@ -72,3 +72,37 @@ cd dashboard && bun install && bun run lint && bun run dev
 # then: open http://localhost:3000/ — Overview renders; Keys create;
 # Free-key flow: Start → wait timer → Complete ×2 → Claim → validate the key in Keys.
 ```
+
+## M11 session 3 (polish & power round) — verification addendum
+
+Scope: dashboard UX/features only — zero api/ code changes (suite baseline unchanged, 212/212 from M10 session).
+
+New in this session:
+- Dark mode via next-themes (class strategy, system default, CSS-only icon swap — no hydration state).
+- Command palette (Ctrl/Cmd+K): all 12 views + theme action; arrow-key navigation, Enter to run, filters as you type.
+- Overview charts (hand-rolled SVG, zero chart deps): 14-day stacked activity bar chart bucketed client-side from GET /admin/audit?limit=200 (series: keys/payments/free flow/security, hover tooltips), tier-distribution donut from /admin/keys, sparklines per stat card, validation-health meter.
+- CSV export (RFC 4180 escaping, BOM for Excel): Keys (current filters), Audit (current filters), Payments orders.
+- Key detail dialog: click any key row → full field set + inline revoke/reset-hwid actions.
+- Toast feedback (sonner) on every mutation: key create/revoke/reset-hwid, product save, webhook sim outcome, reconcile verdict, CSV exports, clipboard copies.
+- Styling: shimmer skeleton loaders, view transition animation, pulse-dot live indicators, gradient stat-card headers, tier/status dot badges, empty states with icons, custom scrollbars, focus-visible rings, reduced-motion support, copy-to-clipboard on key ids.
+- New UI primitives: tooltip.tsx (self-contained TooltipProvider wrapper — fixes Radix "must be used within TooltipProvider"), kbd.tsx.
+- Demo-seed enrichment (idempotent, actor marker "seed-history"): ~77 audit rows across 14 days, 41 ok/5 fail/1 tamper events in the 24h window, 8 extra keys spread across tiers/days — makes the charts render data on first load.
+
+Lint: 0 problems. React-hooks purity ruleset clean (no setState-in-effect, no Date.now() in render — chart "now" = server /sync timestamp).
+
+Browser verification (agent-browser, self-healing batches):
+- All 12 views render with data; navigation exercised THROUGH the command palette itself (12/12 palette navigations correct).
+- Theme toggle: html.dark class flips, computed bg/fg verified (near-black bg / near-white fg / 10%-white borders in dark).
+- Palette: "paym"+Enter → Payments; "keys"+Enter → Keys; "audit"+Enter → Audit log.
+- Key detail dialog: row click → full dialog (id, tier, status, note, hwid, discord, roblox, created/expires/first/last use, created_by).
+- CSV export: toast "CSV exported — 9 key rows (current filters)".
+- Create key: toast "Created 1 key" + plaintext-once card.
+- Webhook simulator regression (real M10 chain): signed → HTTP 200 (issued) toast; tampered → HTTP 400 (invalid_signature) toast.
+- Console after fixes: zero errors (the two early "Module not found kbd/tooltip" entries were mid-session HMR noise, absent on fresh load).
+
+Bugs found and fixed this session:
+1. Radix tooltip without provider crashed the whole app (white screen, "This page couldn't load") — fixed by making the ui/tooltip.tsx Tooltip self-contained (wraps its own TooltipProvider).
+2. React-hooks purity: mounted-state pattern in ThemeToggle → replaced with CSS dark:/hidden icon swap; palette state resets moved from useEffect into the onOpenChange handler; Overview Date.now() → server sync.st.
+3. Seed enrichment race: initial fire-and-forget async IIFE in the sync seed function → converted to awaited loop.
+
+NOT-RUN (honest list): keyboard-only a11y walkthrough beyond palette nav; mobile-viewport pass (nav collapse manually checked only); CSV re-import round-trip; long-poll under load.
