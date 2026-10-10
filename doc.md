@@ -594,6 +594,9 @@ Return a numbered list of defects with file, line, severity (blocker/major/minor
 - [ ] Every module returned a Research Log with real sources, versions, and dates.
 - [ ] Library and service choices are compatible across modules.
 - [ ] Unverified items are resolved or recorded in Open Decisions.
+- [ ] Every "done" claim has a command and output attached (section 22.1).
+- [ ] Reviewer was a different model from the author and ran the tests itself.
+- [ ] Real-environment executor tests are recorded for the current phase.
 - [ ] Reviewer pass completed with no open blockers.
 
 ---
@@ -940,6 +943,46 @@ Auth: Discord OAuth plus optional TOTP. Every mutation produces an audit entry.
 | Free flow | Bypass attempts: replay, skipped steps, fast completion, multi-account |
 | Security | Brute-force simulation, malformed input, auth boundary tests, keys-in-URL scan |
 | Ops | Chaos tests: DB down, blob store down, signing key missing, one node unreachable |
+
+### 22.1 Verification Requirements (guards against "claimed done, never proven")
+
+**Principle:** a module is done only when its claims were checked by something other than the AI that wrote it.
+
+**Rules for every AI**
+- State exactly what you ran and the output. If you could not run something, say "not run" and why. Never write "should work" or "tested" without a command and a result.
+- Do not write tests that only restate your own implementation. Tests must come from an outside source: RFC vectors, the original script's behavior, a spec, or a second implementation.
+- Do not report a partial solution as complete. List the cases you did not cover (for example varargs, upvalues, replay, clock skew, cache corruption).
+- If an approach fails, report the failure and the counterexample. Do not quietly switch to an easier problem.
+
+**Independent review**
+- The reviewer (M14) must be a different model or provider from the module's author.
+- Reviewers must run the tests themselves, not read the author's claim that they pass.
+- Anything security-critical (crypto, key validation, HWID binding, replay protection) gets two independent reviews.
+- Disagreements between reviewers go to Open Decisions instead of being resolved by guesswork.
+
+**Real-environment tests (done by a human on real executors; AIs cannot do these)**
+
+| Test | What to record |
+|------|----------------|
+| SDK sync + check_key on each target executor | Pass/fail, latency, any missing functions |
+| Executor identity headers on `request` | Which header names each executor injects (feeds D10) |
+| Stub cache: first run, second run, corrupted cache file, no write permission | Behavior and error messages |
+| Pure-Lua crypto speed (SHA-256, ChaCha20, X25519, Ed25519 verify) | Milliseconds per operation on low-end and high-end executors |
+| Full load of a protected script | Total load time, memory use, correct behavior vs unprotected original |
+| Clock skew (set device time wrong by minutes) | Auth still works via `/sync` offset |
+| Network failure mid-load, blocked node, blocked domain | Generic failure message, no crash, no partial script load |
+| HTTP spy on the finished flow | Confirm no key, secret, or usable script appears in plaintext in any logged request or response |
+
+**Obfuscator proof of correctness**
+- Differential test every release against the full corpus; any mismatch blocks the release.
+- Report slowdown per script type with numbers.
+- Keep a failing-case list. A case that fails is fixed or documented, never dropped.
+
+**Human sign-off checklist (before each phase is marked done)**
+- [ ] Every claim in the AI's summary has a command and an output attached.
+- [ ] Tests were run by someone other than the author.
+- [ ] Real-environment tests for this phase are recorded in a table with dates and executors.
+- [ ] Known gaps are listed, not hidden.
 
 ---
 
