@@ -46,7 +46,7 @@ export function BlacklistView(): React.JSX.Element {
       setReason("");
       refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "add failed");
+      setNotice(e instanceof Error ? e.message : "add failed");
     } finally {
       setBusy(false);
     }

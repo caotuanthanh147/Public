@@ -23,6 +23,8 @@ import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { CommandPalette, type Command } from "@/components/dashboard/command-palette";
 import { ApiInspectorButton, ApiInspectorPanel, ApiProgressBar } from "@/components/dashboard/api-inspector";
 import { ShortcutsDialog } from "@/components/dashboard/shortcuts";
+import { useApiData } from "@/lib/use-api-data";
+import { KeyRow, gw } from "@/lib/api";
 import {
   ShieldCheck,
   BarChart3,
@@ -117,6 +119,18 @@ export default function Home(): React.JSX.Element {
   // Leak tools view. `leakTraceSession` remounts the view so the prefill lands
   // through the mount-time state initializer (no set-state-from-props).
   const [leakTrace, setLeakTrace] = useState<{ text: string; session: number } | null>(null);
+  // Keys-view prefill from the palette's entity search — same remount pattern
+  // (the KeysView initial query reads this once at mount).
+  const [keysPrefill, setKeysPrefill] = useState<{ text: string; session: number } | null>(null);
+
+  // Keys index for the palette's global entity search (id / note / discord /
+  // roblox). One fetch on mount + 60s poll — the palette filters client-side,
+  // so entity search costs zero extra requests while open.
+  const keysIndex = useApiData(
+    () => gw<{ rows: KeyRow[] }>("GET", "/admin/keys?limit=500").then((r) => r.rows),
+    [],
+    { pollMs: 60000 },
+  );
 
   const openPalette = useCallback(() => {
     setPaletteSession((s) => s + 1);
@@ -163,6 +177,12 @@ export default function Home(): React.JSX.Element {
   const traceWatermark = useCallback((watermarkId: string) => {
     setLeakTrace((t) => ({ text: watermarkId, session: (t?.session ?? 0) + 1 }));
     setView("leak");
+    setMenuOpen(false);
+  }, []);
+
+  const jumpKey = useCallback((id: string) => {
+    setKeysPrefill((t) => ({ text: id, session: (t?.session ?? 0) + 1 }));
+    setView("keys");
     setMenuOpen(false);
   }, []);
 
@@ -347,7 +367,7 @@ export default function Home(): React.JSX.Element {
           </div>
           <div key={view} className="view-enter">
             {view === "overview" && <OverviewView onNavigate={go} />}
-            {view === "keys" && <KeysView />}
+            {view === "keys" && <KeysView key={keysPrefill?.session ?? 0} prefill={keysPrefill?.text} />}
             {view === "scripts" && <ScriptsView />}
             {view === "users" && <UsersView />}
             {view === "resellers" && <ResellersView />}
@@ -392,6 +412,8 @@ export default function Home(): React.JSX.Element {
           else closePalette();
         }}
         commands={commands}
+        keysIndex={keysIndex.data ?? []}
+        onJumpKey={jumpKey}
       />
       <ShortcutsDialog open={helpOpen} onOpenChange={setHelpOpen} />
       <ApiInspectorPanel open={inspectorOpen} onClose={() => setInspectorOpen(false)} />

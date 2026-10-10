@@ -25,7 +25,8 @@ const CATEGORIES = [
   { value: "script", label: "scripts" },
 ];
 
-function categorize(action: string): string {
+// Reused by the Overview timeline to pick dot colors (timeline-cat-*).
+export function categorize(action: string): string {
   if (action.startsWith("key.") || action.startsWith("hwid")) return "key";
   if (action.startsWith("payment")) return "payment";
   if (action.includes("free")) return "free";
@@ -34,7 +35,9 @@ function categorize(action: string): string {
   return "other";
 }
 
-function ActionBadge({ action }: { action: string }): React.JSX.Element {
+// Reused by the Overview "recent activity" timeline — the audit action →
+// category → color mapping is a shared visual vocabulary.
+export function ActionBadge({ action }: { action: string }): React.JSX.Element {
   const cat = categorize(action);
   if (action.startsWith("admin.leak"))
     return (
@@ -75,7 +78,9 @@ function ActionBadge({ action }: { action: string }): React.JSX.Element {
   return <Badge variant="secondary">{action}</Badge>;
 }
 
-function relTime(unix: number): string {
+// Reused by the Overview "recent activity" timeline (client-only render:
+// only mounted after data lands, so Date.now() here is hydration-safe).
+export function relTime(unix: number): string {
   const diff = Math.floor(Date.now() / 1000) - unix;
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;

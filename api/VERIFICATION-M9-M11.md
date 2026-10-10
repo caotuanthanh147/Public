@@ -185,3 +185,78 @@ overlay. api/ module code untouched (229/229 baseline holds).
   (inherits the existing globals reduced-motion block — animation: none
   applies to .pulse-dot::after but the dot itself is a static element);
   multi-tab staleness behavior (client-only state by design).
+
+## Session 8 (M11 s8) — key lifecycle completion + global search (§16)
+
+Fixed-before-features (QA-found):
+- `api/test/m7.test.ts` clientInit opts default `= {}` violated strict tsc
+  (required `key` property missing in the default) — a latent bug shipped in
+  M7 s1 that bun test never exercised (all call sites pass opts). Default
+  removed; suite 229/229, tsc clean.
+- 4 latent src/ tsc errors (never lint-gated, root tsc was not in the
+  sandbox gate): blacklist.tsx + settings.tsx `setError` refactor leftovers
+  (→ setNotice), leak-tools.tsx `onClick={runLookup}` arity mismatch
+  (→ `() => void runLookup()`), node:sqlite missing ambient types
+  (→ src/types/node-sqlite.d.ts minimal shim). src tree now tsc-clean.
+- react-hooks/purity: extend-dialog "days left" computed at dialog-open time
+  (event handler), never in render — the same Date-in-render class that
+  Next 16's prerender guard blocks.
+
+Features (dashboard drives the real router; zero api/ handler changes):
+- Key lifecycle completion: PATCH /admin/keys/:id was real-but-unsurfaced.
+  Key detail dialog gains Extend… (days 1-3650, +7/+30/+90/+365 quick chips,
+  current-expiry + days-left hint captured at open) and inline note edit
+  (≤256 chars, nullable). Both audit-log as admin.key.update (verified:
+  2 rows for bulk, 1 for single extend, 1 for note update).
+- Bulk operations: checkbox column (header tri-state select-all, row toggles
+  stopPropagation so row-click detail still works) + selection toolbar
+  (delta-pop entrance) with bulk Extend… and bulk Revoke… (confirm dialog
+  lists affected keys + FP-style irreversibility warning). Requests run
+  sequentially; ONE summary toast per batch (ok + failed count, first 4 ids).
+- Global entity search: ⌘K palette searches the keys index (id / note /
+  discord / roblox / tier / status; query ≥3 chars; top 8) as a "Keys" group
+  after command matches — arrows/Enter treat entities identically. Selecting
+  one jumps to Keys view with the id prefilled (view remount key pattern) →
+  server-side q filter narrows the table. Index fetches on mount + 60s poll;
+  zero extra requests while the palette is open.
+- Overview stat delta pills: useApiData now exposes prevData (promoted from
+  a dataRef inside the settle callback — never a setState-in-updater). Each
+  KPI card shows ±N since the previous poll with per-metric direction
+  semantics (tamper up = rose/bad; others up = emerald/good). Verified live:
+  webhook-issued key → "+1" pill on Active keys after the next 15s poll.
+- Overview ops row (zero new requests, derived from rows already fetched):
+  Recent activity timeline (8 newest audit entries, category-colored dots
+  timeline-cat-*, ActionBadge reuse, relTime) + Expiring soon watchlist
+  (active keys ≤7d out, sorted, rose ≤3d / amber otherwise, tier badges,
+  empty state).
+
+Styling:
+- Sortable Keys columns (aria-sort + arrow indicators, click toggles,
+  sensible default dirs); CSV export honors the current sort.
+- .row-selected tint + inset emerald accent rail; bulk toolbar styling.
+- delta-pop keyframes (scale+fade pop-in) + prefers-reduced-motion block.
+- Palette entity rows: mono ids, emerald key icon, tier·status hint chip.
+
+Browser verification (agent-browser, fresh session after close --all):
+13/13 view walk via palette; palette reopen = clean query (session-key
+remount intact); entity search "kwolotyjeohm2v" → exact key + free·active
+chip → Enter → Keys view prefilled + 1 row; sort by execs asc/desc
+(aria-sort + row order 1337,210,87); 2-row selection → bulk extend 14d
+(toast "Extended 2 keys"; 2 admin.key.update audit rows); single extend
++7d chip (toast "Extended kwolotyj… by 7d", expiry hint showed
+"expired (renews from today)" for the pre-extension state); note edit
+fill+save (toast "Note updated"); delta pill +1 rendered with computed
+emerald bg + delta-pop-in animation; webhook chain signed-200 (issued,
+YURI- key) / tampered-400 (invalid_signature); fresh reload = 0 console
+errors. NOTE: the persistent "2 empty ✗ page errors" from earlier rounds
+are daemon-buffer artifacts — after `agent-browser close --all` + fresh
+open they are gone; `errors --clear` alone does not reset the daemon log.
+Screenshots: public/qa/s8-{keys-bulk,overview-ops,palette-entity}.png.
+
+Suites: api 229/229 (Public/api, tsc clean), lua m7_checks 40/40, M3
+run.lua 95/95 (lua5.4 rebuilt from source this round — sandbox reset had
+removed the toolchain), eslint 0/0, root tsc src/ 0.
+
+NOT-RUN: bulk revoke on >5 keys in one batch (rate: sequential + no admin
+rate limit, but QA stopped at extend — revoke batches of the same shape);
+entity search performance at >500-key index (limit-capped server-side).

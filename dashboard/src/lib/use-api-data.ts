@@ -9,6 +9,10 @@
 // inside an interval callback — allowed), and lastUpdatedAt tracks when the
 // last fetch SETTLED (client-only Date.now() in a callback — never rendered
 // during SSR, so no hydration/prerender concerns) for freshness pills.
+//
+// prevData: the snapshot before the current one (set inside the same promise
+// callback as data, so the react-hooks/set-state-in-effect contract holds).
+// Lets views render poll-over-poll deltas — "+2 since last refresh".
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,11 +24,16 @@ export function useApiData<T>(
   fetcher: () => Promise<T>,
   deps: unknown[],
   opts?: UseApiDataOptions,
-): { data: T | null; error: string | null; refresh: () => void; loading: boolean; lastUpdatedAt: number | null } {
+): { data: T | null; prevData: T | null; error: string | null; refresh: () => void; loading: boolean; lastUpdatedAt: number | null } {
   const [data, setData] = useState<T | null>(null);
+  const [prevData, setPrevData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  // Last settled snapshot, kept in a ref so the promise callback can promote
+  // it to prevData state BEFORE writing the new data (all inside the callback
+  // — never inside a setState updater, which must stay pure).
+  const dataRef = useRef<T | null>(null);
   const fetcherRef = useRef(fetcher);
   useEffect(() => {
     fetcherRef.current = fetcher;
@@ -36,6 +45,8 @@ export function useApiData<T>(
       .current()
       .then((res: T) => {
         if (active) {
+          if (dataRef.current !== null) setPrevData(dataRef.current);
+          dataRef.current = res;
           setData(res);
           setError(null);
           setLastUpdatedAt(Date.now());
@@ -57,5 +68,5 @@ export function useApiData<T>(
   }, [opts?.pollMs]);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
-  return { data, error, refresh, loading: data === null && error === null, lastUpdatedAt };
+  return { data, prevData, error, refresh, loading: data === null && error === null, lastUpdatedAt };
 }

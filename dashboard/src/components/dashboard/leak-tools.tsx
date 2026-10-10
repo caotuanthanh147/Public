@@ -282,11 +282,11 @@ export function LeakToolsView({ prefill }: { prefill?: string }): React.JSX.Elem
             className="w-full resize-y rounded-md border bg-transparent px-3 py-2 font-mono text-xs outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={runLookup} disabled={busy} size="sm">
+            <Button onClick={() => void runLookup()} disabled={busy} size="sm">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Search className="h-4 w-4" aria-hidden />}
               Extract &amp; correlate
             </Button>
-            <Button variant="outline" size="sm" onClick={craftArtifact} disabled={busy} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => void craftArtifact()} disabled={busy} className="gap-1.5">
               <Fingerprint className="h-4 w-4" aria-hidden />
               Craft demo leak (real handshake)
             </Button>

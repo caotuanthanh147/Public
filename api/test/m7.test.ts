@@ -33,7 +33,7 @@ interface ClientSession {
 
 async function clientInit(
   env: TestEnv,
-  opts: { key: string; hwid?: string | null; ip?: string } = {},
+  opts: { key: string; hwid?: string | null; ip?: string },
 ): Promise<ClientSession> {
   const client = generateX25519KeyPair(randomBytes(32));
   const clientNonce = randomBytes(16);
