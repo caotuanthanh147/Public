@@ -113,3 +113,23 @@ TS→Lua cross-check, and the stale-hash negative test fails closed.
   lua5.4 evidence only.
 - **M3's real init script**: not yet delivered by glm1 — the harness runs a
   mock init honoring the D-M13-6 entry-function contract (msg'd to glm1).
+
+## 7. Re-land verification after force-push #3 (2026-10-10, Public 42d31c5)
+
+User force-push #3 (94e337d) dropped all module trees from Public; loader/stub/
+was re-landed on top of aae6531 as 42d31c5, **bytes identical to the original
+delivery a7beaa4** (`git diff a7beaa4 42d31c5 -- loader/stub/` empty, .gitignore
+blob hash c2658d7 match; fresh-clone tree == canonical SavedFolder work/lp/stub,
+diff -r clean).
+
+Fresh-clone §22.1 re-run (pristine clone of 42d31c5, bun 1.3.14):
+
+| Gate | Result |
+|------|--------|
+| `bun test` (5 files) | **42/42 pass, 0 fail** (179 expect) |
+| `bunx tsc --noEmit` | **clean** |
+| `LUA54=… lua-harness.test.ts` | **12/12 pass** (10 executor-env scenarios + luac5.4 -p gate + stale-hash negative) |
+
+Toolchain: lua5.4/luac5.4 5.4.7 (`~/.lua54/bin`). Environment note: the sandbox
+reset dropped `~/.lua54` from PATH awareness only; the binaries themselves
+survived and were reused — no recompile.
